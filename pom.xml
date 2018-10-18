@@ -1,0 +1,158 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>xyz.gnas.elif</groupId>
+  <artifactId>elif</artifactId>
+  <version>1.0</version>
+
+	<!-- generate html test report -->
+	<reporting>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-report-plugin</artifactId>
+				<version>2.22.1</version>
+			</plugin>
+		</plugins>
+	</reporting>
+  
+ <build>
+		<sourceDirectory>src</sourceDirectory>
+
+		<!-- this is needed for Maven to copy resources to generated output folder -->
+		<resources>
+			<resource>
+				<filtering>false</filtering>
+				<directory>src</directory>
+			</resource>
+		</resources>
+
+		<plugins>
+			<!-- default Maven compiler plugin -->
+			<plugin>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.8.0</version>
+				<configuration>
+					<release>10</release>
+				</configuration>
+			</plugin>
+
+			<!-- generate a jar file with Main manifest -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>3.1.0</version>
+				<configuration>
+					<archive>
+						<manifest>
+							<mainClass>main.java.xyz.gnas.elif.Main</mainClass>
+						</manifest>
+					</archive>
+				</configuration>
+			</plugin>
+
+			<!-- minify jar file, remove tests from package -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+				<version>3.2.0</version>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+						<configuration>
+							<minimizeJar>true</minimizeJar>
+							<artifactSet>
+								<!-- list of dependencies to exclude -->
+								<excludes>
+									<exclude>org.junit.jupiter:*</exclude>
+									<exclude>org.testfx:*</exclude>
+								</excludes>
+							</artifactSet>
+
+							<!-- list of classes to exclude (test classes) -->
+							<filters>
+								<filter>
+									<artifact>xyz.gnas.elif</artifact>
+									<excludes>
+										<exclude>test/java/xyz/gnas/elif/</exclude>
+									</excludes>
+								</filter>
+							</filters>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!-- run tests -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>2.22.1</version>
+				<configuration>
+					<forkCount>1</forkCount>
+					<reuseForks>false</reuseForks>
+					<threadCount>1</threadCount>
+					<printSummary>true</printSummary>
+
+					<!-- source folder of tests -->
+					<testSourceDirectory>${basedir}/src/main/java/xyz/gnas/elif/test</testSourceDirectory>
+
+					<!-- can't find tests to run without this config -->
+					<testClassesDirectory>${project.build.directory}/classes/</testClassesDirectory>
+
+					<!-- run test in a designated folder -->
+					<workingDirectory>${project.build.directory}/test-environment</workingDirectory>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+	
+	<dependencies>
+		<!-- UI libs -->
+		<dependency>
+			<groupId>org.openjfx</groupId>
+			<artifactId>javafx-fxml</artifactId>
+			<version>11</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.controlsfx</groupId>
+			<artifactId>controlsfx</artifactId>
+			<version>9.0.0</version>
+		</dependency>
+
+		<!-- logic libs -->		
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+			<version>2.9.7</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+			<version>2.6</version>
+		</dependency>
+
+		<!-- test libs -->
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-engine</artifactId>
+			<version>5.3.1</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.testfx</groupId>
+			<artifactId>testfx-core</artifactId>
+			<version>4.0.15-alpha</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.testfx</groupId>
+			<artifactId>testfx-junit5</artifactId>
+			<version>4.0.15-alpha</version>
+		</dependency>
+	</dependencies>
+</project>
