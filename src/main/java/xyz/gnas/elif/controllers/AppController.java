@@ -19,6 +19,14 @@ public class AppController {
 
 	private ExplorerController rightController;
 
+	private void showError(Exception e, String message, boolean exit) {
+		CommonUtility.showError(getClass(), e, message, exit);
+	}
+
+	private void writeInfoLog(String log) {
+		CommonUtility.writeInfoLog(getClass(), log);
+	}
+
 	@FXML
 	private void initialize() {
 		try {
@@ -28,7 +36,7 @@ public class AppController {
 			leftController.initialiseAll(rootList);
 			rightController.initialiseAll(rootList);
 		} catch (Exception e) {
-			CommonUtility.showError(e, "Could not initialise app", true);
+			showError(e, "Could not initialise app", true);
 		}
 	}
 

@@ -13,12 +13,13 @@ import main.java.xyz.gnas.elif.Main;
  * @Date Oct 10, 2018
  */
 public class ResourceManager {
-	private static final String RESOURCE_FOLDER = "main/resources/";
-	private static final String CSS_FOLDER = RESOURCE_FOLDER + "css/";
-	private static final String FXML_FOLDER = RESOURCE_FOLDER + "fxml/";
-	private static final String ICON_FOLDER = RESOURCE_FOLDER + "icons/";
+	private static final String CSS_FOLDER = "css/";
+	private static final String FXML_FOLDER = "fxml/";
+	private static final String ICON_FOLDER = "icons/";
 
 	private static Image appIcon;
+	private static Image ascendingIcon;
+	private static Image descendingIcon;
 
 	private static List<String> cssList;
 
@@ -31,6 +32,22 @@ public class ResourceManager {
 		}
 
 		return appIcon;
+	}
+
+	public static Image getAscendingIcon() {
+		if (ascendingIcon == null) {
+			ascendingIcon = new Image(Main.class.getClassLoader().getResourceAsStream(ICON_FOLDER + "ascending.png"));
+		}
+
+		return ascendingIcon;
+	}
+
+	public static Image getDescendingIcon() {
+		if (descendingIcon == null) {
+			descendingIcon = new Image(Main.class.getClassLoader().getResourceAsStream(ICON_FOLDER + "descending.png"));
+		}
+
+		return descendingIcon;
 	}
 
 	public static List<String> getCSSList() {

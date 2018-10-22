@@ -56,7 +56,7 @@ public class ExplorerItem {
 		this.file = file;
 		String fileName = file.getName();
 		name = FilenameUtils.removeExtension(fileName);
-		extension = FilenameUtils.getExtension(fileName);
+		extension = file.isDirectory() ? "[Folder]" : FilenameUtils.getExtension(fileName);
 		long fileSize = file.length();
 		size = fileSize >= 0 ? fileSize : -1;
 		date = Calendar.getInstance();

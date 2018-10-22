@@ -18,9 +18,10 @@ public class Main extends Application {
 			stage.setScene(scene);
 			stage.setTitle("Piz");
 			stage.getIcons().add(ResourceManager.getAppIcon());
+			stage.setMaximized(true);
 			stage.show();
 		} catch (Exception e) {
-			CommonUtility.showError(e, "Could not start the application", true);
+			CommonUtility.showError(getClass(), e, "Could not start the application", true);
 		}
 	}
 
