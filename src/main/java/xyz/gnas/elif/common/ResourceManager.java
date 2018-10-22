@@ -15,6 +15,7 @@ import main.java.xyz.gnas.elif.Main;
 public class ResourceManager {
 	private static final String CSS_FOLDER = "css/";
 	private static final String FXML_FOLDER = "fxml/";
+	private static final String EXPLORER_FXML_FOLDER = FXML_FOLDER + "explorer/";
 	private static final String ICON_FOLDER = "icons/";
 
 	private static Image appIcon;
@@ -25,6 +26,7 @@ public class ResourceManager {
 
 	private static URL appFXML;
 	private static URL explorerFXML;
+	private static URL driveItemFXML;
 
 	public static Image getAppIcon() {
 		if (appIcon == null) {
@@ -70,9 +72,17 @@ public class ResourceManager {
 
 	public static URL getExplorerFXML() {
 		if (explorerFXML == null) {
-			explorerFXML = Main.class.getClassLoader().getResource(FXML_FOLDER + "Explorer.fxml");
+			explorerFXML = Main.class.getClassLoader().getResource(EXPLORER_FXML_FOLDER + "Explorer.fxml");
 		}
 
 		return explorerFXML;
+	}
+
+	public static URL getDriveItemFXML() {
+		if (driveItemFXML == null) {
+			driveItemFXML = Main.class.getClassLoader().getResource(EXPLORER_FXML_FOLDER + "DriveItem.fxml");
+		}
+
+		return driveItemFXML;
 	}
 }

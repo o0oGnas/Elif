@@ -10,6 +10,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import main.java.xyz.gnas.elif.common.CommonUtility;
 import main.java.xyz.gnas.elif.common.ResourceManager;
+import main.java.xyz.gnas.elif.controllers.Explorer.ExplorerController;
 
 public class AppController {
 	@FXML

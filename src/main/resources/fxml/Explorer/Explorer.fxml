@@ -12,18 +12,18 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-<AnchorPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" xmlns="http://javafx.com/javafx/10.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="main.java.xyz.gnas.elif.controllers.ExplorerController">
+<AnchorPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" xmlns="http://javafx.com/javafx/10.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="main.java.xyz.gnas.elif.controllers.Explorer.ExplorerController">
    <children>
       <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
          <children>
             <ComboBox fx:id="cboDrive" prefWidth="150.0" />
             <HBox alignment="CENTER_LEFT" VBox.vgrow="NEVER">
                <children>
-                  <Button mnemonicParsing="false" text="Back" HBox.hgrow="NEVER">
+                  <Button fx:id="btnBack" disable="true" mnemonicParsing="false" onAction="#back" text="Back" HBox.hgrow="NEVER">
                      <graphic>
                         <ImageView fitHeight="16.0" fitWidth="16.0" pickOnBounds="true" preserveRatio="true">
                            <image>
-                              <Image url="@../icons/back.png" />
+                              <Image url="@../../icons/back.png" />
                            </image>
                         </ImageView>
                      </graphic>
@@ -46,7 +46,7 @@
                            <graphic>
                               <ImageView fx:id="imvName" fitHeight="16.0" fitWidth="16.0" pickOnBounds="true" preserveRatio="true">
                                  <image>
-                                    <Image url="@../icons/ascending.png" />
+                                    <Image url="@../../icons/ascending.png" />
                                  </image></ImageView>
                            </graphic>
                         </Label>
@@ -57,7 +57,7 @@
                            <graphic>
                               <ImageView fx:id="imvExtension" fitHeight="16.0" fitWidth="16.0" pickOnBounds="true" preserveRatio="true" visible="false">
                                  <image>
-                                    <Image url="@../icons/ascending.png" />
+                                    <Image url="@../../icons/ascending.png" />
                                  </image>
                               </ImageView>
                            </graphic></Label>
@@ -68,7 +68,7 @@
                            <graphic>
                               <ImageView fx:id="imvSize" fitHeight="16.0" fitWidth="16.0" pickOnBounds="true" preserveRatio="true" visible="false">
                                  <image>
-                                    <Image url="@../icons/ascending.png" />
+                                    <Image url="@../../icons/ascending.png" />
                                  </image>
                               </ImageView>
                            </graphic></Label>
@@ -79,7 +79,7 @@
                            <graphic>
                               <ImageView fx:id="imvDate" fitHeight="16.0" fitWidth="16.0" pickOnBounds="true" preserveRatio="true" visible="false">
                                  <image>
-                                    <Image url="@../icons/ascending.png" />
+                                    <Image url="@../../icons/ascending.png" />
                                  </image>
                               </ImageView>
                            </graphic></Label>

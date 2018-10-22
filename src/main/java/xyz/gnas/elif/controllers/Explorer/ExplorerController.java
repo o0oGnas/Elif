@@ -1,5 +1,6 @@
-package main.java.xyz.gnas.elif.controllers;
+package main.java.xyz.gnas.elif.controllers.Explorer;
 
+import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
 import java.text.DecimalFormat;
@@ -8,11 +9,16 @@ import java.util.Calendar;
 
 import javafx.beans.InvalidationListener;
 import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
@@ -21,6 +27,7 @@ import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableColumn.CellDataFeatures;
+import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -34,6 +41,9 @@ import main.java.xyz.gnas.elif.models.ExplorerItem;
 public class ExplorerController {
 	@FXML
 	private ComboBox<File> cboDrive;
+
+	@FXML
+	private Button btnBack;
 
 	@FXML
 	private Label lblFolderPath;
@@ -77,7 +87,7 @@ public class ExplorerController {
 	@FXML
 	private TableColumn<ExplorerItem, ExplorerItem> tbcDate;
 
-	private File currentPath;
+	private ObjectProperty<File> currentPath = new SimpleObjectProperty<File>();
 
 	/**
 	 * Flag to tell the current sorting columns
@@ -90,7 +100,7 @@ public class ExplorerController {
 	private BooleanProperty isDescending = new SimpleBooleanProperty();
 
 	/**
-	 * Flag to tell if File is editing a file
+	 * Flag to tell if user is editing a file
 	 */
 	private boolean isEditing;
 
@@ -118,6 +128,15 @@ public class ExplorerController {
 	private void initialize() {
 		try {
 			currentSortLabel = lblName;
+
+			currentPath.addListener((ObservableValue<? extends File> observable, File oldValue, File newValue) -> {
+				String path = newValue.getAbsolutePath();
+				writeInfoLog("Navigating to " + path);
+				lblFolderPath.setText(path);
+				btnBack.setDisable(newValue.getParentFile() == null);
+				updateItemList();
+			});
+
 			initialiseDriveComboBox();
 			initialiseSortImages();
 			initialiseTable();
@@ -127,33 +146,48 @@ public class ExplorerController {
 	}
 
 	private void initialiseDriveComboBox() {
-		Callback<ListView<File>, ListCell<File>> factory = (ListView<File> l) -> {
-			return new ListCell<File>() {
-				@Override
-				protected void updateItem(File item, boolean empty) {
+		// SET THE VALUE NEXTSTEP TO THE BUTTONCELL
+		cboDrive.setButtonCell(getListCell());
+
+		cboDrive.setCellFactory((ListView<File> l) -> {
+			return getListCell();
+		});
+
+		addHandlerToDriveComboBox();
+	}
+
+	/**
+	 * @description Wrapper method for displaying both lists of drives and selected
+	 *              drive
+	 * @return the ListCell used by ComboBox for displaying
+	 */
+	private ListCell<File> getListCell() {
+		return new ListCell<File>() {
+			@Override
+			protected void updateItem(File item, boolean empty) {
+				try {
 					super.updateItem(item, empty);
 
 					if (item == null || empty) {
 						setGraphic(null);
 					} else {
-						setText(item.getAbsolutePath());
+						FXMLLoader loader = new FXMLLoader(ResourceManager.getDriveItemFXML());
+						setGraphic(loader.load());
+						DriveItemController dic = loader.getController();
+						dic.initialiseDrive(item);
 					}
+				} catch (Exception e) {
+					showError(e, "Error displaying drives", false);
 				}
-			};
+			}
 		};
-
-		// Just set the button cell here:
-		cboDrive.setButtonCell(factory.call(null));
-		cboDrive.setCellFactory(factory);
-		addHandlerToDriveComboBox();
 	}
 
 	private void addHandlerToDriveComboBox() {
 		cboDrive.getSelectionModel().selectedItemProperty()
 				.addListener((ObservableValue<? extends File> observable, File oldValue, File newValue) -> {
 					try {
-						currentPath = newValue;
-						updateItemList();
+						currentPath.set(newValue);
 					} catch (Exception e) {
 						showError(e, "Error handling drive selection", false);
 					}
@@ -166,11 +200,16 @@ public class ExplorerController {
 
 		isDescending
 				.addListener((ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) -> {
-					Image image = newValue ? ResourceManager.getDescendingIcon() : ResourceManager.getAscendingIcon();
-					imvName.setImage(image);
-					imvExtension.setImage(image);
-					imvSize.setImage(image);
-					imvDate.setImage(image);
+					try {
+						Image image = newValue ? ResourceManager.getDescendingIcon()
+								: ResourceManager.getAscendingIcon();
+						imvName.setImage(image);
+						imvExtension.setImage(image);
+						imvSize.setImage(image);
+						imvDate.setImage(image);
+					} catch (Exception e) {
+						showError(e, "Error when handling change to sort order", false);
+					}
 				});
 	}
 
@@ -182,14 +221,20 @@ public class ExplorerController {
 	}
 
 	private void updateItemList() {
-		for (File child : currentPath.listFiles()) {
-			tbvTable.getItems().add(new ExplorerItem(child));
+		writeInfoLog("Updating item list");
+		ObservableList<ExplorerItem> itemList = tbvTable.getItems();
+		itemList.clear();
+
+		for (File child : currentPath.get().listFiles()) {
+			itemList.add(new ExplorerItem(child));
 		}
 
 		sortItemList();
+		tbvTable.refresh();
 	}
 
 	private void sortItemList() {
+		writeInfoLog("Sorting item list");
 		tbvTable.getItems().sort((ExplorerItem o1, ExplorerItem o2) -> {
 			boolean descending = isDescending.get();
 			boolean IsDirectory1 = o1.getFile().isDirectory();
@@ -220,10 +265,43 @@ public class ExplorerController {
 
 	private void initialiseTable() {
 		tbvTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+		setDoubleClickHandlerToTable();
 		initialiseColumn(tbcName, lblName, Column.Name);
 		initialiseColumn(tbcExtension, lblExtension, Column.Extension);
 		initialiseColumn(tbcSize, lblSize, Column.Size);
 		initialiseColumn(tbcDate, lblDate, Column.Date);
+	}
+
+	private void setDoubleClickHandlerToTable() {
+		tbvTable.setRowFactory(tv -> {
+			TableRow<ExplorerItem> row = new TableRow<ExplorerItem>();
+
+			row.setOnMouseClicked(event -> {
+				try {
+					if (event.getClickCount() == 2 && (!row.isEmpty())) {
+						File file = row.getItem().getFile();
+
+						// navigate if it's a folder, run if a file
+						if (file.isDirectory()) {
+							currentPath.set(file);
+						} else {
+							String path = file.getAbsolutePath();
+
+							try {
+								writeInfoLog("Running file " + path);
+								Desktop.getDesktop().open(file);
+							} catch (IOException e) {
+								showError(e, "Error opening file " + path, false);
+							}
+						}
+					}
+				} catch (Exception e) {
+					showError(e, "Error handling double click", false);
+				}
+			});
+
+			return row;
+		});
 	}
 
 	/**
@@ -238,27 +316,48 @@ public class ExplorerController {
 
 		tbc.widthProperty()
 				.addListener((ObservableValue<? extends Number> observable, Number oldValue, Number newValue) -> {
-					lbl.setPrefWidth(newValue.doubleValue());
+					try {
+						lbl.setPrefWidth(newValue.doubleValue());
+					} catch (Exception e) {
+						showError(e, "Error when listening to changes to column width", false);
+					}
 				});
 	}
 
 	@FXML
-	private void sort(MouseEvent event) {
-		hideSortImages();
-		Label previousLabel = currentSortLabel;
-		currentSortLabel = (Label) event.getSource();
-
-		// switch between ascending/descending if user clicks again on the same column,
-		// otherwise set order to ascending
-		if (previousLabel == currentSortLabel) {
-			isDescending.set(!isDescending.get());
-		} else {
-			isDescending.set(false);
+	private void back(ActionEvent event) {
+		try {
+			currentPath.set(currentPath.get().getParentFile());
+		} catch (Exception e) {
+			showError(e, "Could not navigate back", false);
 		}
+	}
 
-		String sortOrder = isDescending.get() ? "Descending" : "Ascending";
-		writeInfoLog("Sorting list by " + currentSortLabel.getText() + " - " + sortOrder);
+	@FXML
+	private void sort(MouseEvent event) {
+		try {
+			hideSortImages();
+			Label previousLabel = currentSortLabel;
+			currentSortLabel = (Label) event.getSource();
 
+			// switch between ascending/descending if user clicks again on the same column,
+			// otherwise set order to ascending
+			if (previousLabel == currentSortLabel) {
+				isDescending.set(!isDescending.get());
+			} else {
+				isDescending.set(false);
+			}
+
+			String sortOrder = isDescending.get() ? "Descending" : "Ascending";
+			writeInfoLog("Sorting list by " + currentSortLabel.getText() + " - " + sortOrder);
+			showSortImage();
+			sortItemList();
+		} catch (Exception e) {
+			showError(e, "Could not sort items", false);
+		}
+	}
+
+	private void showSortImage() {
 		if (currentSortLabel == lblName) {
 			imvName.setVisible(true);
 		} else if (currentSortLabel == lblExtension) {
@@ -268,8 +367,6 @@ public class ExplorerController {
 		} else {
 			imvDate.setVisible(true);
 		}
-
-		sortItemList();
 	}
 
 	/**
@@ -302,8 +399,12 @@ public class ExplorerController {
 
 				@Override
 				public ExplorerItem getValue() {
-					// TODO Auto-generated method stub
-					return param.getValue();
+					try {
+						return param.getValue();
+					} catch (Exception e) {
+						showError(e, "Error getting value for table cell", false);
+						return null;
+					}
 				}
 
 				@Override
@@ -346,7 +447,7 @@ public class ExplorerController {
 					try {
 						super.updateItem(item, empty);
 
-						if (empty) {
+						if (empty || item == null) {
 							setGraphic(null);
 						} else {
 							setTextFill(item.getFile().isDirectory() ? Color.MAROON : Color.BLACK);
