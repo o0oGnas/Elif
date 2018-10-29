@@ -1,4 +1,4 @@
-package main.java.xyz.gnas.elif.controllers.Explorer;
+package xyz.gnas.elif.app.controllers.Explorer;
 
 import java.awt.Desktop;
 import java.io.File;
@@ -7,6 +7,10 @@ import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+
+import de.jensd.fx.glyphs.materialicons.MaterialIconView;
 import javafx.beans.InvalidationListener;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
@@ -22,21 +26,21 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
-import javafx.scene.control.ListView;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableColumn.CellDataFeatures;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
-import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.paint.Color;
 import javafx.util.Callback;
-import main.java.xyz.gnas.elif.common.CommonUtility;
-import main.java.xyz.gnas.elif.common.ResourceManager;
-import main.java.xyz.gnas.elif.models.ExplorerItem;
+import xyz.gnas.elif.app.common.Configurations;
+import xyz.gnas.elif.app.common.ResourceManager;
+import xyz.gnas.elif.app.common.Utility;
+import xyz.gnas.elif.app.events.LoadDriveEvent;
+import xyz.gnas.elif.app.events.LoadRootsEvent;
+import xyz.gnas.elif.app.models.ExplorerItem;
 
 public class ExplorerController {
 	@FXML
@@ -61,16 +65,16 @@ public class ExplorerController {
 	private Label lblDate;
 
 	@FXML
-	private ImageView imvName;
+	private MaterialIconView mivName;
 
 	@FXML
-	private ImageView imvExtension;
+	private MaterialIconView mivExtension;
 
 	@FXML
-	private ImageView imvSize;
+	private MaterialIconView mivSize;
 
 	@FXML
-	private ImageView imvDate;
+	private MaterialIconView mivDate;
 
 	@FXML
 	private TableView<ExplorerItem> tbvTable;
@@ -104,12 +108,13 @@ public class ExplorerController {
 	 */
 	private boolean isEditing;
 
-	public void initialiseAll(File[] rootList) throws IOException {
+	@Subscribe
+	public void onLoadRootsEvent(LoadRootsEvent event) throws IOException {
 		ObservableList<File> driveList = cboDrive.getItems();
 		driveList.clear();
 
 		// for each pathname in pathname array
-		for (File root : rootList) {
+		for (File root : File.listRoots()) {
 			driveList.add(root);
 		}
 
@@ -117,24 +122,29 @@ public class ExplorerController {
 	}
 
 	private void showError(Exception e, String message, boolean exit) {
-		CommonUtility.showError(getClass(), e, message, exit);
+		Utility.showError(getClass(), e, message, exit);
 	}
 
 	private void writeInfoLog(String log) {
-		CommonUtility.writeInfoLog(getClass(), log);
+		Utility.writeInfoLog(getClass(), log);
 	}
 
 	@FXML
 	private void initialize() {
 		try {
+			EventBus.getDefault().register(this);
 			currentSortLabel = lblName;
 
 			currentPath.addListener((ObservableValue<? extends File> observable, File oldValue, File newValue) -> {
-				String path = newValue.getAbsolutePath();
-				writeInfoLog("Navigating to " + path);
-				lblFolderPath.setText(path);
-				btnBack.setDisable(newValue.getParentFile() == null);
-				updateItemList();
+				try {
+					String path = newValue.getAbsolutePath();
+					writeInfoLog("Navigating to " + path);
+					lblFolderPath.setText(path);
+					btnBack.setDisable(newValue.getParentFile() == null);
+					updateItemList();
+				} catch (Exception e) {
+					showError(e, "Error when changing path", false);
+				}
 			});
 
 			initialiseDriveComboBox();
@@ -149,7 +159,7 @@ public class ExplorerController {
 		// SET THE VALUE NEXTSTEP TO THE BUTTONCELL
 		cboDrive.setButtonCell(getListCell());
 
-		cboDrive.setCellFactory((ListView<File> l) -> {
+		cboDrive.setCellFactory(f -> {
 			return getListCell();
 		});
 
@@ -173,8 +183,7 @@ public class ExplorerController {
 					} else {
 						FXMLLoader loader = new FXMLLoader(ResourceManager.getDriveItemFXML());
 						setGraphic(loader.load());
-						DriveItemController dic = loader.getController();
-						dic.initialiseDrive(item);
+						EventBus.getDefault().post(new LoadDriveEvent(item));
 					}
 				} catch (Exception e) {
 					showError(e, "Error displaying drives", false);
@@ -196,17 +205,16 @@ public class ExplorerController {
 
 	private void initialiseSortImages() {
 		hideSortImages();
-		imvName.setVisible(true);
+		mivName.setVisible(true);
 
 		isDescending
 				.addListener((ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) -> {
 					try {
-						Image image = newValue ? ResourceManager.getDescendingIcon()
-								: ResourceManager.getAscendingIcon();
-						imvName.setImage(image);
-						imvExtension.setImage(image);
-						imvSize.setImage(image);
-						imvDate.setImage(image);
+						String glyph = newValue ? Configurations.DESCENDING : Configurations.ASCENDING;
+						mivName.setGlyphName(glyph);
+						mivExtension.setGlyphName(glyph);
+						mivSize.setGlyphName(glyph);
+						mivDate.setGlyphName(glyph);
 					} catch (Exception e) {
 						showError(e, "Error when handling change to sort order", false);
 					}
@@ -214,10 +222,10 @@ public class ExplorerController {
 	}
 
 	private void hideSortImages() {
-		imvName.setVisible(false);
-		imvExtension.setVisible(false);
-		imvSize.setVisible(false);
-		imvDate.setVisible(false);
+		mivName.setVisible(false);
+		mivExtension.setVisible(false);
+		mivSize.setVisible(false);
+		mivDate.setVisible(false);
 	}
 
 	private void updateItemList() {
@@ -312,7 +320,7 @@ public class ExplorerController {
 	 */
 	private void initialiseColumn(TableColumn<ExplorerItem, ExplorerItem> tbc, Label lbl, Column column) {
 		tbc.setCellValueFactory(new ExplorerTableCellValue());
-		tbc.setCellFactory(new ExplorerTableCell(column));
+		tbc.setCellFactory(new ExplorerTableCellCallback(column));
 
 		tbc.widthProperty()
 				.addListener((ObservableValue<? extends Number> observable, Number oldValue, Number newValue) -> {
@@ -359,13 +367,13 @@ public class ExplorerController {
 
 	private void showSortImage() {
 		if (currentSortLabel == lblName) {
-			imvName.setVisible(true);
+			mivName.setVisible(true);
 		} else if (currentSortLabel == lblExtension) {
-			imvExtension.setVisible(true);
+			mivExtension.setVisible(true);
 		} else if (currentSortLabel == lblSize) {
-			imvSize.setVisible(true);
+			mivSize.setVisible(true);
 		} else {
-			imvDate.setVisible(true);
+			mivDate.setVisible(true);
 		}
 	}
 
@@ -431,58 +439,76 @@ public class ExplorerController {
 	 * @date Oct 22, 2018
 	 * @description custom cell display for table columns
 	 */
-	private class ExplorerTableCell
+	private class ExplorerTableCellCallback
 			implements Callback<TableColumn<ExplorerItem, ExplorerItem>, TableCell<ExplorerItem, ExplorerItem>> {
 		private Column column;
 
-		public ExplorerTableCell(Column column) {
+		public ExplorerTableCellCallback(Column column) {
 			this.column = column;
 		}
 
 		@Override
 		public TableCell<ExplorerItem, ExplorerItem> call(TableColumn<ExplorerItem, ExplorerItem> param) {
-			return new TableCell<ExplorerItem, ExplorerItem>() {
-				@Override
-				protected void updateItem(ExplorerItem item, boolean empty) {
-					try {
-						super.updateItem(item, empty);
-
-						if (empty || item == null) {
-							setGraphic(null);
-						} else {
-							setTextFill(item.getFile().isDirectory() ? Color.MAROON : Color.BLACK);
-							display(item);
-						}
-					} catch (Exception e) {
-						showError(e, "Error when displaying item", true);
-					}
-				}
-
-				private void display(ExplorerItem item) {
-					switch (column) {
-					case Name:
-						setText(item.getName());
-						break;
-
-					case Extension:
-						setText(item.getExtension());
-						break;
-
-					case Size:
-						DecimalFormat format = new DecimalFormat("#,###");
-						setText(format.format(item.getSize()));
-						break;
-
-					case Date:
-						SimpleDateFormat dateFormat = new SimpleDateFormat("dd MMM yyyy HH:mm");
-						setText(dateFormat.format(item.getDate().getTime()));
-						break;
-
-					default:
-						break;
-					}
-				}
+			return new ExplorerTableCell() {
 			};
+		}
+
+		private class ExplorerTableCell extends TableCell<ExplorerItem, ExplorerItem> {
+			@Override
+			protected void updateItem(ExplorerItem item, boolean empty) {
+				try {
+					super.updateItem(item, empty);
+
+					if (empty || item == null) {
+						setGraphic(null);
+					} else {
+						display(item);
+					}
+				} catch (Exception e) {
+					showError(e, "Error when displaying item", true);
+				}
+			}
+
+			private void display(ExplorerItem item) {
+				switch (column) {
+				case Name:
+					setIcon(item);
+					setText(item.getName());
+					break;
+
+				case Extension:
+					setText(item.getExtension());
+					break;
+
+				case Size:
+					DecimalFormat format = new DecimalFormat("#,###");
+					setText(format.format(item.getSize()));
+					break;
+
+				case Date:
+					SimpleDateFormat dateFormat = new SimpleDateFormat("dd MMM yyyy HH:mm");
+					setText(dateFormat.format(item.getDate().getTime()));
+					break;
+
+				default:
+					break;
+				}
+			}
+
+			private void setIcon(ExplorerItem item) {
+				// show icon depending on file or folder
+				File file = item.getFile();
+
+				if (file.isDirectory()) {
+					MaterialIconView miv = new MaterialIconView();
+					miv.setGlyphName("FOLDER_OPEN");
+					miv.setGlyphSize(16);
+					setGraphic(miv);
+				} else {
+					ImageView imv = new ImageView(Utility.getFileIcon(file));
+					setGraphic(imv);
+				}
+			}
 		}
 	}
 }

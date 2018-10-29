@@ -1,17 +1,21 @@
-package main.java.xyz.gnas.elif;
+package xyz.gnas.elif.app;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-import main.java.xyz.gnas.elif.common.CommonUtility;
-import main.java.xyz.gnas.elif.common.ResourceManager;
+import xyz.gnas.elif.app.common.ResourceManager;
+import xyz.gnas.elif.app.common.Utility;
 
-public class Main extends Application {
+public class FXMain extends Application {
 	@Override
 	public void start(Stage stage) {
 		try {
+			Thread.setDefaultUncaughtExceptionHandler((Thread t, Throwable e) -> {
+				Utility.writeErrorLog(getClass(), "Uncaught exception", e);
+			});
+
 			FXMLLoader loader = new FXMLLoader(ResourceManager.getAppFXML());
 			Scene scene = new Scene((Parent) loader.load());
 			scene.getStylesheets().addAll(ResourceManager.getCSSList());
@@ -21,7 +25,7 @@ public class Main extends Application {
 			stage.setMaximized(true);
 			stage.show();
 		} catch (Exception e) {
-			CommonUtility.showError(getClass(), e, "Could not start the application", true);
+			Utility.showError(getClass(), e, "Could not start the application", true);
 		}
 	}
 

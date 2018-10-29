@@ -1,10 +1,14 @@
-package main.java.xyz.gnas.elif.common;
+package xyz.gnas.elif.app.common;
 
+import java.awt.Graphics;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.Calendar;
 import java.util.Optional;
+
+import javax.swing.Icon;
+import javax.swing.filechooser.FileSystemView;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +17,8 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.TextArea;
+import javafx.scene.image.PixelWriter;
+import javafx.scene.image.WritableImage;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
 
@@ -21,9 +27,7 @@ import javafx.scene.layout.Priority;
  * @Description Contains common methods used in the application
  * @Date Oct 9, 2018
  */
-public final class CommonUtility {
-	private static File errorFile = new File("error_log.txt");
-
+public final class Utility {
 	/**
 	 * @Description Show error dialog with exception stack trace in expandable
 	 *              dialog
@@ -32,17 +36,15 @@ public final class CommonUtility {
 	 * @param message A useful message for the user
 	 * @param exit    Flag to whether exit the application after showing the error
 	 */
-	public static void showError(Class callingClass, Exception e, String message, boolean exit) {
+	public static void showError(Class callingClass, Throwable e, String message, boolean exit) {
 		// Get stack trace as string
 		StringWriter sw = new StringWriter();
 		PrintWriter pw = new PrintWriter(sw);
 		e.printStackTrace(pw);
 		String stackTrace = sw.toString();
 
-		// print stack trace to console
-		System.out.println(stackTrace);
-
 		GridPane expContent = getExpandableContent(stackTrace);
+
 		Alert alert = new Alert(AlertType.ERROR);
 		alert.setTitle("Error");
 		alert.setHeaderText("An error has occurred!");
@@ -50,7 +52,7 @@ public final class CommonUtility {
 		alert.getDialogPane().setExpandableContent(expContent);
 		alert.showAndWait();
 
-		writeErrorLog(callingClass, "Message: " + message + " - Stack trace: " + stackTrace);
+		writeErrorLog(callingClass, message, e);
 
 		if (exit) {
 			System.exit(1);
@@ -73,10 +75,10 @@ public final class CommonUtility {
 		return expContent;
 	}
 
-	public static void writeErrorLog(Class callingClass, String log) {
+	public static void writeErrorLog(Class callingClass, String message, Throwable e) {
 		try {
 			Logger logger = LoggerFactory.getLogger(callingClass);
-			logger.error(log);
+			logger.error(message, e);
 		} catch (Exception ex) {
 			System.out.println("Error writing error log");
 		}
@@ -88,15 +90,6 @@ public final class CommonUtility {
 			logger.info(log);
 		} catch (Exception ex) {
 			System.out.println("Error writing info log");
-		}
-	}
-
-	public static void writeDebugLog(Class callingClass, String log) {
-		try {
-			Logger logger = LoggerFactory.getLogger(callingClass);
-			logger.debug(log);
-		} catch (Exception ex) {
-			System.out.println("Error writing debug log");
 		}
 	}
 
@@ -130,43 +123,20 @@ public final class CommonUtility {
 		return result.isPresent() && result.get() == ButtonType.OK;
 	}
 
-	public static class ErrorLog {
-		private Calendar date;
+	public static WritableImage getFileIcon(File file) {
+		Icon icon = FileSystemView.getFileSystemView().getSystemIcon(file);
+		BufferedImage bi = new BufferedImage(icon.getIconWidth(), icon.getIconHeight(), BufferedImage.TYPE_INT_ARGB);
+		Graphics g = bi.createGraphics();
+		icon.paintIcon(null, g, 0, 0);
+		WritableImage wr = new WritableImage(bi.getWidth(), bi.getHeight());
+		PixelWriter pw = wr.getPixelWriter();
 
-		private String errorMessage;
-		private String stackTrace;
-
-		public Calendar getDate() {
-			return date;
+		for (int x = 0; x < bi.getWidth(); x++) {
+			for (int y = 0; y < bi.getHeight(); y++) {
+				pw.setArgb(x, y, bi.getRGB(x, y));
+			}
 		}
 
-		public void setDate(Calendar date) {
-			this.date = date;
-		}
-
-		public String getErrorMessage() {
-			return errorMessage;
-		}
-
-		public void setErrorMessage(String errorMessage) {
-			this.errorMessage = errorMessage;
-		}
-
-		public String getStackTrace() {
-			return stackTrace;
-		}
-
-		public void setStackTrace(String stackTrace) {
-			this.stackTrace = stackTrace;
-		}
-
-		public ErrorLog() {
-		}
-
-		public ErrorLog(String errorMessage, String stackTrace) {
-			this.date = Calendar.getInstance();
-			this.errorMessage = errorMessage;
-			this.stackTrace = stackTrace;
-		}
+		return wr;
 	}
 }

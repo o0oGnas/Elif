@@ -1,4 +1,4 @@
-package main.java.xyz.gnas.elif.models;
+package xyz.gnas.elif.app.models;
 
 import java.io.File;
 import java.util.Calendar;
