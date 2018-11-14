@@ -1,11 +1,12 @@
 package xyz.gnas.elif.app.common;
 
+import javafx.scene.image.Image;
+import javafx.scene.media.Media;
+import xyz.gnas.elif.app.FXMain;
+
 import java.net.URL;
 import java.util.LinkedList;
 import java.util.List;
-
-import javafx.scene.image.Image;
-import xyz.gnas.elif.app.FXMain;
 
 /**
  * @author Gnas
@@ -13,77 +14,96 @@ import xyz.gnas.elif.app.FXMain;
  * @Date Oct 10, 2018
  */
 public class ResourceManager {
-	private static Image appIcon;
+    private static Image appIcon;
 
-	private static List<String> cssList;
+    private static Media notificationSound;
 
-	private static URL appFXML;
-	private static URL explorerFXML;
-	private static URL driveItemFXML;
+    private static List<String> cssList;
 
-	public static Image getAppIcon() {
-		if (appIcon == null) {
-			appIcon = new Image(getClassLoader().getResourceAsStream("icon.png"));
-		}
+    private static URL appFXML;
+    private static URL operationFXML;
+    private static URL explorerFXML;
+    private static URL driveItemFXML;
 
-		return appIcon;
-	}
+    public static Image getAppIcon() {
+        if (appIcon == null) {
+            appIcon = new Image(getClassLoader().getResourceAsStream("icon.png"));
+        }
 
-	private static ClassLoader getClassLoader() {
-		return FXMain.class.getClassLoader();
-	}
+        return appIcon;
+    }
 
-	public static List<String> getCSSList() {
-		if (cssList == null) {
-			cssList = new LinkedList<String>();
-			cssList.add(getCSS("app"));
-			cssList.add(getCSS("theme"));
-		}
+    private static ClassLoader getClassLoader() {
+        return FXMain.class.getClassLoader();
+    }
 
-		return cssList;
-	}
+    public static Media getNotificationSound() {
+        if (notificationSound == null) {
+            notificationSound = new Media(getResourceString("notification.mp3"));
+        }
 
-	private static String getCSS(String cssName) {
-		return getResourceString("css/" + cssName + ".css");
-	}
+        return notificationSound;
+    }
 
-	private static String getResourceString(String resource) {
-		return getResourceURL(resource).toExternalForm();
-	}
+    private static String getResourceString(String resource) {
+        return getResourceURL(resource).toExternalForm();
+    }
 
-	private static URL getResourceURL(String resource) {
-		return getClassLoader().getResource(resource);
-	}
+    public static List<String> getCSSList() {
+        if (cssList == null) {
+            cssList = new LinkedList<String>();
+            cssList.add(getCSS("app"));
+            cssList.add(getCSS("theme"));
+        }
 
-	public static URL getAppFXML() {
-		if (appFXML == null) {
-			appFXML = getFXML("App");
-		}
+        return cssList;
+    }
 
-		return appFXML;
-	}
+    private static String getCSS(String cssName) {
+        return getResourceString("css/" + cssName + ".css");
+    }
 
-	private static URL getFXML(String fxml) {
-		return getResourceURL("fxml/" + fxml + ".fxml");
-	}
+    private static URL getResourceURL(String resource) {
+        return getClassLoader().getResource(resource);
+    }
 
-	public static URL getExplorerFXML() {
-		if (explorerFXML == null) {
-			explorerFXML = getExplorerXMLWrapper("Explorer");
-		}
+    public static URL getAppFXML() {
+        if (appFXML == null) {
+            appFXML = getFXML("App");
+        }
 
-		return explorerFXML;
-	}
+        return appFXML;
+    }
 
-	private static URL getExplorerXMLWrapper(String fxml) {
-		return getFXML("explorer/" + fxml);
-	}
+    private static URL getFXML(String fxml) {
+        return getResourceURL("fxml/" + fxml + ".fxml");
+    }
 
-	public static URL getDriveItemFXML() {
-		if (driveItemFXML == null) {
-			driveItemFXML = getExplorerXMLWrapper("DriveItem");
-		}
+    public static URL getExplorerFXML() {
+        if (explorerFXML == null) {
+            explorerFXML = getExplorerXMLWrapper("Explorer");
+        }
 
-		return driveItemFXML;
-	}
+        return explorerFXML;
+    }
+
+    private static URL getExplorerXMLWrapper(String fxml) {
+        return getFXML("explorer/" + fxml);
+    }
+
+    public static URL getDriveItemFXML() {
+        if (driveItemFXML == null) {
+            driveItemFXML = getExplorerXMLWrapper("DriveItem");
+        }
+
+        return driveItemFXML;
+    }
+
+    public static URL getOperationFXML() {
+        if (operationFXML == null) {
+            operationFXML = getFXML("operation/Operation");
+        }
+
+        return operationFXML;
+    }
 }

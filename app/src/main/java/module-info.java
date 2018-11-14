@@ -1,13 +1,14 @@
 module xyz.gnas.elif.app {
-	requires javafx.fxml;
-	requires javafx.controls;
-	requires de.jensd.fx.glyphs.materialicons;
-	requires java.desktop;
+    requires xyz.gnas.elif.core;
 
-	requires org.slf4j;
-	requires ch.qos.logback.core;
-	requires eventbus;
+    requires javafx.fxml;
+    requires javafx.controls;
+    requires javafx.media;
+    requires de.jensd.fx.glyphs.materialicons;
+    requires de.jensd.fx.glyphs.fontawesome;
+    requires java.desktop;
 
-	requires org.apache.commons.io;
-	requires javafx.graphics;
+    requires org.slf4j;
+    requires ch.qos.logback.core;
+    requires eventbus;
 }
