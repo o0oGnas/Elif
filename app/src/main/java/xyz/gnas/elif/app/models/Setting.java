@@ -12,11 +12,27 @@ import xyz.gnas.elif.app.events.explorer.ChangePathEvent;
 import xyz.gnas.elif.core.models.explorer.ExplorerModel;
 
 import java.io.File;
-import java.util.ArrayList;
 
 public class Setting {
     private static Setting instance;
-    private ArrayList<ExplorerModel> explorerModelList;
+    private ExplorerModel leftModel;
+    private ExplorerModel rightModel;
+
+    public ExplorerModel getLeftModel() {
+        return leftModel;
+    }
+
+    public void setLeftModel(ExplorerModel leftModel) {
+        this.leftModel = leftModel;
+    }
+
+    public ExplorerModel getRightModel() {
+        return rightModel;
+    }
+
+    public void setRightModel(ExplorerModel rightModel) {
+        this.rightModel = rightModel;
+    }
 
     public Setting() {
     }
@@ -29,22 +45,32 @@ public class Setting {
 
                 if (file.exists()) {
                     instance = mapper.readValue(file, Setting.class);
+                    subscribeInstance();
                 } else {
-                    instance = new Setting();
-                    instance.explorerModelList = new ArrayList<ExplorerModel>();
+                    initialiseDefaultSetting();
                 }
-
-                EventBus.getDefault().register(instance);
             }
         } catch (Exception e) {
             Utility.showError(Setting.class, e, "Error getting setting", false);
+            initialiseDefaultSetting();
         }
 
+        ExplorerModel leftModel = instance.leftModel;
+        ExplorerModel rightModel = instance.rightModel;
+        leftModel.setOtherModel(rightModel);
+        rightModel.setOtherModel(leftModel);
         return instance;
     }
 
-    public ArrayList<ExplorerModel> getExplorerModelList() {
-        return explorerModelList;
+    private static void subscribeInstance() {
+        EventBus.getDefault().register(instance);
+    }
+
+    private static void initialiseDefaultSetting() {
+        instance = new Setting();
+        instance.leftModel = new ExplorerModel();
+        instance.rightModel = new ExplorerModel();
+        subscribeInstance();
     }
 
     private void showError(Exception e, String message, boolean exit) {

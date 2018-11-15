@@ -103,20 +103,20 @@
                         <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
                     </columnResizePolicy>
                     <contextMenu>
-                        <ContextMenu>
+                        <ContextMenu fx:id="ctmTable">
                             <items>
-                                <CustomMenuItem fx:id="cmiCopyToOther" mnemonicParsing="false">
+                                <CustomMenuItem fx:id="cmiCopyToOther" mnemonicParsing="false" onAction="#copyToOther">
                                     <content>
-                                        <Label fx:id="lblCopyToOther" onMouseClicked="#copyToOther" text="Copy to other side">
+                                        <Label fx:id="lblCopyToOther" text="Copy to other side">
                                             <graphic>
                                                 <FontAwesomeIconView glyphName="COPY" />
                                             </graphic>
                                         </Label>
                                     </content>
                                 </CustomMenuItem>
-                                <CustomMenuItem mnemonicParsing="false">
+                                <CustomMenuItem mnemonicParsing="false" onAction="#copyToClipboard" text="cmiPaste">
                                     <content>
-                                        <Label onMouseClicked="#copyToClipboard" text="Copy to clipboard">
+                                        <Label text="Copy to clipboard">
                                             <graphic>
                                                 <FontAwesomeIconView glyphName="CLONE" />
                                             </graphic>
@@ -124,6 +124,15 @@
                                     </content>
                                 </CustomMenuItem>
                                 <SeparatorMenuItem hideOnClick="true" mnemonicParsing="false" />
+                        <CustomMenuItem fx:id="cmiPaste" mnemonicParsing="false" onAction="#paste">
+                           <content>
+                              <Label onMouseClicked="#copyToClipboard" text="Paste">
+                                 <graphic>
+                                    <FontAwesomeIconView glyphName="PASTE" />
+                                 </graphic>
+                              </Label>
+                           </content>
+                        </CustomMenuItem>
                             </items>
                         </ContextMenu>
                     </contextMenu>

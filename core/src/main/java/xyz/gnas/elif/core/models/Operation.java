@@ -1,4 +1,4 @@
-package xyz.gnas.elif.app.models;
+package xyz.gnas.elif.core.models;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
@@ -6,10 +6,6 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
-import xyz.gnas.elif.core.models.Progress;
-
-import java.util.LinkedList;
-import java.util.List;
 
 /**
  * Contains information about an operation
@@ -19,11 +15,13 @@ public class Operation {
 
     private StringProperty suboperationName = new SimpleStringProperty();
 
-    private BooleanProperty isComplete = new SimpleBooleanProperty();
+    private BooleanProperty paused = new SimpleBooleanProperty();
 
-    private DoubleProperty percentageDone = new SimpleDoubleProperty(0);
+    private BooleanProperty stopped = new SimpleBooleanProperty();
 
-    private List<Progress> progressList = new LinkedList<>();
+    private BooleanProperty complete = new SimpleBooleanProperty();
+
+    private DoubleProperty percentageDone = new SimpleDoubleProperty();
 
     public String getName() {
         return name;
@@ -41,16 +39,44 @@ public class Operation {
         this.suboperationName.set(suboperationName);
     }
 
-    public boolean isIsComplete() {
-        return isComplete.get();
+    public boolean getPaused() {
+        return paused.get();
     }
 
-    public BooleanProperty isCompleteProperty() {
-        return isComplete;
+    public BooleanProperty pausedProperty() {
+        return paused;
     }
 
-    public void setIsComplete(boolean isComplete) {
-        this.isComplete.set(isComplete);
+    public void setPaused(boolean paused) {
+        this.paused.set(paused);
+    }
+
+    public boolean getStopped() {
+        return stopped.get();
+    }
+
+    public BooleanProperty stoppedProperty() {
+        return stopped;
+    }
+
+    public void setStopped(boolean stopped) {
+        if (stopped) {
+            this.paused.set(false);
+        }
+
+        this.stopped.set(stopped);
+    }
+
+    public boolean getComplete() {
+        return complete.get();
+    }
+
+    public BooleanProperty completeProperty() {
+        return complete;
+    }
+
+    public void setComplete(boolean complete) {
+        this.complete.set(complete);
     }
 
     public double getPercentageDone() {
@@ -63,10 +89,6 @@ public class Operation {
 
     public void setPercentageDone(double percentageDone) {
         this.percentageDone.set(percentageDone);
-    }
-
-    public List<Progress> getProgressList() {
-        return progressList;
     }
 
     public Operation(String name) {

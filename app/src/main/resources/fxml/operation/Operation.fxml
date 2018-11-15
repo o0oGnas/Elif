@@ -27,6 +27,9 @@
                             <HBox.margin>
                                 <Insets />
                             </HBox.margin>
+                     <padding>
+                        <Insets left="10.0" />
+                     </padding>
                         </ProgressIndicator>
                         <HBox fx:id="hboActions" alignment="CENTER_LEFT" fillHeight="false">
                             <HBox.margin>

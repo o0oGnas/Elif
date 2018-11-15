@@ -4,8 +4,13 @@ import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
+import org.greenrobot.eventbus.EventBus;
 import xyz.gnas.elif.app.common.ResourceManager;
 import xyz.gnas.elif.app.common.Utility;
+import xyz.gnas.elif.app.events.ExitEvent;
+
+import static xyz.gnas.elif.app.common.Utility.writeErrorLog;
 
 public class FXMain extends Application {
     public static void main(String[] args) {
@@ -15,8 +20,12 @@ public class FXMain extends Application {
     @Override
     public void start(Stage stage) {
         try {
-            Thread.setDefaultUncaughtExceptionHandler((Thread t, Throwable e) -> {
-                Utility.writeErrorLog(getClass(), "Uncaught exception", e);
+            Thread.setDefaultUncaughtExceptionHandler((Thread t, Throwable e) -> writeErrorLog(getClass(), "Uncaught " +
+                    "exception", e));
+
+            stage.setOnCloseRequest((WindowEvent arg0) -> {
+                // raise exit event
+                EventBus.getDefault().post(new ExitEvent(arg0));
             });
 
             FXMLLoader loader = new FXMLLoader(ResourceManager.getAppFXML());

@@ -128,7 +128,6 @@
                     <reuseForks>false</reuseForks>
                     <threadCount>1</threadCount>
                     <printSummary>true</printSummary>
-
                     <!-- run test in a designated folder -->
                     <workingDirectory>${project.build.directory}/test-environment</workingDirectory>
 

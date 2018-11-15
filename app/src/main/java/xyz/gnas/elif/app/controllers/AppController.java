@@ -12,17 +12,19 @@ import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import xyz.gnas.elif.app.common.ResourceManager;
 import xyz.gnas.elif.app.common.Utility;
+import xyz.gnas.elif.app.events.ExitEvent;
 import xyz.gnas.elif.app.events.explorer.InitialiseExplorerEvent;
 import xyz.gnas.elif.app.events.operation.AddOperationEvent;
 import xyz.gnas.elif.app.events.operation.InitialiseOperationEvent;
-import xyz.gnas.elif.app.models.Operation;
 import xyz.gnas.elif.app.models.Setting;
+import xyz.gnas.elif.core.models.Operation;
 import xyz.gnas.elif.core.models.explorer.ExplorerModel;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+
+import static xyz.gnas.elif.app.common.Utility.showConfirmation;
 
 public class AppController {
     @FXML
@@ -30,9 +32,6 @@ public class AppController {
 
     @FXML
     private HBox hboExplorer;
-
-    private ExplorerModel leftModel;
-    private ExplorerModel rightModel;
 
     private List<Operation> operationList = new LinkedList<>();
 
@@ -45,60 +44,81 @@ public class AppController {
     }
 
     @Subscribe
+    public void onExitEvent(ExitEvent event) {
+        try {
+            // show confirmation is there are running processes
+            if (!operationList.isEmpty()) {
+                if (showConfirmation("There are running operations, are you sure you want to exit?")) {
+                    for (Operation operation : operationList) {
+                        operation.setStopped(true);
+                    }
+                } else {
+                    event.getWindowEvent().consume();
+                }
+            }
+        } catch (Exception e) {
+            showError(e, "Error when closing the application", true);
+        }
+    }
+
+    @Subscribe
     public void onAddOperationEvent(AddOperationEvent event) {
         try {
             Operation operation = event.getOperation();
             operationList.add(operation);
             FXMLLoader loader = new FXMLLoader(ResourceManager.getOperationFXML());
             Node n = loader.load();
-            vboOperations.getChildren().add(n);
+            vboOperations.getChildren().add(0, n);
+            addOperationCompleteListener(operation, n);
             EventBus.getDefault().post(new InitialiseOperationEvent(operation));
-
-            operation.isCompleteProperty().addListener(l -> {
-                try {
-                    if (operation.isIsComplete()) {
-                        // play notification sound
-                        Media media = ResourceManager.getNotificationSound();
-                        MediaPlayer mediaPlayer = new MediaPlayer(media);
-                        mediaPlayer.play();
-                        vboOperations.getChildren().remove(n);
-                    }
-                } catch (Exception e) {
-                    showError(e, "Error removing operation from list", false);
-                }
-            });
         } catch (Exception e) {
             showError(e, "Error handling add operation event", false);
         }
+    }
+
+    private void addOperationCompleteListener(Operation operation, Node n) {
+        operation.completeProperty().addListener(l -> {
+            try {
+                if (operation.getComplete()) {
+                    // play notification sound is operation is not stopped
+                    if (!operation.getStopped()) {
+                        Media media = ResourceManager.getNotificationSound();
+                        MediaPlayer mediaPlayer = new MediaPlayer(media);
+                        mediaPlayer.play();
+                    }
+
+                    removeOperation(operation, n);
+                }
+            } catch (Exception e) {
+                showError(e, "Error removing operation from list", false);
+            }
+        });
+    }
+
+    private synchronized void removeOperation(Operation operation, Node n) {
+        operationList.remove(operation);
+        vboOperations.getChildren().remove(n);
     }
 
     @FXML
     private void initialize() {
         try {
             EventBus.getDefault().register(this);
-            ArrayList<ExplorerModel> modelList = Setting.getInstance().getExplorerModelList();
-
-            if (modelList.isEmpty()) {
-                writeInfoLog("Initialising explorer models");
-                leftModel = new ExplorerModel();
-                rightModel = new ExplorerModel();
-                leftModel.setOtherModel(rightModel);
-                rightModel.setOtherModel(leftModel);
-                modelList.add(leftModel);
-                modelList.add(rightModel);
-            } else {
-                leftModel = modelList.get(0);
-                rightModel = modelList.get(1);
-            }
+            initialiseExplorerModels();
+            Setting setting = Setting.getInstance();
 
             // load both sides
             writeInfoLog("Loading left side");
-            loadExplorer(leftModel);
+            loadExplorer(setting.getLeftModel());
             writeInfoLog("Loading right side");
-            loadExplorer(rightModel);
+            loadExplorer(setting.getRightModel());
         } catch (Exception e) {
             showError(e, "Could not initialise app", true);
         }
+    }
+
+    private void initialiseExplorerModels() {
+        Setting setting = Setting.getInstance();
     }
 
     private void loadExplorer(ExplorerModel model) throws IOException {

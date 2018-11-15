@@ -1,9 +1,10 @@
 module xyz.gnas.elif.app {
     requires xyz.gnas.elif.core;
 
-    requires javafx.fxml;
-    requires javafx.controls;
+    requires transitive javafx.fxml;
+    requires transitive javafx.controls;
     requires javafx.media;
+
     requires de.jensd.fx.glyphs.materialicons;
     requires de.jensd.fx.glyphs.fontawesome;
     requires java.desktop;

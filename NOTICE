@@ -1,0 +1,38 @@
+Piz
+
+Copyright (c) 2018 o0oGnas
+	
+This application is distributed under the MIT license and uses third party libraries and creative works that are distributed with or without a license of their own (see below).
+
+To see the full terms and conditions of these licenses as well as their notices, check "licenses" folder.
+
+* Third party libraries:
+	- OpenJFX: 
+		+ Source: https://wiki.openjdk.java.net/display/OpenJFX/Main
+		+ License: GNU General Public License (GPL) Version 2, June 1991
+	- FontAwesomeFX:
+		Source: https://bitbucket.org/Jerady/fontawesomefx
+		+ License: Apache License Version 2.0, January 2004
+	- jbootx:
+		+ Source: https://github.com/dicolar/jbootx
+	- Logback :
+		+ Source: https://github.com/qos-ch/logback
+		+ License: Eclipse Public License v1.0
+	- EventBus:
+		+ Source: https://github.com/greenrobot/EventBus
+		+ License: Apache License Version 2.0, January 2004
+	- jackson-databind:
+		+ Source: https://github.com/FasterXML/jackson-databind
+		+ License: Apache License Version 2.0, January 2004
+	- Apache Commons IO:
+		+ Source: https://github.com/apache/commons-io
+		+ License: Apache License Version 2.0, January 2004
+	- JUnit 5:
+		+ Source: https://github.com/junit-team/junit5/
+		+ License: Eclipse Public License - v2.0		
+
+* Creative works
+	- Notification sound:
+    		+ Source: Piano Notification 4 - https://freesound.org/people/FoolBoyMedia/sounds/352650/
+    		+ Author: FoolBoyMedia - http://www.foolboymedia.co.uk/
+    		+ License: Attribution-NonCommercial 3.0 Unported (CC BY-NC 3.0) - https://creativecommons.org/licenses/by-nc/3.0/

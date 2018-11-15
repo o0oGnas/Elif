@@ -3,7 +3,9 @@ package xyz.gnas.elif.app.controllers.Explorer;
 import de.jensd.fx.glyphs.materialicons.MaterialIconView;
 import javafx.beans.InvalidationListener;
 import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ObservableList;
@@ -13,10 +15,10 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.ContextMenu;
 import javafx.scene.control.CustomMenuItem;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
-import javafx.scene.control.ScrollBar;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
@@ -26,6 +28,7 @@ import javafx.scene.control.TableView;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
+import javafx.stage.Stage;
 import javafx.util.Callback;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -37,9 +40,9 @@ import xyz.gnas.elif.app.events.explorer.InitialiseExplorerEvent;
 import xyz.gnas.elif.app.events.explorer.LoadDriveEvent;
 import xyz.gnas.elif.app.events.explorer.ReloadEvent;
 import xyz.gnas.elif.app.events.operation.AddOperationEvent;
-import xyz.gnas.elif.app.models.Operation;
-import xyz.gnas.elif.core.FileLogic;
-import xyz.gnas.elif.core.models.Progress;
+import xyz.gnas.elif.core.logic.ClipboardLogic;
+import xyz.gnas.elif.core.logic.FileLogic;
+import xyz.gnas.elif.core.models.Operation;
 import xyz.gnas.elif.core.models.explorer.ExplorerItemModel;
 import xyz.gnas.elif.core.models.explorer.ExplorerModel;
 
@@ -50,6 +53,7 @@ import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -110,7 +114,13 @@ public class ExplorerController {
     private TableColumn<ExplorerItemModel, ExplorerItemModel> tbcDate;
 
     @FXML
+    private ContextMenu ctmTable;
+
+    @FXML
     private CustomMenuItem cmiCopyToOther;
+
+    @FXML
+    private CustomMenuItem cmiPaste;
 
     private ExplorerModel model;
 
@@ -237,11 +247,7 @@ public class ExplorerController {
 
     private void initialiseDriveComboBox() {
         cboDrive.setButtonCell(getListCell());
-
-        cboDrive.setCellFactory(f -> {
-            return getListCell();
-        });
-
+        cboDrive.setCellFactory(f -> getListCell());
         addHandlerToDriveComboBox();
     }
 
@@ -377,6 +383,7 @@ public class ExplorerController {
         initialiseColumn(tbcExtension, lblExtension, Column.Extension);
         initialiseColumn(tbcSize, lblSize, Column.Size);
         initialiseColumn(tbcDate, lblDate, Column.Date);
+        initialiseTableContextMenu();
     }
 
     private void setDoubleClickHandler() {
@@ -435,6 +442,12 @@ public class ExplorerController {
                 });
     }
 
+    private void initialiseTableContextMenu() {
+        ctmTable.setOnShowing(l -> {
+            cmiPaste.setVisible(ClipboardLogic.clipboardHasFiles());
+        });
+    }
+
     @FXML
     private void back(ActionEvent event) {
         try {
@@ -452,29 +465,17 @@ public class ExplorerController {
     private void scrollToTop(ActionEvent event) {
         try {
             writeInfoLog("Scrolling to top");
-            ScrollBar verticalBar = getVerticalBar();
-
-            if (verticalBar != null) {
-                verticalBar.setValue(verticalBar.getMin());
-            }
+            tbvTable.scrollTo(0);
         } catch (Exception e) {
             showError(e, "Could not scroll to top", false);
         }
-    }
-
-    private ScrollBar getVerticalBar() {
-        return (ScrollBar) tbvTable.lookup(".scroll-bar:vertical");
     }
 
     @FXML
     private void scrollToBottom(ActionEvent event) {
         try {
             writeInfoLog("Scrolling to bottom");
-            ScrollBar verticalBar = getVerticalBar();
-
-            if (verticalBar != null) {
-                verticalBar.setValue(verticalBar.getMax());
-            }
+            tbvTable.scrollTo(tbvTable.getItems().size() - 1);
         } catch (Exception e) {
             showError(e, "Could not scroll to bottom", false);
         }
@@ -515,41 +516,45 @@ public class ExplorerController {
     }
 
     @FXML
-    private void copyToOther(MouseEvent event) {
+    private void copyToOther(ActionEvent event) {
         try {
-            String targetPath = model.getOtherModel().getPath().getAbsolutePath() + "\\";
             List<ExplorerItemModel> sourceList = tbvTable.getSelectionModel().getSelectedItems();
-            boolean hasDuplicate = false;
-            Map<ExplorerItemModel, File> sourceTargetMap = new TreeMap<>();
-            double totalSize = 0;
-
-            for (ExplorerItemModel source : sourceList) {
-                File targetFile = new File(targetPath + source.getFile().getName());
-
-                if (targetFile.exists()) {
-                    hasDuplicate = true;
-                }
-
-                totalSize += source.getSize();
-                sourceTargetMap.put(source, targetFile);
-            }
-
-            performCopyToOther(sourceTargetMap, hasDuplicate, targetPath, totalSize);
+            copyFromSourceListToPath(sourceList, model.getOtherModel().getPath().getAbsolutePath() + "\\", false);
         } catch (Exception e) {
             showError(e, "Could not copy to other tab", false);
         }
     }
 
+    private void copyFromSourceListToPath(List<ExplorerItemModel> sourceList, String targetPath, boolean isPaste) throws IOException {
+        boolean hasDuplicate = false;
+        Map<ExplorerItemModel, File> sourceTargetMap = new TreeMap<>();
+        double totalSize = 0;
+
+        for (ExplorerItemModel source : sourceList) {
+            File targetFile = new File(targetPath + source.getFile().getName());
+
+            if (targetFile.exists()) {
+                hasDuplicate = true;
+            }
+
+            totalSize += source.getSize();
+            sourceTargetMap.put(source, targetFile);
+        }
+
+        performCopyToOther(sourceTargetMap, hasDuplicate, targetPath, totalSize, isPaste);
+    }
+
     private void performCopyToOther(Map<ExplorerItemModel, File> sourceTargetMap, boolean hasDuplicate,
-                                    String targetPath, double totalSize) throws IOException {
+                                    String targetPath, double totalSize, boolean isPaste) throws IOException {
         String replace = "Replace existing files";
         String duplicate = "Copy as duplicates";
         String skip = "Skip existing files";
         String cancel = "Cancel";
-        String result = replace;
+        String result = duplicate;
 
-        if (hasDuplicate) {
-            result = Utility.showOptions("There are files in the target folder with the same name", replace, skip,
+        if (!model.getPath().getAbsolutePath().equalsIgnoreCase(model.getOtherModel().getPath().getAbsolutePath()) && hasDuplicate) {
+            result = Utility.showOptions("There are files in the target folder with the same name, please choose one " +
+                            "of the options below", replace, skip,
                     duplicate, cancel);
         }
 
@@ -560,7 +565,7 @@ public class ExplorerController {
 
             Operation operation = new Operation("Copy files to " + targetPath);
             EventBus.getDefault().post(new AddOperationEvent(operation));
-            runCopyMasterThread(operation, sourceTargetMap, targetPath, result, duplicate, totalSize);
+            runCopyMasterThread(operation, sourceTargetMap, targetPath, result, duplicate, totalSize, isPaste);
         }
     }
 
@@ -582,23 +587,36 @@ public class ExplorerController {
     }
 
     private void runCopyMasterThread(Operation operation, Map<ExplorerItemModel, File> sourceTargetMap,
-                                     String targetPath, String result,
-                                     String duplicate, double totalSize) {
+                                     String targetPath, String result, String duplicate, double totalSize,
+                                     boolean isPaste) {
         runNewThread(new Task<>() {
             @Override
             protected Integer call() {
                 try {
                     for (ExplorerItemModel source : sourceTargetMap.keySet()) {
-                        runLater(() -> {
-                            operation.setSuboperationName("Copying " + source.getFile().getAbsolutePath());
-                        });
+                        while (operation.getPaused()) {
+                            Thread.sleep(500);
+                        }
 
-                        checkAndUpdateSourceTargetMap(sourceTargetMap, source, targetPath, result, duplicate);
-                        runCopyFileThread(operation, sourceTargetMap, source, totalSize);
+                        if (operation.getStopped()) {
+                            break;
+                        } else {
+                            runLater(() -> {
+                                operation.setSuboperationName("Copying " + source.getFile().getAbsolutePath());
+                            });
+
+                            checkAndUpdateSourceTargetMap(sourceTargetMap, source, targetPath, result, duplicate);
+                            runCopyFileThread(operation, sourceTargetMap, source, totalSize);
+                        }
                     }
 
                     runLater(() -> {
-                        operation.setIsComplete(true);
+                        operation.setComplete(true);
+
+                        // clear clipboard after pasting
+                        if (isPaste) {
+                            ClipboardLogic.clear();
+                        }
                     });
                 } catch (Exception e) {
                     showError(e, "Error when copying files", false);
@@ -632,14 +650,14 @@ public class ExplorerController {
             File target = new File(targetPath + source.getName() + " (" + index + ")." + source.getExtension());
             sourceTargetMap.put(source, target);
             ++index;
+            Stage s = (Stage) tbvTable.getScene().getWindow();
         } while (sourceTargetMap.get(source).exists());
     }
 
     private void runCopyFileThread(Operation operation, Map<ExplorerItemModel, File> sourceTargetMap,
                                    ExplorerItemModel source, double totalSize) throws InterruptedException {
-        Progress progress = new Progress();
-        operation.getProgressList().add(progress);
         File target = sourceTargetMap.get(source);
+        DoubleProperty progress = new SimpleDoubleProperty();
 
         runNewThread(new Task<>() {
             @Override
@@ -647,7 +665,7 @@ public class ExplorerController {
                 File sourceFile = source.getFile();
 
                 try {
-                    FileLogic.copyToPath(sourceFile, target, progress);
+                    FileLogic.copyToPath(sourceFile, target, operation, progress);
                 } catch (Exception e) {
                     showError(e,
                             "Error when copying " + sourceFile.getAbsolutePath() + " to " + target.getAbsolutePath()
@@ -661,15 +679,16 @@ public class ExplorerController {
         monitorFileCopyProgress(operation, progress, source, target, totalSize);
     }
 
-    private void monitorFileCopyProgress(Operation operation, Progress progress, ExplorerItemModel source, File target,
+    private void monitorFileCopyProgress(Operation operation, DoubleProperty progress, ExplorerItemModel source,
+                                         File target,
                                          double totalSize) throws InterruptedException {
         double currentPercentageDone = operation.getPercentageDone();
 
         // calculate the amount of contribution this file has to the total size of the operation
         double contribution = source.getSize() / totalSize;
 
-        while (!progress.isComplete()) {
-            setPercentageDone(operation, currentPercentageDone + contribution * progress.getPercentageDone());
+        while (progress.get() < 1) {
+            setPercentageDone(operation, currentPercentageDone + contribution * progress.get());
             sleep(500);
         }
 
@@ -695,7 +714,29 @@ public class ExplorerController {
     }
 
     @FXML
-    public void copyToClipboard(MouseEvent mouseEvent) {
+    private void copyToClipboard(ActionEvent event) {
+        try {
+            ClipboardLogic.copyToClipboard(tbvTable.getSelectionModel().getSelectedItems());
+        } catch (Exception e) {
+            showError(e, "Could not copy to clipboard", false);
+        }
+    }
+
+    @FXML
+    private void paste(ActionEvent event) {
+        try {
+            List<File> fileList = ClipboardLogic.getFiles();
+            List<ExplorerItemModel> sourceList = new LinkedList<>();
+
+            for (File source : fileList) {
+                ExplorerItemModel item = new ExplorerItemModel(source);
+                sourceList.add(item);
+            }
+
+            copyFromSourceListToPath(sourceList, model.getPath().getAbsolutePath() + "\\", true);
+        } catch (Exception e) {
+            showError(e, "Could not paste files", false);
+        }
     }
 
     @FXML
