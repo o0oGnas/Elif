@@ -13,6 +13,7 @@ import org.greenrobot.eventbus.Subscribe;
 import xyz.gnas.elif.app.common.ResourceManager;
 import xyz.gnas.elif.app.common.Utility;
 import xyz.gnas.elif.app.events.ExitEvent;
+import xyz.gnas.elif.app.events.dialog.SingleRenameEvent;
 import xyz.gnas.elif.app.events.explorer.InitialiseExplorerEvent;
 import xyz.gnas.elif.app.events.operation.AddOperationEvent;
 import xyz.gnas.elif.app.events.operation.InitialiseOperationEvent;
@@ -25,6 +26,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import static xyz.gnas.elif.app.common.Utility.showConfirmation;
+import static xyz.gnas.elif.app.common.Utility.showCustomDialog;
 
 public class AppController {
     @FXML
@@ -32,6 +34,8 @@ public class AppController {
 
     @FXML
     private HBox hboExplorer;
+
+    private Node singleRenameDialog = null;
 
     private List<Operation> operationList = new LinkedList<>();
 
@@ -100,25 +104,35 @@ public class AppController {
         vboOperations.getChildren().remove(n);
     }
 
+    @Subscribe
+    public void onSingleRenameEvent(SingleRenameEvent event) {
+        try {
+            showCustomDialog("Rename", singleRenameDialog);
+        } catch (Exception e) {
+            showError(e, "Error handling single rename event", false);
+        }
+    }
+
     @FXML
     private void initialize() {
         try {
             EventBus.getDefault().register(this);
-            initialiseExplorerModels();
-            Setting setting = Setting.getInstance();
-
-            // load both sides
-            writeInfoLog("Loading left side");
-            loadExplorer(setting.getLeftModel());
-            writeInfoLog("Loading right side");
-            loadExplorer(setting.getRightModel());
+            initialiseExplorers();
+            FXMLLoader loader = new FXMLLoader(ResourceManager.getSingleRenameFXML());
+            singleRenameDialog = loader.load();
         } catch (Exception e) {
             showError(e, "Could not initialise app", true);
         }
     }
 
-    private void initialiseExplorerModels() {
+    private void initialiseExplorers() throws IOException {
         Setting setting = Setting.getInstance();
+
+        // load both sides
+        writeInfoLog("Loading left side");
+        loadExplorer(setting.getLeftModel());
+        writeInfoLog("Loading right side");
+        loadExplorer(setting.getRightModel());
     }
 
     private void loadExplorer(ExplorerModel model) throws IOException {

@@ -24,6 +24,7 @@ public class ResourceManager {
     private static URL operationFXML;
     private static URL explorerFXML;
     private static URL driveItemFXML;
+    private static URL singleRenameFXML;
 
     public static Image getAppIcon() {
         if (appIcon == null) {
@@ -81,19 +82,19 @@ public class ResourceManager {
 
     public static URL getExplorerFXML() {
         if (explorerFXML == null) {
-            explorerFXML = getExplorerXMLWrapper("Explorer");
+            explorerFXML = getExplorerFXMLWrapper("Explorer");
         }
 
         return explorerFXML;
     }
 
-    private static URL getExplorerXMLWrapper(String fxml) {
+    private static URL getExplorerFXMLWrapper(String fxml) {
         return getFXML("explorer/" + fxml);
     }
 
     public static URL getDriveItemFXML() {
         if (driveItemFXML == null) {
-            driveItemFXML = getExplorerXMLWrapper("DriveItem");
+            driveItemFXML = getExplorerFXMLWrapper("DriveItem");
         }
 
         return driveItemFXML;
@@ -105,5 +106,17 @@ public class ResourceManager {
         }
 
         return operationFXML;
+    }
+
+    public static URL getSingleRenameFXML() {
+        if (singleRenameFXML == null) {
+            singleRenameFXML = getDialogFXML("SingleRename");
+        }
+
+        return singleRenameFXML;
+    }
+
+    private static URL getDialogFXML(String fxml) {
+        return getFXML("dialog/" + fxml);
     }
 }

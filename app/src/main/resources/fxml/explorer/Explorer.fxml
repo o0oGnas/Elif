@@ -14,12 +14,20 @@
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
-
 <AnchorPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" xmlns="http://javafx.com/javafx/10.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="xyz.gnas.elif.app.controllers.Explorer.ExplorerController">
     <children>
         <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
             <children>
-                <ComboBox fx:id="cboDrive" prefWidth="170.0" />
+                <HBox alignment="CENTER_LEFT">
+                    <children>
+                        <ComboBox fx:id="cboDrive" prefWidth="170.0"/>
+                        <Label fx:id="lblFolderPath">
+                            <HBox.margin>
+                                <Insets left="10.0"/>
+                            </HBox.margin>
+                        </Label>
+                    </children>
+                </HBox>
                 <HBox alignment="CENTER_LEFT" VBox.vgrow="NEVER">
                     <children>
                         <Button fx:id="btnBack" disable="true" mnemonicParsing="false" onAction="#back" text="Back" HBox.hgrow="NEVER">
@@ -27,34 +35,48 @@
                                 <MaterialIconView glyphName="ARROW_BACK" size="16" />
                             </graphic>
                         </Button>
-                        <Label fx:id="lblFolderPath" HBox.hgrow="ALWAYS">
+                        <Button fx:id="btnRoot" mnemonicParsing="false" onAction="#goToRoot" text="Root">
+                            <graphic>
+                                <MaterialIconView glyphName="HOME" size="16"/>
+                            </graphic>
                             <HBox.margin>
                                 <Insets left="10.0" />
                             </HBox.margin>
-                        </Label>
-                  <HBox alignment="CENTER_RIGHT" HBox.hgrow="ALWAYS">
-                     <children>
-                        <Button alignment="TOP_LEFT" mnemonicParsing="false" onAction="#scrollToTop" prefWidth="150.0" styleClass="sm" text="Scroll to top">
-                           <graphic>
-                              <MaterialIconView glyphName="KEYBOARD_ARROW_UP" size="16" />
-                           </graphic>
                         </Button>
-                        <Button alignment="TOP_LEFT" mnemonicParsing="false" onAction="#scrollToBottom" prefWidth="150.0" styleClass="sm" text="Scroll to bottom">
-                           <graphic>
-                              <MaterialIconView glyphName="KEYBOARD_ARROW_DOWN" size="16" />
-                           </graphic>
-                           <HBox.margin>
-                              <Insets left="10.0" />
-                           </HBox.margin>
+                        <Button mnemonicParsing="false" onAction="#reload" text="Reload">
+                            <graphic>
+                                <MaterialIconView glyphName="SYNC" size="16"/>
+                            </graphic>
+                            <HBox.margin>
+                                <Insets left="10.0"/>
+                            </HBox.margin>
                         </Button>
-                     </children>
-                  </HBox>
+                        <HBox alignment="CENTER_RIGHT" HBox.hgrow="ALWAYS">
+                            <children>
+                                <Button alignment="TOP_LEFT" mnemonicParsing="false" onAction="#scrollToTop"
+                                        prefWidth="150.0" styleClass="sm" text="Scroll to top">
+                                    <graphic>
+                                        <MaterialIconView glyphName="KEYBOARD_ARROW_UP" size="16"/>
+                                    </graphic>
+                                </Button>
+                                <Button alignment="TOP_LEFT" mnemonicParsing="false" onAction="#scrollToBottom"
+                                        prefWidth="150.0" styleClass="sm" text="Scroll to bottom">
+                                    <graphic>
+                                        <MaterialIconView glyphName="KEYBOARD_ARROW_DOWN" size="16"/>
+                                    </graphic>
+                                    <HBox.margin>
+                                        <Insets left="10.0"/>
+                                    </HBox.margin>
+                                </Button>
+                            </children>
+                        </HBox>
                     </children>
                     <VBox.margin>
                         <Insets top="10.0" />
                     </VBox.margin>
                 </HBox>
-                <TableView fx:id="tbvTable" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" onKeyReleased="#tableKeyReleased" VBox.vgrow="ALWAYS">
+                <TableView fx:id="tbvTable" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308"
+                           onKeyPressed="#tableKeyReleased" VBox.vgrow="ALWAYS">
                     <placeholder>
                         <Label text="" />
                     </placeholder>
@@ -105,34 +127,76 @@
                     <contextMenu>
                         <ContextMenu fx:id="ctmTable">
                             <items>
+                                <CustomMenuItem fx:id="cmiRunOrGoto" mnemonicParsing="false" onAction="#runOrGoTo">
+                                    <content>
+                                        <Label fx:id="lblRunOrGoTo" onMouseClicked="#copyToClipboard"
+                                               text="Run or go to">
+                                            <graphic>
+                                                <MaterialIconView fx:id="mivRunOrGoTo" glyphName="POWER_SETTINGS_NEW"
+                                                                  size="16"/>
+                                            </graphic>
+                                        </Label>
+                                    </content>
+                                </CustomMenuItem>
+                                <SeparatorMenuItem fx:id="smiRunOrGoTo" mnemonicParsing="false"/>
                                 <CustomMenuItem fx:id="cmiCopyToOther" mnemonicParsing="false" onAction="#copyToOther">
                                     <content>
-                                        <Label fx:id="lblCopyToOther" text="Copy to other side">
+                                        <Label fx:id="lblCopyToOther" text="Copy to other">
                                             <graphic>
                                                 <FontAwesomeIconView glyphName="COPY" />
                                             </graphic>
                                         </Label>
                                     </content>
                                 </CustomMenuItem>
-                                <CustomMenuItem mnemonicParsing="false" onAction="#copyToClipboard" text="cmiPaste">
+                                <CustomMenuItem fx:id="cmiCopyToClipboard" mnemonicParsing="false"
+                                                onAction="#copyToClipboard">
                                     <content>
-                                        <Label text="Copy to clipboard">
+                                        <Label fx:id="lblCopyToClipboard" text="Copy to clipboard">
                                             <graphic>
                                                 <FontAwesomeIconView glyphName="CLONE" />
                                             </graphic>
                                         </Label>
                                     </content>
                                 </CustomMenuItem>
-                                <SeparatorMenuItem hideOnClick="true" mnemonicParsing="false" />
-                        <CustomMenuItem fx:id="cmiPaste" mnemonicParsing="false" onAction="#paste">
-                           <content>
-                              <Label onMouseClicked="#copyToClipboard" text="Paste">
-                                 <graphic>
-                                    <FontAwesomeIconView glyphName="PASTE" />
-                                 </graphic>
-                              </Label>
-                           </content>
-                        </CustomMenuItem>
+                                <CustomMenuItem fx:id="cmiPaste" mnemonicParsing="false" onAction="#paste">
+                                    <content>
+                                        <Label fx:id="lblPaste" text="Paste">
+                                            <graphic>
+                                                <FontAwesomeIconView glyphName="PASTE"/>
+                                            </graphic>
+                                        </Label>
+                                    </content>
+                                </CustomMenuItem>
+                                <SeparatorMenuItem hideOnClick="true" mnemonicParsing="false"/>
+                                <CustomMenuItem mnemonicParsing="false" onAction="#move">
+                                    <content>
+                                        <Label fx:id="lblMove" onMouseClicked="#copyToClipboard" text="Move">
+                                            <graphic>
+                                                <MaterialIconView glyphName="COMPARE_ARROWS" size="16"/>
+                                            </graphic>
+                                        </Label>
+                                    </content>
+                                </CustomMenuItem>
+                                <SeparatorMenuItem hideOnClick="true" mnemonicParsing="false"/>
+                                <CustomMenuItem mnemonicParsing="false" onAction="#delete">
+                                    <content>
+                                        <Label fx:id="lblDelete" text="Delete">
+                                            <graphic>
+                                                <MaterialIconView glyphName="DELETE_FOREVER" size="16"/>
+                                            </graphic>
+                                        </Label>
+                                    </content>
+                                </CustomMenuItem>
+                                <SeparatorMenuItem fx:id="smiDelete" hideOnClick="true" mnemonicParsing="false"/>
+                                <CustomMenuItem fx:id="cmiRename" mnemonicParsing="false" onAction="#rename">
+                                    <content>
+                                        <Label fx:id="lblRename" text="Rename">
+                                            <graphic>
+                                                <MaterialIconView glyphName="EDIT" size="16"/>
+                                            </graphic>
+                                        </Label>
+                                    </content>
+                                </CustomMenuItem>
                             </items>
                         </ContextMenu>
                     </contextMenu>

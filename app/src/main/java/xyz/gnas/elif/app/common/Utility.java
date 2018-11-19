@@ -1,8 +1,10 @@
 package xyz.gnas.elif.app.common;
 
+import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.DialogPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.image.PixelWriter;
 import javafx.scene.image.WritableImage;
@@ -115,6 +117,28 @@ public final class Utility {
                 alert.showAndWait();
             } catch (Exception e) {
                 writeErrorLog(Utility.class, "Could not display alert", e);
+            }
+        });
+    }
+
+    public static void showCustomDialog(String headerText, Node content) {
+        runLater(() -> {
+            try {
+                Alert alert = new Alert(AlertType.NONE);
+                alert.setTitle("Dialog");
+                alert.setHeaderText(headerText);
+                DialogPane dialogPane = alert.getDialogPane();
+                dialogPane.setContent(content);
+
+                // add hidden close button so "X" button works
+                // https://stackoverflow.com/questions/32048348/javafx-scene-control-dialogr-wont-close-on-pressing-x
+                dialogPane.getButtonTypes().add(ButtonType.CLOSE);
+                Node closeButton = dialogPane.lookupButton(ButtonType.CLOSE);
+                closeButton.managedProperty().bind(closeButton.visibleProperty());
+                closeButton.setVisible(false);
+                alert.showAndWait();
+            } catch (Exception e) {
+                writeErrorLog(Utility.class, "Could not display custom dialog", e);
             }
         });
     }

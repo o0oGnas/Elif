@@ -9,7 +9,7 @@ import java.io.File;
 public class ExplorerModel {
     private ExplorerModel otherModel;
 
-    private File path;
+    private File folder;
 
     public ExplorerModel getOtherModel() {
         return otherModel;
@@ -19,11 +19,11 @@ public class ExplorerModel {
         this.otherModel = otherModel;
     }
 
-    public File getPath() {
-        return path;
+    public File getFolder() {
+        return folder;
     }
 
-    public void setPath(File path) {
-        this.path = path;
+    public void setFolder(File folder) {
+        this.folder = folder;
     }
 }

@@ -62,4 +62,12 @@ public class FileLogic {
         outputChannel.transferFrom(inputChannel, i, chunkSize);
         progress.set(i * 1.0 / sourceSize);
     }
+
+    public static void delete(File file) {
+        file.delete();
+    }
+
+    public static void rename(File source, File target) {
+        source.renameTo(target);
+    }
 }
