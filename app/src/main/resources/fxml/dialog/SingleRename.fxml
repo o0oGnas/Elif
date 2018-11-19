@@ -14,7 +14,7 @@
             xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="xyz.gnas.elif.app.controllers.Dialog.SingleRenameController">
     <padding>
-        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+        <Insets bottom="0.0" left="0.0" right="10.0" top="10.0"/>
     </padding>
     <children>
         <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"

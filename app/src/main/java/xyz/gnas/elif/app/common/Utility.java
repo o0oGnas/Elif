@@ -6,10 +6,12 @@ import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.DialogPane;
 import javafx.scene.control.TextArea;
+import javafx.scene.image.Image;
 import javafx.scene.image.PixelWriter;
 import javafx.scene.image.WritableImage;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
+import javafx.stage.Stage;
 import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,7 +61,6 @@ public final class Utility {
                 alert.setHeaderText("An error has occurred!");
                 alert.setContentText(message + ". See details below");
                 alert.getDialogPane().setExpandableContent(expContent);
-                alert.showAndWait();
 
                 writeErrorLog(callingClass, message, e);
             } catch (Exception ex) {
@@ -121,26 +122,35 @@ public final class Utility {
         });
     }
 
-    public static void showCustomDialog(String headerText, Node content) {
+    public static void showCustomDialog(String dialogName, Node content, Image icon) {
         runLater(() -> {
             try {
                 Alert alert = new Alert(AlertType.NONE);
-                alert.setTitle("Dialog");
-                alert.setHeaderText(headerText);
-                DialogPane dialogPane = alert.getDialogPane();
-                dialogPane.setContent(content);
-
-                // add hidden close button so "X" button works
-                // https://stackoverflow.com/questions/32048348/javafx-scene-control-dialogr-wont-close-on-pressing-x
-                dialogPane.getButtonTypes().add(ButtonType.CLOSE);
-                Node closeButton = dialogPane.lookupButton(ButtonType.CLOSE);
-                closeButton.managedProperty().bind(closeButton.visibleProperty());
-                closeButton.setVisible(false);
+                alert.setTitle(dialogName);
+                initialiseCustomDialogPane(alert, content, icon);
                 alert.showAndWait();
             } catch (Exception e) {
                 writeErrorLog(Utility.class, "Could not display custom dialog", e);
             }
         });
+    }
+
+    private static void initialiseCustomDialogPane(Alert alert, Node content, Image icon) {
+        DialogPane dialogPane = alert.getDialogPane();
+        dialogPane.setContent(content);
+
+        if (icon != null) {
+            Stage stage = (Stage) dialogPane.getScene().getWindow();
+            stage.getIcons().add(icon);
+        }
+
+        // add hidden close button so "X" button works
+        // https://stackoverflow.com/questions/32048348/javafx-scene-control-dialogr-wont-close-on
+        // -pressing-x
+        dialogPane.getButtonTypes().add(ButtonType.CLOSE);
+        Node closeButton = dialogPane.lookupButton(ButtonType.CLOSE);
+        closeButton.managedProperty().bind(closeButton.visibleProperty());
+        closeButton.setVisible(false);
     }
 
     public static boolean showConfirmation(String message) {

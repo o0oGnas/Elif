@@ -15,6 +15,7 @@ import java.util.List;
  */
 public class ResourceManager {
     private static Image appIcon;
+    private static Image renameSingleIcon;
 
     private static Media notificationSound;
 
@@ -28,14 +29,26 @@ public class ResourceManager {
 
     public static Image getAppIcon() {
         if (appIcon == null) {
-            appIcon = new Image(getClassLoader().getResourceAsStream("icon.png"));
+            appIcon = getIcon("app.png");
         }
 
         return appIcon;
     }
 
+    private static Image getIcon(String iconName) {
+        return new Image(getClassLoader().getResourceAsStream("icons/" + iconName));
+    }
+
     private static ClassLoader getClassLoader() {
         return FXMain.class.getClassLoader();
+    }
+
+    public static Image getRenameSingleIcon() {
+        if (renameSingleIcon == null) {
+            renameSingleIcon = getIcon("rename_single.png");
+        }
+
+        return renameSingleIcon;
     }
 
     public static Media getNotificationSound() {

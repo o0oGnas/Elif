@@ -107,7 +107,7 @@ public class AppController {
     @Subscribe
     public void onSingleRenameEvent(SingleRenameEvent event) {
         try {
-            showCustomDialog("Rename", singleRenameDialog);
+            showCustomDialog("Rename", singleRenameDialog, ResourceManager.getRenameSingleIcon());
         } catch (Exception e) {
             showError(e, "Error handling single rename event", false);
         }
