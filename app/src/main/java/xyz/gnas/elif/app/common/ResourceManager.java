@@ -24,7 +24,6 @@ public class ResourceManager {
     private static URL appFXML;
     private static URL operationFXML;
     private static URL explorerFXML;
-    private static URL driveItemFXML;
     private static URL singleRenameFXML;
 
     public static Image getAppIcon() {
@@ -95,22 +94,10 @@ public class ResourceManager {
 
     public static URL getExplorerFXML() {
         if (explorerFXML == null) {
-            explorerFXML = getExplorerFXMLWrapper("Explorer");
+            explorerFXML = getFXML("explorer/Explorer");
         }
 
         return explorerFXML;
-    }
-
-    private static URL getExplorerFXMLWrapper(String fxml) {
-        return getFXML("explorer/" + fxml);
-    }
-
-    public static URL getDriveItemFXML() {
-        if (driveItemFXML == null) {
-            driveItemFXML = getExplorerFXMLWrapper("DriveItem");
-        }
-
-        return driveItemFXML;
     }
 
     public static URL getOperationFXML() {

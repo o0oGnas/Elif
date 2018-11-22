@@ -10,8 +10,8 @@ import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.ContextMenu;
@@ -30,22 +30,24 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.paint.Color;
 import javafx.util.Callback;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import xyz.gnas.elif.app.common.Configurations;
-import xyz.gnas.elif.app.common.ResourceManager;
 import xyz.gnas.elif.app.common.Utility;
 import xyz.gnas.elif.app.events.dialog.SingleRenameEvent;
 import xyz.gnas.elif.app.events.explorer.ChangePathEvent;
 import xyz.gnas.elif.app.events.explorer.InitialiseExplorerEvent;
-import xyz.gnas.elif.app.events.explorer.LoadDriveEvent;
 import xyz.gnas.elif.app.events.explorer.ReloadEvent;
 import xyz.gnas.elif.app.events.explorer.SwitchTabEvent;
 import xyz.gnas.elif.app.models.explorer.ExplorerItemModel;
 import xyz.gnas.elif.app.models.explorer.ExplorerModel;
 import xyz.gnas.elif.core.logic.ClipboardLogic;
 
+import javax.swing.filechooser.FileSystemView;
 import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
@@ -236,6 +238,21 @@ public class ExplorerController {
         return path.substring(0, path.indexOf("\\") + 1);
     }
 
+    /**
+     * Change current path and generate change path event
+     */
+    private void changeCurrentPath(File path) {
+        String absolutePath = path.getAbsolutePath();
+        writeInfoLog("Navigating to " + absolutePath);
+        model.setFolder(path);
+        lblFolderPath.setText(absolutePath);
+        boolean isRoot = path.getParentFile() == null;
+        btnBack.setDisable(isRoot);
+        btnRoot.setDisable(isRoot);
+        updateItemList();
+        postEvent(new ChangePathEvent(model));
+    }
+
     private void addListenerToDriveComboBox() {
         cboDrive.getSelectionModel().selectedItemProperty()
                 .addListener((ObservableValue<? extends File> observable, File oldValue, File newValue) -> {
@@ -330,7 +347,7 @@ public class ExplorerController {
      * drive
      */
     private ListCell<File> getListCell() {
-        return new ListCell<File>() {
+        return new ListCell<>() {
             @Override
             protected void updateItem(File item, boolean empty) {
                 try {
@@ -339,9 +356,7 @@ public class ExplorerController {
                     if (item == null || empty) {
                         setGraphic(null);
                     } else {
-                        FXMLLoader loader = new FXMLLoader(ResourceManager.getDriveItemFXML());
-                        setGraphic(loader.load());
-                        postEvent(new LoadDriveEvent(item));
+                        setGraphic(getDriveItem(item));
                     }
                 } catch (Exception e) {
                     showError(e, "Error displaying drives", false);
@@ -350,19 +365,19 @@ public class ExplorerController {
         };
     }
 
-    /**
-     * Change current path and generate change path event
-     */
-    private void changeCurrentPath(File path) {
-        String absolutePath = path.getAbsolutePath();
-        writeInfoLog("Navigating to " + absolutePath);
-        model.setFolder(path);
-        lblFolderPath.setText(absolutePath);
-        boolean isRoot = path.getParentFile() == null;
-        btnBack.setDisable(isRoot);
-        btnRoot.setDisable(isRoot);
-        updateItemList();
-        postEvent(new ChangePathEvent(model));
+    private HBox getDriveItem(File item) {
+        ImageView imv = new ImageView(Utility.getFileIcon(item, false));
+        Label lbl = new Label(FileSystemView.getFileSystemView().getSystemDisplayName(item));
+        lbl.setTextFill(Color.BLACK);
+        HBox hbo = new HBox(imv, lbl);
+        hbo.setMargin(lbl, new Insets(0, 0, 0, 10));
+
+        // make the icon vertically center
+        hbo.setMargin(imv, new Insets(0, 0, 5, 0));
+        hbo.setHgrow(lbl, Priority.ALWAYS);
+        hbo.setAlignment(Pos.CENTER_LEFT);
+        hbo.setPadding(new Insets(5, 5, 5, 5));
+        return hbo;
     }
 
     private void initialiseSortImages() {

@@ -9,11 +9,13 @@
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
-<AnchorPane xmlns="http://javafx.com/javafx/10.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="xyz.gnas.elif.app.controllers.AppController">
+<AnchorPane xmlns="http://javafx.com/javafx/10.0.1" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="xyz.gnas.elif.app.controllers.AppController">
     <children>
-        <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+        <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
+              AnchorPane.topAnchor="0.0">
             <children>
-                <HBox fx:id="hboExplorer" VBox.vgrow="ALWAYS" />
+                <HBox fx:id="hboExplorer" VBox.vgrow="ALWAYS"/>
                 <ScrollPane fx:id="scpOperation" maxHeight="100.0" visible="false">
                     <content>
                         <VBox fx:id="vboOperations"/>
