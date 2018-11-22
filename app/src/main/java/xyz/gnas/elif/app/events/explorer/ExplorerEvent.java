@@ -1,6 +1,6 @@
 package xyz.gnas.elif.app.events.explorer;
 
-import xyz.gnas.elif.core.models.explorer.ExplorerModel;
+import xyz.gnas.elif.app.models.explorer.ExplorerModel;
 
 public abstract class ExplorerEvent {
     private ExplorerModel model;

@@ -9,7 +9,7 @@ import org.greenrobot.eventbus.Subscribe;
 import xyz.gnas.elif.app.common.Configurations;
 import xyz.gnas.elif.app.common.Utility;
 import xyz.gnas.elif.app.events.explorer.ChangePathEvent;
-import xyz.gnas.elif.core.models.explorer.ExplorerModel;
+import xyz.gnas.elif.app.models.explorer.ExplorerModel;
 
 import java.io.File;
 

@@ -1,4 +1,4 @@
-package xyz.gnas.elif.core.models.explorer;
+package xyz.gnas.elif.app.models.explorer;
 
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;

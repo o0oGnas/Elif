@@ -1,4 +1,4 @@
-package xyz.gnas.elif.core.models.explorer;
+package xyz.gnas.elif.app.models.explorer;
 
 import org.apache.commons.io.FilenameUtils;
 

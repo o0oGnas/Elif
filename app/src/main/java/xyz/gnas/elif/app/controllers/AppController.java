@@ -1,8 +1,10 @@
 package xyz.gnas.elif.app.controllers;
 
+import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
@@ -18,8 +20,8 @@ import xyz.gnas.elif.app.events.explorer.InitialiseExplorerEvent;
 import xyz.gnas.elif.app.events.operation.AddOperationEvent;
 import xyz.gnas.elif.app.events.operation.InitialiseOperationEvent;
 import xyz.gnas.elif.app.models.Setting;
+import xyz.gnas.elif.app.models.explorer.ExplorerModel;
 import xyz.gnas.elif.core.models.Operation;
-import xyz.gnas.elif.core.models.explorer.ExplorerModel;
 
 import java.io.IOException;
 import java.util.LinkedList;
@@ -30,10 +32,13 @@ import static xyz.gnas.elif.app.common.Utility.showCustomDialog;
 
 public class AppController {
     @FXML
-    private VBox vboOperations;
+    private HBox hboExplorer;
 
     @FXML
-    private HBox hboExplorer;
+    private ScrollPane scpOperation;
+
+    @FXML
+    private VBox vboOperations;
 
     private Node singleRenameDialog = null;
 
@@ -45,6 +50,10 @@ public class AppController {
 
     private void writeInfoLog(String log) {
         Utility.writeInfoLog(getClass(), log);
+    }
+
+    private void postEvent(Object object) {
+        EventBus.getDefault().post(object);
     }
 
     @Subscribe
@@ -74,7 +83,7 @@ public class AppController {
             Node n = loader.load();
             vboOperations.getChildren().add(0, n);
             addOperationCompleteListener(operation, n);
-            EventBus.getDefault().post(new InitialiseOperationEvent(operation));
+            postEvent(new InitialiseOperationEvent(operation));
         } catch (Exception e) {
             showError(e, "Error handling add operation event", false);
         }
@@ -83,9 +92,9 @@ public class AppController {
     private void addOperationCompleteListener(Operation operation, Node n) {
         operation.completeProperty().addListener(l -> {
             try {
-                if (operation.getComplete()) {
+                if (operation.isComplete()) {
                     // play notification sound is operation is not stopped
-                    if (!operation.getStopped()) {
+                    if (!operation.isStopped()) {
                         Media media = ResourceManager.getNotificationSound();
                         MediaPlayer mediaPlayer = new MediaPlayer(media);
                         mediaPlayer.play();
@@ -107,7 +116,7 @@ public class AppController {
     @Subscribe
     public void onSingleRenameEvent(SingleRenameEvent event) {
         try {
-            showCustomDialog("Rename", singleRenameDialog, ResourceManager.getRenameSingleIcon());
+            showCustomDialog("Single rename", singleRenameDialog, ResourceManager.getRenameSingleIcon());
         } catch (Exception e) {
             showError(e, "Error handling single rename event", false);
         }
@@ -117,6 +126,14 @@ public class AppController {
     private void initialize() {
         try {
             EventBus.getDefault().register(this);
+            scpOperation.setManaged(false);
+            scpOperation.managedProperty().bind(scpOperation.visibleProperty());
+
+            // only show scroll pane if there are running operations
+            vboOperations.getChildren().addListener((ListChangeListener<Node>) l -> {
+                scpOperation.setVisible(!vboOperations.getChildren().isEmpty());
+            });
+
             initialiseExplorers();
             FXMLLoader loader = new FXMLLoader(ResourceManager.getSingleRenameFXML());
             singleRenameDialog = loader.load();
@@ -130,16 +147,16 @@ public class AppController {
 
         // load both sides
         writeInfoLog("Loading left side");
-        loadExplorer(setting.getLeftModel());
+        loadExplorer(setting.getLeftModel(), true);
         writeInfoLog("Loading right side");
-        loadExplorer(setting.getRightModel());
+        loadExplorer(setting.getRightModel(), false);
     }
 
-    private void loadExplorer(ExplorerModel model) throws IOException {
+    private void loadExplorer(ExplorerModel model, boolean isLeft) throws IOException {
         FXMLLoader loader = new FXMLLoader(ResourceManager.getExplorerFXML());
         Node explorer = loader.load();
         HBox.setHgrow(explorer, Priority.ALWAYS);
         hboExplorer.getChildren().add(explorer);
-        EventBus.getDefault().post(new InitialiseExplorerEvent(model));
+        postEvent(new InitialiseExplorerEvent(model, isLeft));
     }
 }

@@ -2,10 +2,8 @@ package xyz.gnas.elif.core.logic;
 
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
-import xyz.gnas.elif.core.models.explorer.ExplorerItemModel;
 
 import java.io.File;
-import java.util.LinkedList;
 import java.util.List;
 
 public class ClipboardLogic {
@@ -15,14 +13,8 @@ public class ClipboardLogic {
         return clipboard.hasFiles();
     }
 
-    public static void copyToClipboard(List<ExplorerItemModel> itemList) {
+    public static void copyToClipboard(List<File> fileList) {
         ClipboardContent content = new ClipboardContent();
-        List<File> fileList = new LinkedList<>();
-
-        for (ExplorerItemModel item : itemList) {
-            fileList.add(item.getFile());
-        }
-
         content.putFiles(fileList);
         clipboard.setContent(content);
     }

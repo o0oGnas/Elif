@@ -50,6 +50,7 @@ public class OperationController {
         try {
             if (operation == null) {
                 operation = event.getOperation();
+                lblName.setText(operation.getName());
                 hboActions.disableProperty().bind(operation.stoppedProperty());
                 hboActions.disableProperty().bind(operation.completeProperty());
                 addSuboperationNameListener(operation);
@@ -72,8 +73,6 @@ public class OperationController {
     }
 
     private void addPercentageDoneListner(Operation operation) {
-        lblName.setText(operation.getName());
-
         operation.percentageDoneProperty().addListener(l -> {
             try {
                 pgiProgress.setProgress(operation.getPercentageDone());
@@ -85,17 +84,19 @@ public class OperationController {
 
     private void addPauseListener(Operation operation) {
         operation.pausedProperty().addListener(l -> {
-            boolean pause = operation.getPaused();
-            mivPauseResume.setGlyphName(pause ? Configurations.RESUME_GLYPH : Configurations.PAUSE_GLYPH);
-            btnPauseResume.setText(pause ? "Resume" : "Pause");
-            String status = "";
+            if (!operation.isStopped()) {
+                boolean pause = operation.isPaused();
+                mivPauseResume.setGlyphName(pause ? Configurations.RESUME_GLYPH : Configurations.PAUSE_GLYPH);
+                btnPauseResume.setText(pause ? "Resume" : "Pause");
+                String status = "";
 
-            if (pause) {
-                status += "(Paused) ";
+                if (pause) {
+                    status += "(Paused) ";
+                }
+
+                status += operation.getSuboperationName();
+                lblStatus.setText(status);
             }
-
-            status += operation.getSuboperationName();
-            lblStatus.setText(status);
         });
     }
 
@@ -111,8 +112,8 @@ public class OperationController {
     @FXML
     private void pauseOrResume(ActionEvent event) {
         try {
-            operation.setPaused(!operation.getPaused());
-            String pauseResume = operation.getPaused() ? "Pausing" : "Resuming";
+            operation.setPaused(!operation.isPaused());
+            String pauseResume = operation.isPaused() ? "Pausing" : "Resuming";
             writeInfoLog(pauseResume + " operation [" + operation.getName() + "]");
         } catch (Exception e) {
             showError(e, "Could not pause/resume operation [" + operation.getName() + "]", false);

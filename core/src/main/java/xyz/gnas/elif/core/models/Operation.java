@@ -39,7 +39,7 @@ public class Operation {
         this.suboperationName.set(suboperationName);
     }
 
-    public boolean getPaused() {
+    public boolean isPaused() {
         return paused.get();
     }
 
@@ -51,7 +51,7 @@ public class Operation {
         this.paused.set(paused);
     }
 
-    public boolean getStopped() {
+    public boolean isStopped() {
         return stopped.get();
     }
 
@@ -60,14 +60,14 @@ public class Operation {
     }
 
     public void setStopped(boolean stopped) {
+        this.stopped.set(stopped);
+
         if (stopped) {
             this.paused.set(false);
         }
-
-        this.stopped.set(stopped);
     }
 
-    public boolean getComplete() {
+    public boolean isComplete() {
         return complete.get();
     }
 

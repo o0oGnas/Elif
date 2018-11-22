@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-
 <?import de.jensd.fx.glyphs.materialicons.MaterialIconView?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
@@ -44,7 +43,7 @@
                                 <MaterialIconView glyphName="CHECK_CIRCLE" size="16"/>
                             </graphic>
                         </Button>
-                        <Button mnemonicParsing="false" onAction="#cancel" text="Cancel">
+                        <Button cancelButton="true" mnemonicParsing="false" onAction="#cancel" text="Cancel">
                             <HBox.margin>
                                 <Insets left="10.0"/>
                             </HBox.margin>

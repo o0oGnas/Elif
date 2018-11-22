@@ -14,8 +14,8 @@ import org.greenrobot.eventbus.Subscribe;
 import xyz.gnas.elif.app.common.Utility;
 import xyz.gnas.elif.app.events.dialog.SingleRenameEvent;
 import xyz.gnas.elif.app.events.explorer.ReloadEvent;
+import xyz.gnas.elif.app.models.explorer.ExplorerItemModel;
 import xyz.gnas.elif.core.logic.FileLogic;
-import xyz.gnas.elif.core.models.explorer.ExplorerItemModel;
 
 import java.io.File;
 

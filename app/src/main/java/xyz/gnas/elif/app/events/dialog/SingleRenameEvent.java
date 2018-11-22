@@ -1,6 +1,6 @@
 package xyz.gnas.elif.app.events.dialog;
 
-import xyz.gnas.elif.core.models.explorer.ExplorerItemModel;
+import xyz.gnas.elif.app.models.explorer.ExplorerItemModel;
 
 public class SingleRenameEvent {
     private ExplorerItemModel item;

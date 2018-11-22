@@ -14,8 +14,8 @@
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
-<AnchorPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" xmlns="http://javafx.com/javafx/10.0.1"
-            xmlns:fx="http://javafx.com/fxml/1"
+<AnchorPane fx:id="acpMain" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308"
+            xmlns="http://javafx.com/javafx/10.0.1" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="xyz.gnas.elif.app.controllers.Explorer.ExplorerController">
     <children>
         <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
@@ -33,13 +33,14 @@
                 </HBox>
                 <HBox alignment="CENTER_LEFT" VBox.vgrow="NEVER">
                     <children>
-                        <Button fx:id="btnBack" disable="true" mnemonicParsing="false" onAction="#back" text="Back"
+                        <Button fx:id="btnBack" mnemonicParsing="false" onAction="#back" prefWidth="90.0" text="Back"
                                 HBox.hgrow="NEVER">
                             <graphic>
                                 <MaterialIconView glyphName="ARROW_BACK" size="16"/>
                             </graphic>
                         </Button>
-                        <Button fx:id="btnRoot" mnemonicParsing="false" onAction="#goToRoot" text="Root">
+                        <Button fx:id="btnRoot" mnemonicParsing="false" onAction="#goToRoot" prefWidth="90.0"
+                                text="Root">
                             <graphic>
                                 <MaterialIconView glyphName="HOME" size="16"/>
                             </graphic>
@@ -47,7 +48,7 @@
                                 <Insets left="10.0"/>
                             </HBox.margin>
                         </Button>
-                        <Button mnemonicParsing="false" onAction="#reload" text="Reload">
+                        <Button mnemonicParsing="false" onAction="#reload" prefWidth="90.0" text="Reload">
                             <graphic>
                                 <MaterialIconView glyphName="SYNC" size="16"/>
                             </graphic>
@@ -57,14 +58,14 @@
                         </Button>
                         <HBox alignment="CENTER_RIGHT" HBox.hgrow="ALWAYS">
                             <children>
-                                <Button alignment="TOP_LEFT" mnemonicParsing="false" onAction="#scrollToTop"
-                                        prefWidth="150.0" styleClass="sm" text="Scroll to top">
+                                <Button mnemonicParsing="false" onAction="#scrollToTop" prefWidth="150.0"
+                                        text="Scroll to top">
                                     <graphic>
                                         <MaterialIconView glyphName="KEYBOARD_ARROW_UP" size="16"/>
                                     </graphic>
                                 </Button>
-                                <Button alignment="TOP_LEFT" mnemonicParsing="false" onAction="#scrollToBottom"
-                                        prefWidth="150.0" styleClass="sm" text="Scroll to bottom">
+                                <Button mnemonicParsing="false" onAction="#scrollToBottom" prefWidth="150.0"
+                                        text="Scroll to bottom">
                                     <graphic>
                                         <MaterialIconView glyphName="KEYBOARD_ARROW_DOWN" size="16"/>
                                     </graphic>
@@ -140,7 +141,7 @@
                     <contextMenu>
                         <ContextMenu fx:id="ctmTable">
                             <items>
-                                <CustomMenuItem fx:id="cmiRunOrGoto" mnemonicParsing="false" onAction="#runOrGoTo">
+                                <CustomMenuItem fx:id="cmiRunOrGoto" onAction="#runOrGoTo">
                                     <content>
                                         <Label fx:id="lblRunOrGoTo" onMouseClicked="#copyToClipboard"
                                                text="Run or go to">
@@ -151,37 +152,36 @@
                                         </Label>
                                     </content>
                                 </CustomMenuItem>
-                                <SeparatorMenuItem fx:id="smiRunOrGoTo" mnemonicParsing="false"/>
-                                <CustomMenuItem fx:id="cmiCopyToOther" mnemonicParsing="false" onAction="#copyToOther">
+                                <SeparatorMenuItem fx:id="smiRunOrGoTo"/>
+                                <CustomMenuItem fx:id="cmiCopyToOther" onAction="#copyToOther">
                                     <content>
                                         <Label fx:id="lblCopyToOther" text="Copy to other">
                                             <graphic>
-                                                <FontAwesomeIconView glyphName="COPY"/>
+                                                <FontAwesomeIconView glyphName="COPY" size="16"/>
                                             </graphic>
                                         </Label>
                                     </content>
                                 </CustomMenuItem>
-                                <CustomMenuItem fx:id="cmiCopyToClipboard" mnemonicParsing="false"
-                                                onAction="#copyToClipboard">
+                                <CustomMenuItem fx:id="cmiCopyToClipboard" onAction="#copyToClipboard">
                                     <content>
                                         <Label fx:id="lblCopyToClipboard" text="Copy to clipboard">
                                             <graphic>
-                                                <FontAwesomeIconView glyphName="CLONE"/>
+                                                <FontAwesomeIconView glyphName="CLONE" size="16"/>
                                             </graphic>
                                         </Label>
                                     </content>
                                 </CustomMenuItem>
-                                <CustomMenuItem fx:id="cmiPaste" mnemonicParsing="false" onAction="#paste">
+                                <CustomMenuItem fx:id="cmiPaste" onAction="#paste">
                                     <content>
                                         <Label fx:id="lblPaste" text="Paste">
                                             <graphic>
-                                                <FontAwesomeIconView glyphName="PASTE"/>
+                                                <FontAwesomeIconView glyphName="PASTE" size="16"/>
                                             </graphic>
                                         </Label>
                                     </content>
                                 </CustomMenuItem>
-                                <SeparatorMenuItem hideOnClick="true" mnemonicParsing="false"/>
-                                <CustomMenuItem mnemonicParsing="false" onAction="#move">
+                                <SeparatorMenuItem hideOnClick="true"/>
+                                <CustomMenuItem onAction="#move">
                                     <content>
                                         <Label fx:id="lblMove" onMouseClicked="#copyToClipboard" text="Move">
                                             <graphic>
@@ -190,8 +190,8 @@
                                         </Label>
                                     </content>
                                 </CustomMenuItem>
-                                <SeparatorMenuItem hideOnClick="true" mnemonicParsing="false"/>
-                                <CustomMenuItem mnemonicParsing="false" onAction="#delete">
+                                <SeparatorMenuItem hideOnClick="true"/>
+                                <CustomMenuItem onAction="#delete">
                                     <content>
                                         <Label fx:id="lblDelete" text="Delete">
                                             <graphic>
@@ -200,8 +200,8 @@
                                         </Label>
                                     </content>
                                 </CustomMenuItem>
-                                <SeparatorMenuItem fx:id="smiDelete" hideOnClick="true" mnemonicParsing="false"/>
-                                <CustomMenuItem fx:id="cmiRename" mnemonicParsing="false" onAction="#rename">
+                                <SeparatorMenuItem fx:id="smiDelete" hideOnClick="true"/>
+                                <CustomMenuItem fx:id="cmiRename" onAction="#rename">
                                     <content>
                                         <Label fx:id="lblRename" text="Rename">
                                             <graphic>
@@ -217,7 +217,4 @@
             </children>
         </VBox>
     </children>
-    <padding>
-        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
-    </padding>
 </AnchorPane>

@@ -3,17 +3,15 @@ package xyz.gnas.elif.app.controllers.Explorer;
 import de.jensd.fx.glyphs.materialicons.MaterialIconView;
 import javafx.beans.InvalidationListener;
 import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
-import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.ContextMenu;
@@ -31,6 +29,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.AnchorPane;
 import javafx.util.Callback;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -42,12 +41,10 @@ import xyz.gnas.elif.app.events.explorer.ChangePathEvent;
 import xyz.gnas.elif.app.events.explorer.InitialiseExplorerEvent;
 import xyz.gnas.elif.app.events.explorer.LoadDriveEvent;
 import xyz.gnas.elif.app.events.explorer.ReloadEvent;
-import xyz.gnas.elif.app.events.operation.AddOperationEvent;
+import xyz.gnas.elif.app.events.explorer.SwitchTabEvent;
+import xyz.gnas.elif.app.models.explorer.ExplorerItemModel;
+import xyz.gnas.elif.app.models.explorer.ExplorerModel;
 import xyz.gnas.elif.core.logic.ClipboardLogic;
-import xyz.gnas.elif.core.logic.FileLogic;
-import xyz.gnas.elif.core.models.Operation;
-import xyz.gnas.elif.core.models.explorer.ExplorerItemModel;
-import xyz.gnas.elif.core.models.explorer.ExplorerModel;
 
 import java.awt.Desktop;
 import java.io.File;
@@ -55,17 +52,12 @@ import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-
-import static java.lang.Thread.sleep;
-import static javafx.application.Platform.runLater;
-import static xyz.gnas.elif.app.common.Utility.showConfirmation;
 
 public class ExplorerController {
+    @FXML
+    private AnchorPane acpMain;
+
     @FXML
     private ComboBox<File> cboDrive;
 
@@ -98,9 +90,6 @@ public class ExplorerController {
 
     @FXML
     private Label lblCopyToClipboard;
-
-    @FXML
-    private Label lblPaste;
 
     @FXML
     private Label lblMove;
@@ -180,25 +169,34 @@ public class ExplorerController {
     private List<ExplorerItemModel> selectedFileList = new ArrayList<>();
 
     @Subscribe
-    public void onInitialiseExplorerEvent(InitialiseExplorerEvent event) throws IOException {
+    public void onInitialiseExplorerEvent(InitialiseExplorerEvent event) {
         try {
             if (model == null) {
                 model = event.getModel();
 
-                ObservableList<File> driveList = cboDrive.getItems();
-                driveList.clear();
-
-                // for each pathname in pathname array
-                for (File root : File.listRoots()) {
-                    driveList.add(root);
-                }
-
-                selectInitialDrive();
+                // add right padding if model is left, left padding if model is right
+                acpMain.setPadding(event.isLeft() ? new Insets(0, 5, 0, 0) : new Insets(0, 0, 0, 5));
+                loadDrives();
                 updateOperationTargets();
             }
         } catch (Exception e) {
             showError(e, "Could not initialise explorer", true);
         }
+    }
+
+    private void loadDrives() {
+        ObservableList<File> driveList = cboDrive.getItems();
+        driveList.clear();
+
+        // for each pathname in pathname array
+        for (File root : File.listRoots()) {
+            driveList.add(root);
+        }
+
+        selectInitialDrive();
+
+        // add listener to drive combo box after initialising
+        addListenerToDriveComboBox();
     }
 
     private void selectInitialDrive() {
@@ -234,8 +232,29 @@ public class ExplorerController {
     }
 
     private String getRootPath() {
-        File path = model.getFolder();
-        return path.getAbsolutePath().substring(0, path.getAbsolutePath().indexOf("\\") + 1);
+        String path = model.getFolder().getAbsolutePath();
+        return path.substring(0, path.indexOf("\\") + 1);
+    }
+
+    private void addListenerToDriveComboBox() {
+        cboDrive.getSelectionModel().selectedItemProperty()
+                .addListener((ObservableValue<? extends File> observable, File oldValue, File newValue) -> {
+                    try {
+                        changeCurrentPath(newValue);
+                    } catch (Exception e) {
+                        showError(e, "Error handling drive selection", false);
+                    }
+                });
+    }
+
+    private void updateOperationTargets() {
+        File path = model.getOtherModel().getFolder();
+        cmiCopyToOther.setDisable(path == null);
+
+        if (path != null) {
+            lblCopyToOther.setText("Copy to " + path.getAbsolutePath());
+            lblMove.setText("Move to " + path.getAbsolutePath());
+        }
     }
 
     @Subscribe
@@ -262,13 +281,14 @@ public class ExplorerController {
         }
     }
 
-    private void updateOperationTargets() {
-        File path = model.getOtherModel().getFolder();
-        cmiCopyToOther.setDisable(path == null);
-
-        if (path != null) {
-            lblCopyToOther.setText("Copy to " + path.getAbsolutePath());
-            lblMove.setText("Move to " + path.getAbsolutePath());
+    @Subscribe
+    public void onSwitchTabEvent(SwitchTabEvent event) {
+        try {
+            if (event.getModel() != model) {
+                tbvTable.requestFocus();
+            }
+        } catch (Exception e) {
+            showError(e, "Error handling switch tab event", false);
         }
     }
 
@@ -278,6 +298,10 @@ public class ExplorerController {
 
     private void writeInfoLog(String log) {
         Utility.writeInfoLog(getClass(), log);
+    }
+
+    private void postEvent(Object object) {
+        EventBus.getDefault().post(object);
     }
 
     @FXML
@@ -299,7 +323,6 @@ public class ExplorerController {
     private void initialiseDriveComboBox() {
         cboDrive.setButtonCell(getListCell());
         cboDrive.setCellFactory(f -> getListCell());
-        addHandlerToDriveComboBox();
     }
 
     /**
@@ -318,24 +341,13 @@ public class ExplorerController {
                     } else {
                         FXMLLoader loader = new FXMLLoader(ResourceManager.getDriveItemFXML());
                         setGraphic(loader.load());
-                        EventBus.getDefault().post(new LoadDriveEvent(item));
+                        postEvent(new LoadDriveEvent(item));
                     }
                 } catch (Exception e) {
                     showError(e, "Error displaying drives", false);
                 }
             }
         };
-    }
-
-    private void addHandlerToDriveComboBox() {
-        cboDrive.getSelectionModel().selectedItemProperty()
-                .addListener((ObservableValue<? extends File> observable, File oldValue, File newValue) -> {
-                    try {
-                        changeCurrentPath(newValue);
-                    } catch (Exception e) {
-                        showError(e, "Error handling drive selection", false);
-                    }
-                });
     }
 
     /**
@@ -350,7 +362,7 @@ public class ExplorerController {
         btnBack.setDisable(isRoot);
         btnRoot.setDisable(isRoot);
         updateItemList();
-        EventBus.getDefault().post(new ChangePathEvent(model));
+        postEvent(new ChangePathEvent(model));
     }
 
     private void initialiseSortImages() {
@@ -574,14 +586,14 @@ public class ExplorerController {
         tbc.setCellValueFactory(new ExplorerTableCellValue());
         tbc.setCellFactory(new ExplorerTableCellCallback(column));
 
-        tbc.widthProperty()
-                .addListener((ObservableValue<? extends Number> observable, Number oldValue, Number newValue) -> {
-                    try {
-                        lbl.setPrefWidth(newValue.doubleValue());
-                    } catch (Exception e) {
-                        showError(e, "Error when listening to changes to column width", false);
-                    }
-                });
+        tbc.widthProperty().addListener((ObservableValue<? extends Number> observable, Number oldValue,
+                                         Number newValue) -> {
+            try {
+                lbl.setPrefWidth(newValue.doubleValue());
+            } catch (Exception e) {
+                showError(e, "Error when listening to changes to column width", false);
+            }
+        });
     }
 
     @FXML
@@ -688,224 +700,17 @@ public class ExplorerController {
     @FXML
     private void copyToOther(ActionEvent event) {
         try {
-            copyOrMoveToOther(false);
+            OperationHandler.copy(model, model.getOtherModel().getFolder().getAbsolutePath(),
+                    tbvTable.getSelectionModel().getSelectedItems(), OperationHandler.CopyMode.COPY);
         } catch (Exception e) {
             showError(e, "Could not copy to other tab", false);
         }
     }
 
-    private void copyOrMoveToOther(boolean isMove) {
-        List<ExplorerItemModel> sourceList = tbvTable.getSelectionModel().getSelectedItems();
-        copyFromSourceListToPath(sourceList, model.getOtherModel().getFolder().getAbsolutePath() + "\\", isMove);
-    }
-
-    private void copyFromSourceListToPath(List<ExplorerItemModel> sourceList, String targetPath,
-                                          boolean isMove) {
-        if (!sourceList.isEmpty()) {
-            boolean hasDuplicate = false;
-            Map<ExplorerItemModel, File> sourceTargetMap = new TreeMap<>();
-            double totalSize = 0;
-
-            for (ExplorerItemModel source : sourceList) {
-                File targetFile = new File(targetPath + source.getFile().getName());
-
-                if (targetFile.exists()) {
-                    hasDuplicate = true;
-                }
-
-                totalSize += source.getSize();
-                sourceTargetMap.put(source, targetFile);
-            }
-
-            performCopyToOther(sourceTargetMap, hasDuplicate, targetPath, totalSize, isMove);
-        }
-    }
-
-    private void performCopyToOther(Map<ExplorerItemModel, File> sourceTargetMap, boolean hasDuplicate,
-                                    String targetPath, double totalSize, boolean isMove) {
-        String replace = "Replace existing files";
-        String duplicate = "Copy as duplicates";
-        String skip = "Skip existing files";
-        String cancel = "Cancel";
-        String result = duplicate;
-
-        if (!model.getFolder().getAbsolutePath().equalsIgnoreCase(model.getOtherModel().getFolder().getAbsolutePath()) && hasDuplicate) {
-            result = Utility.showOptions("There are files in the target folder with the same name, please choose " +
-                            "one " + "of the options below", replace, skip,
-                    duplicate, cancel);
-        }
-
-        if (result != null && !result.equalsIgnoreCase(cancel)) {
-            if (result.equalsIgnoreCase(skip)) {
-                totalSize = removeExistingFiles(sourceTargetMap, totalSize);
-            }
-
-            String operationName = isMove ? "Move" : "Copy";
-            Operation operation = new Operation(operationName + " files to " + targetPath);
-            EventBus.getDefault().post(new AddOperationEvent(operation));
-            runMasterThread(operation, sourceTargetMap, targetPath, result, duplicate, totalSize, isMove);
-        }
-    }
-
-    private double removeExistingFiles(Map<ExplorerItemModel, File> sourceTargetMap, double totalSize) {
-        Map<ExplorerItemModel, File> temp = new HashMap<>(sourceTargetMap);
-        sourceTargetMap.clear();
-
-        for (ExplorerItemModel source : temp.keySet()) {
-            File target = temp.get(source);
-
-            if (target.exists()) {
-                totalSize -= source.getSize();
-            } else {
-                sourceTargetMap.put(source, target);
-            }
-        }
-
-        return totalSize;
-    }
-
-    private void runMasterThread(Operation operation, Map<ExplorerItemModel, File> sourceTargetMap,
-                                 String targetPath, String result, String duplicate, double totalSize,
-                                 boolean isMove) {
-        runNewThread(new Task<>() {
-            @Override
-            protected Integer call() {
-                try {
-                    for (ExplorerItemModel source : sourceTargetMap.keySet()) {
-                        while (operation.getPaused()) {
-                            Thread.sleep(500);
-                        }
-
-                        if (operation.getStopped()) {
-                            break;
-                        } else {
-                            runLater(() -> {
-                                String name = isMove ? "Moving" : "Copying";
-                                operation.setSuboperationName(name + " " + source.getFile().getAbsolutePath());
-                            });
-
-                            checkAndUpdateSourceTargetMap(sourceTargetMap, source, targetPath, result, duplicate);
-                            runFileThread(operation, sourceTargetMap, source, totalSize, isMove);
-                        }
-                    }
-
-                    runLater(() -> {
-                        operation.setComplete(true);
-                    });
-                } catch (Exception e) {
-                    showError(e, "Error when copying files", false);
-                }
-
-                return 1;
-            }
-        });
-    }
-
-    private void runNewThread(Task<Integer> task) {
-        new Thread(task).start();
-    }
-
-    private void checkAndUpdateSourceTargetMap(Map<ExplorerItemModel, File> sourceTargetMap, ExplorerItemModel
-            source
-            , String targetPath, String result, String duplicate) {
-        if (sourceTargetMap.get(source).exists()) {
-            if (result.equalsIgnoreCase(duplicate)) {
-                // update target name to prevent overwriting existing file
-                updateSourceTargetMap(sourceTargetMap, targetPath, source);
-            }
-        }
-    }
-
-    private void updateSourceTargetMap(Map<ExplorerItemModel, File> sourceTargetMap, String targetPath,
-                                       ExplorerItemModel source) {
-        int index = 2;
-
-        // add suffix to target name until there's no more duplicate
-        do {
-            File target = new File(targetPath + source.getName() + " (" + index + ")." + source.getExtension());
-            sourceTargetMap.put(source, target);
-            ++index;
-        } while (sourceTargetMap.get(source).exists());
-    }
-
-    private void runFileThread(Operation operation, Map<ExplorerItemModel, File> sourceTargetMap,
-                               ExplorerItemModel source, double totalSize, boolean isMove) throws InterruptedException {
-        File target = sourceTargetMap.get(source);
-        DoubleProperty progress = new SimpleDoubleProperty();
-        BooleanProperty error = new SimpleBooleanProperty();
-
-        runNewThread(new Task<>() {
-            @Override
-            protected Integer call() {
-                File sourceFile = source.getFile();
-
-                try {
-                    FileLogic.copyToPath(sourceFile, target, operation, progress);
-                } catch (Exception e) {
-                    error.set(true);
-
-                    showError(e,
-                            "Error when copying " + sourceFile.getAbsolutePath() + " to " + target.getAbsolutePath()
-                            , false);
-                }
-
-                return 1;
-            }
-        });
-
-        monitorFileProgress(operation, progress, error, source, target, totalSize, isMove);
-    }
-
-    private void monitorFileProgress(Operation operation, DoubleProperty progress, BooleanProperty error,
-                                     ExplorerItemModel source, File target, double totalSize, boolean isMove) throws InterruptedException {
-        double currentPercentageDone = operation.getPercentageDone();
-
-        // calculate the amount of contribution this file has to the total size of the operation
-        double contribution = source.getSize() / totalSize;
-
-        while (progress.get() < 1) {
-            setPercentageDone(operation, currentPercentageDone + contribution * progress.get());
-            sleep(500);
-        }
-
-        finishFileProgress(operation, error, source, target, currentPercentageDone, contribution, isMove);
-    }
-
-    private void setPercentageDone(Operation operation, double percent) {
-        runLater(() -> {
-            try {
-                operation.setPercentageDone(percent);
-            } catch (Exception e) {
-                showError(e, "Error updating operation progress", false);
-            }
-        });
-    }
-
-    private void finishFileProgress(Operation operation, BooleanProperty error, ExplorerItemModel source, File
-            target
-            , double currentPercentageDone, double contribution, boolean isMove) {
-        setPercentageDone(operation, currentPercentageDone + contribution);
-
-        runLater(() -> {
-            try {
-                // delete file if operation is move and it is successfully done
-                if (isMove && !operation.getStopped() && !error.get()) {
-                    source.getFile().delete();
-                    EventBus.getDefault().post(new ReloadEvent(model.getFolder().getAbsolutePath()));
-                }
-
-                // reload each time a file process is finished
-                EventBus.getDefault().post(new ReloadEvent(target.getParent()));
-            } catch (Exception e) {
-                showError(e, "Error updating finished progress", false);
-            }
-        });
-    }
-
     @FXML
     private void copyToClipboard(ActionEvent event) {
         try {
-            ClipboardLogic.copyToClipboard(tbvTable.getSelectionModel().getSelectedItems());
+            OperationHandler.copyToClipboard(tbvTable.getSelectionModel().getSelectedItems());
         } catch (Exception e) {
             showError(e, "Could not copy to clipboard", false);
         }
@@ -914,19 +719,7 @@ public class ExplorerController {
     @FXML
     private void paste(ActionEvent event) {
         try {
-            List<File> fileList = ClipboardLogic.getFiles();
-
-            if (fileList != null && !fileList.isEmpty()) {
-                writeInfoLog("Pasting files from clipboard");
-                List<ExplorerItemModel> sourceList = new LinkedList<>();
-
-                for (File source : fileList) {
-                    ExplorerItemModel item = new ExplorerItemModel(source);
-                    sourceList.add(item);
-                }
-
-                copyFromSourceListToPath(sourceList, model.getFolder().getAbsolutePath() + "\\", false);
-            }
+            OperationHandler.paste(model);
         } catch (Exception e) {
             showError(e, "Could not paste", false);
         }
@@ -935,7 +728,8 @@ public class ExplorerController {
     @FXML
     private void move(ActionEvent event) {
         try {
-            copyOrMoveToOther(true);
+            OperationHandler.copy(model, model.getOtherModel().getFolder().getAbsolutePath(),
+                    tbvTable.getSelectionModel().getSelectedItems(), OperationHandler.CopyMode.MOVE);
         } catch (Exception e) {
             showError(e, "Could not copy to clipboard", false);
         }
@@ -944,18 +738,7 @@ public class ExplorerController {
     @FXML
     private void delete(ActionEvent event) {
         try {
-            ObservableList<ExplorerItemModel> selectedItems = tbvTable.getSelectionModel().getSelectedItems();
-
-            if (showConfirmation("Are you sure you want to delete selected files (" + selectedItems.size() + ")")) {
-                writeInfoLog("Deleting files");
-
-                for (ExplorerItemModel item : selectedItems) {
-                    FileLogic.delete(item.getFile());
-                }
-
-                // reload after deleting
-                EventBus.getDefault().post(new ReloadEvent(model.getFolder().getAbsolutePath()));
-            }
+            OperationHandler.delete(model, tbvTable.getSelectionModel().getSelectedItems());
         } catch (Exception e) {
             showError(e, "Could not delete", false);
         }
@@ -964,7 +747,7 @@ public class ExplorerController {
     @FXML
     private void rename(ActionEvent event) {
         try {
-            EventBus.getDefault().post(new SingleRenameEvent(tbvTable.getSelectionModel().getSelectedItem()));
+            postEvent(new SingleRenameEvent(tbvTable.getSelectionModel().getSelectedItem()));
         } catch (Exception e) {
             showError(e, "Could not rename", false);
         }
@@ -989,6 +772,14 @@ public class ExplorerController {
 
     private void handleControlModifierEvent(KeyEvent event) {
         switch (event.getCode()) {
+            case H:
+                goToRoot(null);
+                break;
+
+            case R:
+                reload(null);
+                break;
+
             case C:
                 copyToClipboard(null);
                 break;
@@ -1004,6 +795,10 @@ public class ExplorerController {
 
     private void handleNoModifierEvent(KeyEvent event) {
         switch (event.getCode()) {
+            case TAB:
+                postEvent(new SwitchTabEvent(model));
+                break;
+
             case ENTER:
                 // only call run or go to if list of selected files is not empty or only 1 folder is selected
                 if (!selectedFileList.isEmpty() || selectedFolderList.size() == 1) {

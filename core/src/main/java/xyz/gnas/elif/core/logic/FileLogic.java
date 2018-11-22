@@ -8,6 +8,8 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 
 public class FileLogic {
     /**
@@ -20,7 +22,7 @@ public class FileLogic {
      *                  the method finishes
      * @throws IOException the io exception
      */
-    public static void copyToPath(File source, File target, Operation operation, DoubleProperty progress) throws IOException, InterruptedException {
+    public static void copy(File source, File target, Operation operation, DoubleProperty progress) throws IOException, InterruptedException {
         try (FileChannel inputChannel = new FileInputStream(source).getChannel()) {
             long sourceSize = inputChannel.size();
 
@@ -28,11 +30,11 @@ public class FileLogic {
                 long stepSize = 1024 * 1024;
 
                 for (long i = 0; i < sourceSize; i = i + stepSize) {
-                    while (operation.getPaused()) {
+                    while (operation.isPaused()) {
                         Thread.sleep(500);
                     }
 
-                    if (operation.getStopped()) {
+                    if (operation.isStopped()) {
                         completeProgress(progress);
                         break;
                     } else {
@@ -50,8 +52,7 @@ public class FileLogic {
     }
 
     private static void copyChunk(long i, long stepSize, long sourceSize, FileChannel inputChannel,
-                                  FileChannel outputChannel
-            , DoubleProperty progress) throws IOException {
+                                  FileChannel outputChannel, DoubleProperty progress) throws IOException {
         long chunkSize = stepSize;
 
         // the size of the last chunk is the remaining bytes to copy
@@ -61,6 +62,30 @@ public class FileLogic {
 
         outputChannel.transferFrom(inputChannel, i, chunkSize);
         progress.set(i * 1.0 / sourceSize);
+    }
+
+    public static void move(File source, File target, Operation operation, DoubleProperty progress) throws IOException, InterruptedException {
+        String sourceRoot = getRootPath(source);
+        String targetRoot = getRootPath(target);
+
+        // use java.nio.file.Files.move when moving in the same drive because it's much faster, otherwise use copy
+        // function and delete the source file after finish
+        if (sourceRoot.equalsIgnoreCase(targetRoot)) {
+            Files.move(source.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            completeProgress(progress);
+        } else {
+            copy(source, target, operation, progress);
+
+            // delete source after copying
+            if (!operation.isStopped()) {
+                source.delete();
+            }
+        }
+    }
+
+    private static String getRootPath(File file) {
+        String path = file.getAbsolutePath();
+        return path.substring(0, path.indexOf("\\") + 1);
     }
 
     public static void delete(File file) {
