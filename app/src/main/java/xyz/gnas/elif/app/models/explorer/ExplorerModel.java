@@ -7,17 +7,7 @@ import java.io.File;
 
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 public class ExplorerModel {
-    private ExplorerModel otherModel;
-
     private File folder;
-
-    public ExplorerModel getOtherModel() {
-        return otherModel;
-    }
-
-    public void setOtherModel(ExplorerModel otherModel) {
-        this.otherModel = otherModel;
-    }
 
     public File getFolder() {
         return folder;

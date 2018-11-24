@@ -57,8 +57,6 @@ public class Setting {
 
         ExplorerModel leftModel = instance.leftModel;
         ExplorerModel rightModel = instance.rightModel;
-        leftModel.setOtherModel(rightModel);
-        rightModel.setOtherModel(leftModel);
         return instance;
     }
 

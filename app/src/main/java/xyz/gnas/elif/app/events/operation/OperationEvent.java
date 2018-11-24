@@ -1,15 +1,15 @@
 package xyz.gnas.elif.app.events.operation;
 
-import xyz.gnas.elif.core.models.Operation;
+import xyz.gnas.elif.app.models.explorer.ExplorerModel;
 
 public abstract class OperationEvent {
-    private Operation operation;
+    private ExplorerModel sourceModel;
 
-    public Operation getOperation() {
-        return operation;
+    public ExplorerModel getSourceModel() {
+        return sourceModel;
     }
 
-    public OperationEvent(Operation operation) {
-        this.operation = operation;
+    public OperationEvent(ExplorerModel sourceModel) {
+        this.sourceModel = sourceModel;
     }
 }

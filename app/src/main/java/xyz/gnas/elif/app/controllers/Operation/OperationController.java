@@ -84,18 +84,22 @@ public class OperationController {
 
     private void addPauseListener(Operation operation) {
         operation.pausedProperty().addListener(l -> {
-            if (!operation.isStopped()) {
-                boolean pause = operation.isPaused();
-                mivPauseResume.setGlyphName(pause ? Configurations.RESUME_GLYPH : Configurations.PAUSE_GLYPH);
-                btnPauseResume.setText(pause ? "Resume" : "Pause");
-                String status = "";
+            try {
+                if (!operation.isStopped()) {
+                    boolean pause = operation.isPaused();
+                    mivPauseResume.setGlyphName(pause ? Configurations.RESUME_GLYPH : Configurations.PAUSE_GLYPH);
+                    btnPauseResume.setText(pause ? "Resume" : "Pause");
+                    String status = "";
 
-                if (pause) {
-                    status += "(Paused) ";
+                    if (pause) {
+                        status += "(Paused) ";
+                    }
+
+                    status += operation.getSuboperationName();
+                    lblStatus.setText(status);
                 }
-
-                status += operation.getSuboperationName();
-                lblStatus.setText(status);
+            } catch (Exception e) {
+                showError(e, "Error handing operation paused event", false);
             }
         });
     }

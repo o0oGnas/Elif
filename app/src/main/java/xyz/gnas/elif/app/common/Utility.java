@@ -144,9 +144,14 @@ public final class Utility {
             stage.getIcons().add(icon);
         }
 
-        // add hidden close button so "X" button works
-        // https://stackoverflow.com/questions/32048348/javafx-scene-control-dialogr-wont-close-on
-        // -pressing-x
+        addCloseButton(dialogPane);
+    }
+
+
+    // add hidden close button so "X" button works
+    // https://stackoverflow.com/questions/32048348/javafx-scene-control-dialogr-wont-close-on
+    // -pressing-x
+    private static void addCloseButton(DialogPane dialogPane) {
         dialogPane.getButtonTypes().add(ButtonType.CLOSE);
         Node closeButton = dialogPane.lookupButton(ButtonType.CLOSE);
         closeButton.managedProperty().bind(closeButton.visibleProperty());
@@ -164,9 +169,9 @@ public final class Utility {
 
     public static String showOptions(String message, String... options) {
         Alert alert = new Alert(AlertType.CONFIRMATION);
-        alert.setTitle("Select option");
-        alert.setHeaderText("Please select an option");
-        alert.setContentText(message);
+        alert.setTitle("Option selection required");
+        alert.setHeaderText(message);
+        alert.setContentText("Please select an option below");
         alert.getButtonTypes().clear();
 
         for (String option : options) {
@@ -174,10 +179,12 @@ public final class Utility {
             alert.getButtonTypes().add(button);
         }
 
+        addCloseButton(alert.getDialogPane());
         Optional<ButtonType> result = alert.showAndWait();
+        ButtonType selectedOption = result.get();
 
-        if (result.isPresent()) {
-            return result.get().getText();
+        if (result.isPresent() && selectedOption != ButtonType.CLOSE) {
+            return selectedOption.getText();
         } else {
             return null;
         }

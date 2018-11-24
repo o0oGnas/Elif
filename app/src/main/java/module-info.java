@@ -9,6 +9,7 @@ module xyz.gnas.elif.app {
     requires de.jensd.fx.glyphs.materialicons;
     requires de.jensd.fx.glyphs.fontawesome;
     requires de.jensd.fx.glyphs.octicons;
+    requires de.jensd.fx.glyphs.materialdesignicons;
     requires java.desktop;
 
     requires com.fasterxml.jackson.core;

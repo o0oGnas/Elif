@@ -12,16 +12,15 @@ import org.apache.commons.io.FilenameUtils;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import xyz.gnas.elif.app.common.Utility;
-import xyz.gnas.elif.app.events.dialog.SingleRenameEvent;
+import xyz.gnas.elif.app.events.dialog.SimpleRenameEvent;
 import xyz.gnas.elif.app.events.explorer.ReloadEvent;
-import xyz.gnas.elif.app.models.explorer.ExplorerItemModel;
 import xyz.gnas.elif.core.logic.FileLogic;
 
 import java.io.File;
 
 import static xyz.gnas.elif.app.common.Utility.showConfirmation;
 
-public class SingleRenameController {
+public class SimpleRenameController {
     @FXML
     private MaterialIconView mivFolder;
 
@@ -34,7 +33,7 @@ public class SingleRenameController {
     @FXML
     private TextField txtName;
 
-    private ExplorerItemModel item;
+    private File file;
 
     private void showError(Exception e, String message, boolean exit) {
         Utility.showError(getClass(), e, message, exit);
@@ -45,10 +44,9 @@ public class SingleRenameController {
     }
 
     @Subscribe
-    public void onSingleRenameEvent(SingleRenameEvent event) {
+    public void onRenameEvent(SimpleRenameEvent event) {
         try {
-            item = event.getItem();
-            File file = item.getFile();
+            file = event.getFile();
             mivFolder.setVisible(file.isDirectory());
 
             if (!file.isDirectory()) {
@@ -69,22 +67,33 @@ public class SingleRenameController {
             mivFolder.managedProperty().bind(mivFolder.visibleProperty());
             imvFile.managedProperty().bind(imvFile.visibleProperty());
             imvFile.visibleProperty().bind(mivFolder.visibleProperty().not());
+            addHandlerToSceneAndWindow();
+        } catch (Exception e) {
+            showError(e, "Could not initialise single rename dialog", true);
+        }
+    }
 
-            txtName.sceneProperty().addListener(s -> {
+    private void addHandlerToSceneAndWindow() {
+        txtName.sceneProperty().addListener(s -> {
+            try {
                 Scene scene = txtName.getScene();
 
                 if (scene != null) {
                     scene.getWindow().setOnShown(l -> {
-                        // select only the name of the file by default
-                        txtName.requestFocus();
-                        String name = FilenameUtils.removeExtension(item.getFile().getName());
-                        txtName.selectRange(0, name.length());
+                        try {
+                            // select only the name of the file by default
+                            txtName.requestFocus();
+                            String name = FilenameUtils.removeExtension(file.getName());
+                            txtName.selectRange(0, name.length());
+                        } catch (Exception e) {
+                            showError(e, "Error handling window shown event", false);
+                        }
                     });
                 }
-            });
-        } catch (Exception e) {
-            showError(e, "Could not initialise single rename dialog", true);
-        }
+            } catch (Exception e) {
+                showError(e, "Error handling scene change event", false);
+            }
+        });
     }
 
     @FXML
@@ -110,18 +119,19 @@ public class SingleRenameController {
     @FXML
     private void apply(ActionEvent event) {
         try {
-            File source = item.getFile();
-            File target = new File(source.getParent() + "\\" + txtName.getText());
+            String newName = txtName.getText() == null ? "" : txtName.getText();
+            File target = new File(file.getParent() + "\\" + newName);
             boolean result = true;
 
-            if (target.exists()) {
+            // do not ask for confirm if use old name
+            if (target.exists() && !newName.equalsIgnoreCase(file.getName())) {
                 result = showConfirmation("There is already a file or folder with the same name, do you want to " +
                         "overwrite it?");
             }
 
             if (result) {
-                writeInfoLog("Raname file " + source.getAbsolutePath() + " to " + target.getAbsolutePath());
-                FileLogic.rename(source, target);
+                writeInfoLog("Raname file " + file.getAbsolutePath() + " to " + target.getAbsolutePath());
+                FileLogic.rename(file, target);
                 EventBus.getDefault().post(new ReloadEvent(target.getParent()));
                 hideDialog();
             }

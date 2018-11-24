@@ -95,4 +95,31 @@ public class FileLogic {
     public static void rename(File source, File target) {
         source.renameTo(target);
     }
+
+    public static File addNewFolder(String parent) {
+        File folder = getNewFileOrFolder(parent, false);
+        folder.mkdir();
+        return folder;
+    }
+
+    private static File getNewFileOrFolder(String parent, boolean isFile) {
+        String parentPath = parent + "\\";
+        String fileFolder = isFile ? "file" : "folder";
+        String newFileFolderPath = parentPath + "New " + fileFolder;
+        File fileOrFolder = new File(newFileFolderPath);
+        int index = 2;
+
+        while (fileOrFolder.exists()) {
+            fileOrFolder = new File(newFileFolderPath + " (" + index + ")");
+            ++index;
+        }
+
+        return fileOrFolder;
+    }
+
+    public static File addNewFile(String parent) throws IOException {
+        File file = getNewFileOrFolder(parent, true);
+        file.createNewFile();
+        return file;
+    }
 }

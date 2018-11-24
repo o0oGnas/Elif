@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView?>
+<?import de.jensd.fx.glyphs.materialdesignicons.MaterialDesignIconView?>
 <?import de.jensd.fx.glyphs.materialicons.MaterialIconView?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
@@ -201,11 +202,39 @@
                                     </content>
                                 </CustomMenuItem>
                                 <SeparatorMenuItem fx:id="smiDelete" hideOnClick="true"/>
-                                <CustomMenuItem fx:id="cmiRename" onAction="#rename">
+                                <CustomMenuItem onAction="#simpleRename">
                                     <content>
-                                        <Label fx:id="lblRename" text="Rename">
+                                        <Label fx:id="lblRename" text="Rename (simple)">
                                             <graphic>
                                                 <MaterialIconView glyphName="EDIT" size="16"/>
+                                            </graphic>
+                                        </Label>
+                                    </content>
+                                </CustomMenuItem>
+                                <CustomMenuItem onAction="#advancedRename">
+                                    <content>
+                                        <Label fx:id="lblRename1" text="Rename (advanced)">
+                                            <graphic>
+                                                <FontAwesomeIconView glyphName="EDIT" size="16"/>
+                                            </graphic>
+                                        </Label>
+                                    </content>
+                                </CustomMenuItem>
+                                <SeparatorMenuItem hideOnClick="true"/>
+                                <CustomMenuItem onAction="#addNewFolder">
+                                    <content>
+                                        <Label fx:id="lblNewFolder" text="New folder">
+                                            <graphic>
+                                                <MaterialIconView glyphName="CREATE_NEW_FOLDER" size="16"/>
+                                            </graphic>
+                                        </Label>
+                                    </content>
+                                </CustomMenuItem>
+                                <CustomMenuItem onAction="#addNewFile">
+                                    <content>
+                                        <Label fx:id="lblNewFile" text="New file">
+                                            <graphic>
+                                                <MaterialDesignIconView glyphName="FILE_PLUS" size="16"/>
                                             </graphic>
                                         </Label>
                                     </content>

@@ -38,11 +38,20 @@ import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import xyz.gnas.elif.app.common.Configurations;
 import xyz.gnas.elif.app.common.Utility;
-import xyz.gnas.elif.app.events.dialog.SingleRenameEvent;
+import xyz.gnas.elif.app.events.dialog.SimpleRenameEvent;
+import xyz.gnas.elif.app.events.explorer.ChangeItemSelectionEvent;
 import xyz.gnas.elif.app.events.explorer.ChangePathEvent;
+import xyz.gnas.elif.app.events.explorer.FocusExplorerEvent;
 import xyz.gnas.elif.app.events.explorer.InitialiseExplorerEvent;
 import xyz.gnas.elif.app.events.explorer.ReloadEvent;
 import xyz.gnas.elif.app.events.explorer.SwitchTabEvent;
+import xyz.gnas.elif.app.events.operation.AddNewFileEvent;
+import xyz.gnas.elif.app.events.operation.AddNewFolderEvent;
+import xyz.gnas.elif.app.events.operation.CopyToClipboardEvent;
+import xyz.gnas.elif.app.events.operation.CopyToOtherEvent;
+import xyz.gnas.elif.app.events.operation.DeleteEvent;
+import xyz.gnas.elif.app.events.operation.MoveEvent;
+import xyz.gnas.elif.app.events.operation.PasteEvent;
 import xyz.gnas.elif.app.models.explorer.ExplorerItemModel;
 import xyz.gnas.elif.app.models.explorer.ExplorerModel;
 import xyz.gnas.elif.core.logic.ClipboardLogic;
@@ -103,6 +112,12 @@ public class ExplorerController {
     private Label lblRename;
 
     @FXML
+    private Label lblNewFolder;
+
+    @FXML
+    private Label lblNewFile;
+
+    @FXML
     private MaterialIconView mivName;
 
     @FXML
@@ -142,13 +157,7 @@ public class ExplorerController {
     private CustomMenuItem cmiCopyToOther;
 
     @FXML
-    private CustomMenuItem cmiRename;
-
-    @FXML
     private SeparatorMenuItem smiRunOrGoTo;
-
-    @FXML
-    private SeparatorMenuItem smiDelete;
 
     @FXML
     private CustomMenuItem cmiPaste;
@@ -179,7 +188,6 @@ public class ExplorerController {
                 // add right padding if model is left, left padding if model is right
                 acpMain.setPadding(event.isLeft() ? new Insets(0, 5, 0, 0) : new Insets(0, 0, 0, 5));
                 loadDrives();
-                updateOperationTargets();
             }
         } catch (Exception e) {
             showError(e, "Could not initialise explorer", true);
@@ -249,8 +257,32 @@ public class ExplorerController {
         boolean isRoot = path.getParentFile() == null;
         btnBack.setDisable(isRoot);
         btnRoot.setDisable(isRoot);
-        updateItemList();
+        updateItemListAndScrollToTop();
         postEvent(new ChangePathEvent(model));
+    }
+
+    private void updateItemListAndScrollToTop() {
+        updateItemList();
+        scrollToTop(null);
+    }
+
+    private void updateItemList() {
+        writeInfoLog("Updating item list");
+
+        ObservableList<ExplorerItemModel> itemList = tbvTable.getItems();
+        itemList.clear();
+
+        File[] children = model.getFolder().listFiles();
+
+        if (children != null) {
+            for (File child : children) {
+                itemList.add(new ExplorerItemModel(child));
+            }
+
+            sortItemList();
+        }
+
+        tbvTable.refresh();
     }
 
     private void addListenerToDriveComboBox() {
@@ -264,23 +296,19 @@ public class ExplorerController {
                 });
     }
 
-    private void updateOperationTargets() {
-        File path = model.getOtherModel().getFolder();
-        cmiCopyToOther.setDisable(path == null);
-
-        if (path != null) {
-            lblCopyToOther.setText("Copy to " + path.getAbsolutePath());
-            lblMove.setText("Move to " + path.getAbsolutePath());
-        }
-    }
-
     @Subscribe
     public void onChangePathEvent(ChangePathEvent event) {
         try {
             ExplorerModel eventModel = event.getModel();
 
             if (model != eventModel) {
-                updateOperationTargets();
+                File otherPath = event.getModel().getFolder();
+                cmiCopyToOther.setDisable(otherPath == null);
+
+                if (otherPath != null) {
+                    lblCopyToOther.setText("Copy to " + otherPath.getAbsolutePath());
+                    lblMove.setText("Move to " + otherPath.getAbsolutePath());
+                }
             }
         } catch (Exception e) {
             showError(e, "Error handling change path event", false);
@@ -330,7 +358,11 @@ public class ExplorerController {
             initialiseTable();
 
             ctmTable.setOnShowing(l -> {
-                cmiPaste.setVisible(ClipboardLogic.clipboardHasFiles());
+                try {
+                    cmiPaste.setVisible(ClipboardLogic.clipboardHasFiles());
+                } catch (Exception e) {
+                    showError(e, "Error handling table context menu shown event", false);
+                }
             });
         } catch (Exception e) {
             showError(e, "Could not initialise explorer", true);
@@ -404,48 +436,34 @@ public class ExplorerController {
         mivDate.setVisible(false);
     }
 
-    private void updateItemList() {
-        writeInfoLog("Updating item list");
-
-        ObservableList<ExplorerItemModel> itemList = tbvTable.getItems();
-        itemList.clear();
-
-        File[] children = model.getFolder().listFiles();
-
-        if (children != null) {
-            for (File child : children) {
-                itemList.add(new ExplorerItemModel(child));
-            }
-
-            sortItemList();
-        }
-
-        tbvTable.refresh();
-        scrollToTop(null);
-    }
-
     private void sortItemList() {
         String sortOrder = isDescending.get() ? "Descending" : "Ascending";
         writeInfoLog("Sorting list by " + currentSortLabel.getText() + " - " + sortOrder);
 
         tbvTable.getItems().sort((ExplorerItemModel o1, ExplorerItemModel o2) -> {
-            boolean descending = isDescending.get();
-            boolean IsDirectory1 = o1.getFile().isDirectory();
+            try {
+                boolean descending = isDescending.get();
+                boolean IsDirectory1 = o1.getFile().isDirectory();
 
-            // only sort if both are files or folders, otherwise folder comes first
-            if (IsDirectory1 == o2.getFile().isDirectory()) {
-                if (currentSortLabel == lblName) {
-                    return getSortResult(descending, o1.getName(), o2.getName());
-                } else if (currentSortLabel == lblExtension) {
-                    return getSortResult(descending, o1.getExtension(), o2.getExtension());
-                } else if (currentSortLabel == lblSize) {
-                    return getSortResult(descending, o1.getSize(), o2.getSize());
+                // only sort if both are files or folders, otherwise folder comes first
+                if (IsDirectory1 == o2.getFile().isDirectory()) {
+                    if (currentSortLabel == lblName) {
+                        return getSortResult(descending, o1.getName(), o2.getName());
+                    } else if (currentSortLabel == lblExtension) {
+                        return getSortResult(descending, o1.getExtension(), o2.getExtension());
+                    } else if (currentSortLabel == lblSize) {
+                        return getSortResult(descending, o1.getSize(), o2.getSize());
+                    } else {
+                        return getSortResult(descending, o1.getDate(), o2.getDate());
+                    }
                 } else {
-                    return getSortResult(descending, o1.getDate(), o2.getDate());
+                    return IsDirectory1 ? -1 : 1;
                 }
-            } else {
-                return IsDirectory1 ? -1 : 1;
+            } catch (Exception e) {
+                showError(e, "Error when sorting table", false);
             }
+
+            return 0;
         });
     }
 
@@ -459,6 +477,19 @@ public class ExplorerController {
     private void initialiseTable() {
         // sort by name initially
         currentSortLabel = lblName;
+
+        tbvTable.focusedProperty().addListener(l -> {
+            try {
+                if (tbvTable.isFocused()) {
+                    postEvent(new FocusExplorerEvent(model));
+                    postEvent(new ChangeItemSelectionEvent(getSelectedItems()));
+                }
+            } catch (Exception e) {
+                showError(e, "Error when handling focus change event", false);
+            }
+        });
+
+        addListenerToSelectedItems();
         initialiseTableContextMenu();
         tbvTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         setDoubleClickHandler();
@@ -466,26 +497,6 @@ public class ExplorerController {
         initialiseColumn(tbcExtension, lblExtension, Column.Extension);
         initialiseColumn(tbcSize, lblSize, Column.Size);
         initialiseColumn(tbcDate, lblDate, Column.Date);
-    }
-
-    private void initialiseTableContextMenu() {
-        smiRunOrGoTo.visibleProperty().bind(cmiRunOrGoto.visibleProperty());
-        smiDelete.visibleProperty().bind(cmiRename.visibleProperty());
-        lblRunOrGoTo.setMinWidth(MIN_TABLE_CONTEXT_MENU_ITEM_WIDTH);
-
-        lblRunOrGoTo.widthProperty().addListener(l -> {
-            // resize label to minimum width if it's less than minimum
-            if (lblRunOrGoTo.getWidth() < MIN_TABLE_CONTEXT_MENU_ITEM_WIDTH) {
-                lblRunOrGoTo.autosize();
-            }
-        });
-
-        lblCopyToOther.prefWidthProperty().bind(lblRunOrGoTo.widthProperty());
-        lblCopyToClipboard.prefWidthProperty().bind(lblRunOrGoTo.widthProperty());
-        lblMove.prefWidthProperty().bind(lblRunOrGoTo.widthProperty());
-        lblDelete.prefWidthProperty().bind(lblRunOrGoTo.widthProperty());
-        lblRename.prefWidthProperty().bind(lblRunOrGoTo.widthProperty());
-        addListenerToSelectedItems();
     }
 
     private void addListenerToSelectedItems() {
@@ -498,32 +509,51 @@ public class ExplorerController {
                 if (selectedFolderList.isEmpty()) {
                     if (!selectedFileList.isEmpty()) {
                         setRunContextMenuItem();
-
-                        // show "rename" if only 1 file is selected
-                        cmiRename.setVisible(selectedFileList.size() == 1);
                     }
                 } else {
                     // hide "run or go to" if there are both files and folder or multiple folders are selected
                     if (!selectedFileList.isEmpty() || selectedFolderList.size() > 1) {
                         cmiRunOrGoto.setVisible(false);
-                        cmiRename.setVisible(false);
                     } else {
                         setGoToContextMenuItem();
-
-                        // show rename if only 1 folder is selected
-                        cmiRename.setVisible(true);
                     }
                 }
+
+                postEvent(new ChangeItemSelectionEvent(getSelectedItems()));
             } catch (Exception e) {
                 showError(e, "Error when handling change to item selection", false);
             }
         });
     }
 
+    private void initialiseTableContextMenu() {
+        smiRunOrGoTo.visibleProperty().bind(cmiRunOrGoto.visibleProperty());
+        lblRunOrGoTo.setMinWidth(MIN_TABLE_CONTEXT_MENU_ITEM_WIDTH);
+
+        lblRunOrGoTo.widthProperty().addListener(l -> {
+            try {
+                // resize label to minimum width if it's less than minimum
+                if (lblRunOrGoTo.getWidth() < MIN_TABLE_CONTEXT_MENU_ITEM_WIDTH) {
+                    lblRunOrGoTo.autosize();
+                }
+            } catch (Exception e) {
+                showError(e, "Error when handling run or go to label width change", false);
+            }
+        });
+
+        lblCopyToOther.prefWidthProperty().bind(lblRunOrGoTo.widthProperty());
+        lblCopyToClipboard.prefWidthProperty().bind(lblRunOrGoTo.widthProperty());
+        lblMove.prefWidthProperty().bind(lblRunOrGoTo.widthProperty());
+        lblDelete.prefWidthProperty().bind(lblRunOrGoTo.widthProperty());
+        lblRename.prefWidthProperty().bind(lblRunOrGoTo.widthProperty());
+        lblNewFolder.prefWidthProperty().bind(lblRunOrGoTo.widthProperty());
+        lblNewFile.prefWidthProperty().bind(lblRunOrGoTo.widthProperty());
+    }
+
     private void updateSelectedFoldersAndFiles() {
         selectedFolderList.clear();
         selectedFileList.clear();
-        ObservableList<ExplorerItemModel> itemList = tbvTable.getSelectionModel().getSelectedItems();
+        List<ExplorerItemModel> itemList = getSelectedItems();
 
         for (ExplorerItemModel item : itemList) {
             if (item.getFile().isDirectory()) {
@@ -532,6 +562,10 @@ public class ExplorerController {
                 selectedFileList.add(item);
             }
         }
+    }
+
+    private List<ExplorerItemModel> getSelectedItems() {
+        return tbvTable.getSelectionModel().getSelectedItems();
     }
 
     private void setRunContextMenuItem() {
@@ -596,15 +630,13 @@ public class ExplorerController {
     /**
      * Wrapper to reduce copy paste
      */
-    private void initialiseColumn(TableColumn<ExplorerItemModel, ExplorerItemModel> tbc, Label lbl, Column
-            column) {
+    private void initialiseColumn(TableColumn<ExplorerItemModel, ExplorerItemModel> tbc, Label lbl, Column column) {
         tbc.setCellValueFactory(new ExplorerTableCellValue());
         tbc.setCellFactory(new ExplorerTableCellCallback(column));
 
-        tbc.widthProperty().addListener((ObservableValue<? extends Number> observable, Number oldValue,
-                                         Number newValue) -> {
+        tbc.widthProperty().addListener(l -> {
             try {
-                lbl.setPrefWidth(newValue.doubleValue());
+                lbl.setPrefWidth(tbc.getWidth());
             } catch (Exception e) {
                 showError(e, "Error when listening to changes to column width", false);
             }
@@ -636,7 +668,7 @@ public class ExplorerController {
     @FXML
     private void reload(ActionEvent event) {
         try {
-            updateItemList();
+            updateItemListAndScrollToTop();
         } catch (Exception e) {
             showError(e, "Could not reload", false);
         }
@@ -715,17 +747,22 @@ public class ExplorerController {
     @FXML
     private void copyToOther(ActionEvent event) {
         try {
-            OperationHandler.copy(model, model.getOtherModel().getFolder().getAbsolutePath(),
-                    tbvTable.getSelectionModel().getSelectedItems(), OperationHandler.CopyMode.COPY);
+            checkEmptyAndPostEvent(new CopyToOtherEvent(model, getSelectedItems()));
         } catch (Exception e) {
             showError(e, "Could not copy to other tab", false);
+        }
+    }
+
+    private void checkEmptyAndPostEvent(Object event) {
+        if (!getSelectedItems().isEmpty()) {
+            postEvent(event);
         }
     }
 
     @FXML
     private void copyToClipboard(ActionEvent event) {
         try {
-            OperationHandler.copyToClipboard(tbvTable.getSelectionModel().getSelectedItems());
+            checkEmptyAndPostEvent(new CopyToClipboardEvent(model, getSelectedItems()));
         } catch (Exception e) {
             showError(e, "Could not copy to clipboard", false);
         }
@@ -734,7 +771,7 @@ public class ExplorerController {
     @FXML
     private void paste(ActionEvent event) {
         try {
-            OperationHandler.paste(model);
+            postEvent(new PasteEvent(model));
         } catch (Exception e) {
             showError(e, "Could not paste", false);
         }
@@ -743,8 +780,7 @@ public class ExplorerController {
     @FXML
     private void move(ActionEvent event) {
         try {
-            OperationHandler.copy(model, model.getOtherModel().getFolder().getAbsolutePath(),
-                    tbvTable.getSelectionModel().getSelectedItems(), OperationHandler.CopyMode.MOVE);
+            checkEmptyAndPostEvent(new MoveEvent(model, getSelectedItems()));
         } catch (Exception e) {
             showError(e, "Could not copy to clipboard", false);
         }
@@ -753,18 +789,44 @@ public class ExplorerController {
     @FXML
     private void delete(ActionEvent event) {
         try {
-            OperationHandler.delete(model, tbvTable.getSelectionModel().getSelectedItems());
+            checkEmptyAndPostEvent(new DeleteEvent(model, getSelectedItems()));
         } catch (Exception e) {
             showError(e, "Could not delete", false);
         }
     }
 
     @FXML
-    private void rename(ActionEvent event) {
+    private void simpleRename(ActionEvent event) {
         try {
-            postEvent(new SingleRenameEvent(tbvTable.getSelectionModel().getSelectedItem()));
+            postEvent(new SimpleRenameEvent(tbvTable.getSelectionModel().getSelectedItem().getFile()));
         } catch (Exception e) {
-            showError(e, "Could not rename", false);
+            showError(e, "Could not perform simple rename", false);
+        }
+    }
+
+    @FXML
+    private void advancedRename(ActionEvent event) {
+        try {
+        } catch (Exception e) {
+            showError(e, "Could not perform advanced rename", false);
+        }
+    }
+
+    @FXML
+    private void addNewFolder(ActionEvent event) {
+        try {
+            postEvent(new AddNewFolderEvent(model));
+        } catch (Exception e) {
+            showError(e, "Could not add new folder", false);
+        }
+    }
+
+    @FXML
+    private void addNewFile(ActionEvent event) {
+        try {
+            postEvent(new AddNewFileEvent(model));
+        } catch (Exception e) {
+            showError(e, "Could not add new file", false);
         }
     }
 
@@ -839,7 +901,15 @@ public class ExplorerController {
                 break;
 
             case F2:
-                rename(null);
+                simpleRename(null);
+                break;
+
+            case F7:
+                addNewFolder(null);
+                break;
+
+            case F8:
+                addNewFile(null);
                 break;
 
             default:
@@ -858,9 +928,8 @@ public class ExplorerController {
     /**
      * Custom value for table columns
      */
-    private class ExplorerTableCellValue implements
-            Callback<TableColumn.CellDataFeatures<ExplorerItemModel, ExplorerItemModel>,
-                    ObservableValue<ExplorerItemModel>> {
+    private class ExplorerTableCellValue implements Callback<TableColumn.CellDataFeatures<ExplorerItemModel,
+            ExplorerItemModel>, ObservableValue<ExplorerItemModel>> {
         @Override
         public ObservableValue<ExplorerItemModel> call(CellDataFeatures<ExplorerItemModel, ExplorerItemModel> param) {
             return new ObservableValue<>() {
@@ -896,10 +965,8 @@ public class ExplorerController {
     /**
      * Custom cell display for table columns
      */
-    private class ExplorerTableCellCallback implements
-            Callback<TableColumn<ExplorerItemModel, ExplorerItemModel>, TableCell<ExplorerItemModel,
-                    ExplorerItemModel>> {
-
+    private class ExplorerTableCellCallback implements Callback<TableColumn<ExplorerItemModel, ExplorerItemModel>,
+            TableCell<ExplorerItemModel, ExplorerItemModel>> {
         private Column column;
 
         public ExplorerTableCellCallback(Column column) {
@@ -907,8 +974,7 @@ public class ExplorerController {
         }
 
         @Override
-        public TableCell<ExplorerItemModel, ExplorerItemModel> call(
-                TableColumn<ExplorerItemModel, ExplorerItemModel> param) {
+        public TableCell<ExplorerItemModel, ExplorerItemModel> call(TableColumn<ExplorerItemModel, ExplorerItemModel> param) {
             return new ExplorerTableCell() {
             };
         }
