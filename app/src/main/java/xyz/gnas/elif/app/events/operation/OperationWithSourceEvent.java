@@ -3,6 +3,7 @@ package xyz.gnas.elif.app.events.operation;
 import xyz.gnas.elif.app.models.explorer.ExplorerItemModel;
 import xyz.gnas.elif.app.models.explorer.ExplorerModel;
 
+import java.util.LinkedList;
 import java.util.List;
 
 public class OperationWithSourceEvent extends OperationEvent {
@@ -14,6 +15,6 @@ public class OperationWithSourceEvent extends OperationEvent {
 
     public OperationWithSourceEvent(ExplorerModel sourceModel, List<ExplorerItemModel> sourceList) {
         super(sourceModel);
-        this.sourceList = sourceList;
+        this.sourceList = new LinkedList<>(sourceList);
     }
 }

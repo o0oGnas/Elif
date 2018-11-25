@@ -16,22 +16,22 @@
     </padding>
     <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
           AnchorPane.topAnchor="0.0">
-        <HBox fx:id="hboExplorer" VBox.vgrow="ALWAYS"/>
+        <HBox fx:id="hbxExplorer" VBox.vgrow="ALWAYS"/>
         <ScrollPane fx:id="scpOperation" maxHeight="100.0" visible="false">
-            <VBox fx:id="vboOperations"/>
+            <VBox fx:id="vbxOperations"/>
         </ScrollPane>
         <HBox>
             <VBox.margin>
                 <Insets top="10.0"/>
             </VBox.margin>
-            <HBox fx:id="hboRenameEditCopyMove" disable="true">
-                <Button mnemonicParsing="false" onAction="#simpleRename" prefWidth="180.0"
+            <HBox fx:id="hbxRenameEditCopyMove" disable="true">
+                <Button fx:id="btnSimpleRename" mnemonicParsing="false" onAction="#simpleRename" prefWidth="190.0"
                         text="F2 - Simple rename">
                     <graphic>
                         <MaterialIconView glyphName="EDIT" size="16"/>
                     </graphic>
                 </Button>
-                <Button mnemonicParsing="false" onAction="#advancedRename" prefWidth="180.0"
+                <Button mnemonicParsing="false" onAction="#advancedRename" prefWidth="190.0"
                         text="F3 - Advanced rename">
                     <graphic>
                         <FontAwesomeIconView glyphName="EDIT" size="16"/>
@@ -40,7 +40,8 @@
                         <Insets left="10.0"/>
                     </HBox.margin>
                 </Button>
-                <Button mnemonicParsing="false" prefWidth="180.0" text="F4 - Edit as text">
+                <Button fx:id="btnEditAsText" mnemonicParsing="false" onAction="#editAsText" prefWidth="190.0"
+                        text="F4 - Edit as text">
                     <HBox.margin>
                         <Insets left="10.0"/>
                     </HBox.margin>
@@ -48,7 +49,7 @@
                         <OctIconView glyphName="FILE" size="16"/>
                     </graphic>
                 </Button>
-                <Button mnemonicParsing="false" onAction="#copy" prefWidth="180.0" text="F5 - Copy">
+                <Button mnemonicParsing="false" onAction="#copy" prefWidth="190.0" text="F5 - Copy">
                     <graphic>
                         <FontAwesomeIconView glyphName="COPY" size="16"/>
                     </graphic>
@@ -56,7 +57,7 @@
                         <Insets left="10.0"/>
                     </HBox.margin>
                 </Button>
-                <Button mnemonicParsing="false" onAction="#move" prefWidth="180.0" text="F6 - Move">
+                <Button mnemonicParsing="false" onAction="#move" prefWidth="190.0" text="F6 - Move">
                     <HBox.margin>
                         <Insets left="10.0"/>
                     </HBox.margin>
@@ -65,9 +66,8 @@
                     </graphic>
                 </Button>
             </HBox>
-            <HBox fx:id="hboNewFolderFile" disable="true">
-                <Button mnemonicParsing="false" onAction="#addNewFolder" prefWidth="180.0"
-                        text="F7 - New folder">
+            <HBox fx:id="hbxNewFolderFile" disable="true">
+                <Button mnemonicParsing="false" onAction="#addNewFolder" prefWidth="190.0" text="F7 - New folder">
                     <HBox.margin>
                         <Insets left="10.0"/>
                     </HBox.margin>
@@ -75,8 +75,7 @@
                         <MaterialIconView glyphName="CREATE_NEW_FOLDER" size="16"/>
                     </graphic>
                 </Button>
-                <Button mnemonicParsing="false" onAction="#addNewFile" prefWidth="180.0"
-                        text="F8 - New file">
+                <Button mnemonicParsing="false" onAction="#addNewFile" prefWidth="190.0" text="F8 - New file">
                     <HBox.margin>
                         <Insets left="10.0"/>
                     </HBox.margin>

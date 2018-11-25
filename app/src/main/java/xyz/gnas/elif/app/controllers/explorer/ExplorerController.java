@@ -1,4 +1,4 @@
-package xyz.gnas.elif.app.controllers.Explorer;
+package xyz.gnas.elif.app.controllers.explorer;
 
 import de.jensd.fx.glyphs.materialicons.MaterialIconView;
 import javafx.beans.InvalidationListener;
@@ -33,11 +33,15 @@ import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.paint.Color;
+import javafx.stage.WindowEvent;
 import javafx.util.Callback;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import xyz.gnas.elif.app.common.Configurations;
-import xyz.gnas.elif.app.common.Utility;
+import xyz.gnas.elif.app.common.utility.DialogUtility;
+import xyz.gnas.elif.app.common.utility.ImageUtility;
+import xyz.gnas.elif.app.common.utility.WindowEventUtility;
+import xyz.gnas.elif.app.events.dialog.EditAsTextEvent;
 import xyz.gnas.elif.app.events.dialog.SimpleRenameEvent;
 import xyz.gnas.elif.app.events.explorer.ChangeItemSelectionEvent;
 import xyz.gnas.elif.app.events.explorer.ChangePathEvent;
@@ -52,7 +56,6 @@ import xyz.gnas.elif.app.events.operation.CopyToOtherEvent;
 import xyz.gnas.elif.app.events.operation.DeleteEvent;
 import xyz.gnas.elif.app.events.operation.MoveEvent;
 import xyz.gnas.elif.app.events.operation.PasteEvent;
-import xyz.gnas.elif.app.events.window.WindowFocusedEvent;
 import xyz.gnas.elif.app.models.explorer.ExplorerItemModel;
 import xyz.gnas.elif.app.models.explorer.ExplorerModel;
 import xyz.gnas.elif.core.logic.ClipboardLogic;
@@ -72,7 +75,7 @@ public class ExplorerController {
     private AnchorPane acpMain;
 
     @FXML
-    private ComboBox<File> cboDrive;
+    private ComboBox<File> cbbDrive;
 
     @FXML
     private Button btnBack;
@@ -111,7 +114,13 @@ public class ExplorerController {
     private Label lblDelete;
 
     @FXML
-    private Label lblRename;
+    private Label lblSimpleRename;
+
+    @FXML
+    private Label lblAdvancedRename;
+
+    @FXML
+    private Label lblEditAsText;
 
     @FXML
     private Label lblNewFolder;
@@ -159,10 +168,19 @@ public class ExplorerController {
     private CustomMenuItem cmiCopyToOther;
 
     @FXML
-    private SeparatorMenuItem smiRunOrGoTo;
+    private CustomMenuItem cmiSimpleRename;
+
+    @FXML
+    private CustomMenuItem cmiEditAsText;
 
     @FXML
     private CustomMenuItem cmiPaste;
+
+    @FXML
+    private SeparatorMenuItem smiRunOrGoTo;
+
+    @FXML
+    private SeparatorMenuItem smiEditAsText;
 
     private final int MIN_TABLE_CONTEXT_MENU_ITEM_WIDTH = 150;
 
@@ -182,15 +200,6 @@ public class ExplorerController {
     private List<ExplorerItemModel> selectedFileList = new ArrayList<>();
 
     @Subscribe
-    public void onWindowFocusedEvent(WindowFocusedEvent event) {
-        try {
-            updateItemList();
-        } catch (Exception e) {
-            showError(e, "Error updating list", false);
-        }
-    }
-
-    @Subscribe
     public void onInitialiseExplorerEvent(InitialiseExplorerEvent event) {
         try {
             if (model == null) {
@@ -206,7 +215,7 @@ public class ExplorerController {
     }
 
     private void loadDrives() {
-        ObservableList<File> driveList = cboDrive.getItems();
+        ObservableList<File> driveList = cbbDrive.getItems();
         driveList.clear();
         Collections.addAll(driveList, File.listRoots());
         selectInitialDrive();
@@ -218,8 +227,8 @@ public class ExplorerController {
     private void selectInitialDrive() {
         if (model.getFolder() == null) {
             // select first drive by default
-            if (!cboDrive.getItems().isEmpty()) {
-                cboDrive.getSelectionModel().select(0);
+            if (!cbbDrive.getItems().isEmpty()) {
+                cbbDrive.getSelectionModel().select(0);
             }
         } else {
             selectDriveFromSetting();
@@ -227,7 +236,7 @@ public class ExplorerController {
     }
 
     private void selectDriveFromSetting() {
-        ObservableList<File> driveList = cboDrive.getItems();
+        ObservableList<File> driveList = cbbDrive.getItems();
         // select drive that is chosen by the current path
         // get the drive path of the current path
         String driveOfPath = getRootPath();
@@ -235,7 +244,7 @@ public class ExplorerController {
 
         for (int i = 0; i < driveList.size(); ++i) {
             if (driveOfPath.equalsIgnoreCase(driveList.get(i).getAbsolutePath())) {
-                cboDrive.getSelectionModel().select(i);
+                cbbDrive.getSelectionModel().select(i);
                 changeCurrentPath(model.getFolder());
                 validPath = true;
                 break;
@@ -243,7 +252,7 @@ public class ExplorerController {
         }
 
         if (!validPath) {
-            cboDrive.getSelectionModel().select(0);
+            cbbDrive.getSelectionModel().select(0);
         }
     }
 
@@ -292,7 +301,7 @@ public class ExplorerController {
     }
 
     private void addListenerToDriveComboBox() {
-        cboDrive.getSelectionModel().selectedItemProperty()
+        cbbDrive.getSelectionModel().selectedItemProperty()
                 .addListener((ObservableValue<? extends File> observable, File oldValue, File newValue) -> {
                     try {
                         changeCurrentPath(newValue);
@@ -308,12 +317,13 @@ public class ExplorerController {
             ExplorerModel eventModel = event.getModel();
 
             if (model != eventModel) {
-                File otherPath = event.getModel().getFolder();
-                cmiCopyToOther.setDisable(otherPath == null);
+                File otherFile = event.getModel().getFolder();
+                cmiCopyToOther.setDisable(otherFile == null);
 
-                if (otherPath != null) {
-                    lblCopyToOther.setText("Copy to " + otherPath.getAbsolutePath());
-                    lblMove.setText("Move to " + otherPath.getAbsolutePath());
+                if (otherFile != null) {
+                    String otherPath = "\"" + otherFile.getAbsolutePath() + "\"";
+                    lblCopyToOther.setText("Copy to " + otherPath);
+                    lblMove.setText("Move to " + otherPath);
                 }
             }
         } catch (Exception e) {
@@ -344,11 +354,11 @@ public class ExplorerController {
     }
 
     private void showError(Exception e, String message, boolean exit) {
-        Utility.showError(getClass(), e, message, exit);
+        DialogUtility.showError(getClass(), e, message, exit);
     }
 
     private void writeInfoLog(String log) {
-        Utility.writeInfoLog(getClass(), log);
+        DialogUtility.writeInfoLog(getClass(), log);
     }
 
     private void postEvent(Object object) {
@@ -359,25 +369,41 @@ public class ExplorerController {
     private void initialize() {
         try {
             EventBus.getDefault().register(this);
+            handleWindowFocusedEvent();
             initialiseDriveComboBox();
             initialiseSortImages();
             initialiseTable();
-
-            ctmTable.setOnShowing(l -> {
-                try {
-                    cmiPaste.setVisible(ClipboardLogic.clipboardHasFiles());
-                } catch (Exception e) {
-                    showError(e, "Error handling table context menu shown event", false);
-                }
-            });
         } catch (Exception e) {
             showError(e, "Could not initialise explorer", true);
         }
     }
 
+    private void handleWindowFocusedEvent() {
+        WindowEventUtility.bindWindowEventHandler(acpMain, new WindowEventUtility.WindowEventHandler() {
+            @Override
+            public void handleShownEvent() {
+
+            }
+
+            @Override
+            public void handleFocusedEvent() {
+                try {
+                    updateItemList();
+                } catch (Exception e) {
+                    showError(e, "Error handling window focused event", false);
+                }
+            }
+
+            @Override
+            public void handleCloseEvent(WindowEvent windowEvent) {
+
+            }
+        });
+    }
+
     private void initialiseDriveComboBox() {
-        cboDrive.setButtonCell(getListCell());
-        cboDrive.setCellFactory(f -> getListCell());
+        cbbDrive.setButtonCell(getListCell());
+        cbbDrive.setCellFactory(f -> getListCell());
     }
 
     /**
@@ -404,7 +430,7 @@ public class ExplorerController {
     }
 
     private HBox getDriveItem(File item) {
-        ImageView imv = new ImageView(Utility.getFileIcon(item, false));
+        ImageView imv = new ImageView(ImageUtility.getFileIcon(item, false));
         Label lbl = new Label(FileSystemView.getFileSystemView().getSystemDisplayName(item));
         lbl.setTextFill(Color.BLACK);
         HBox hbo = new HBox(imv, lbl);
@@ -509,22 +535,7 @@ public class ExplorerController {
         tbvTable.getSelectionModel().getSelectedItems().addListener((ListChangeListener<ExplorerItemModel>) l -> {
             try {
                 updateSelectedFoldersAndFiles();
-                cmiRunOrGoto.setVisible(true);
-
-                // if only files are selected
-                if (selectedFolderList.isEmpty()) {
-                    if (!selectedFileList.isEmpty()) {
-                        setRunContextMenuItem();
-                    }
-                } else {
-                    // hide "run or go to" if there are both files and folder or multiple folders are selected
-                    if (!selectedFileList.isEmpty() || selectedFolderList.size() > 1) {
-                        cmiRunOrGoto.setVisible(false);
-                    } else {
-                        setGoToContextMenuItem();
-                    }
-                }
-
+                updateTableContextMenu();
                 postEvent(new ChangeItemSelectionEvent(getSelectedItems()));
             } catch (Exception e) {
                 showError(e, "Error when handling change to item selection", false);
@@ -532,8 +543,49 @@ public class ExplorerController {
         });
     }
 
+    private void updateTableContextMenu() {
+        cmiRunOrGoto.setVisible(false);
+        cmiSimpleRename.setVisible(false);
+        cmiEditAsText.setVisible(false);
+
+        // if only files are selected
+        if (selectedFolderList.isEmpty()) {
+            if (!selectedFileList.isEmpty()) {
+                cmiRunOrGoto.setVisible(true);
+                setRunContextMenuItem();
+
+                // show edit as text if exactly 1 file is selected
+                if (selectedFileList.size() == 1) {
+                    cmiSimpleRename.setVisible(true);
+                    cmiEditAsText.setVisible(true);
+                }
+            }
+        } else if (selectedFolderList.size() == 1) {
+            // only show rename and go to if exactly 1 folder is selected
+            if (selectedFileList.isEmpty()) {
+                cmiSimpleRename.setVisible(true);
+                cmiRunOrGoto.setVisible(true);
+                setGoToContextMenuItem();
+            }
+        }
+    }
+
     private void initialiseTableContextMenu() {
+        ctmTable.setOnShowing(l -> {
+            try {
+                cmiPaste.setVisible(ClipboardLogic.clipboardHasFiles());
+            } catch (Exception e) {
+                showError(e, "Error handling table context menu shown event", false);
+            }
+        });
+
         smiRunOrGoTo.visibleProperty().bind(cmiRunOrGoto.visibleProperty());
+        smiEditAsText.visibleProperty().bindBidirectional(cmiEditAsText.visibleProperty());
+        setRunOrGoToLabelWidth();
+        bindTableMenuItemsWidthProperty();
+    }
+
+    private void setRunOrGoToLabelWidth() {
         lblRunOrGoTo.setMinWidth(MIN_TABLE_CONTEXT_MENU_ITEM_WIDTH);
 
         lblRunOrGoTo.widthProperty().addListener(l -> {
@@ -546,12 +598,16 @@ public class ExplorerController {
                 showError(e, "Error when handling run or go to label width change", false);
             }
         });
+    }
 
+    private void bindTableMenuItemsWidthProperty() {
         lblCopyToOther.prefWidthProperty().bind(lblRunOrGoTo.widthProperty());
         lblCopyToClipboard.prefWidthProperty().bind(lblRunOrGoTo.widthProperty());
         lblMove.prefWidthProperty().bind(lblRunOrGoTo.widthProperty());
         lblDelete.prefWidthProperty().bind(lblRunOrGoTo.widthProperty());
-        lblRename.prefWidthProperty().bind(lblRunOrGoTo.widthProperty());
+        lblSimpleRename.prefWidthProperty().bind(lblRunOrGoTo.widthProperty());
+        lblAdvancedRename.prefWidthProperty().bind(lblRunOrGoTo.widthProperty());
+        lblEditAsText.prefWidthProperty().bind(lblRunOrGoTo.widthProperty());
         lblNewFolder.prefWidthProperty().bind(lblRunOrGoTo.widthProperty());
         lblNewFile.prefWidthProperty().bind(lblRunOrGoTo.widthProperty());
     }
@@ -582,7 +638,7 @@ public class ExplorerController {
         if (size > 1) {
             run += size + " selected files";
         } else {
-            run += selectedFileList.get(0).getFile().getName();
+            run += "\"" + selectedFileList.get(0).getFile().getName() + "\"";
         }
 
         lblRunOrGoTo.setText(run);
@@ -819,6 +875,15 @@ public class ExplorerController {
     }
 
     @FXML
+    private void editAsText(ActionEvent event) {
+        try {
+            postEvent(new EditAsTextEvent(tbvTable.getSelectionModel().getSelectedItem().getFile()));
+        } catch (Exception e) {
+            showError(e, "Could not edit as text", false);
+        }
+    }
+
+    @FXML
     private void addNewFolder(ActionEvent event) {
         try {
             postEvent(new AddNewFolderEvent(model));
@@ -883,8 +948,7 @@ public class ExplorerController {
                 break;
 
             case ENTER:
-                // only call run or go to if list of selected files is not empty or only 1 folder is selected
-                if (!selectedFileList.isEmpty() || selectedFolderList.size() == 1) {
+                if (cmiRunOrGoto.isVisible()) {
                     runOrGoTo(null);
                 }
 
@@ -907,7 +971,17 @@ public class ExplorerController {
                 break;
 
             case F2:
-                simpleRename(null);
+                if (cmiSimpleRename.isVisible()) {
+                    simpleRename(null);
+                }
+
+                break;
+
+            case F4:
+                if (cmiEditAsText.isVisible()) {
+                    editAsText(null);
+                }
+
                 break;
 
             case F7:
@@ -1037,7 +1111,7 @@ public class ExplorerController {
                     mivFolder.setGlyphSize(16);
                     setGraphic(mivFolder);
                 } else {
-                    ImageView imv = new ImageView(Utility.getFileIcon(file, true));
+                    ImageView imv = new ImageView(ImageUtility.getFileIcon(file, true));
                     setGraphic(imv);
                 }
             }

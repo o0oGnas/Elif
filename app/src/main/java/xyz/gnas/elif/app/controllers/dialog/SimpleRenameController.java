@@ -1,24 +1,25 @@
-package xyz.gnas.elif.app.controllers.Dialog;
+package xyz.gnas.elif.app.controllers.dialog;
 
 import de.jensd.fx.glyphs.materialicons.MaterialIconView;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyEvent;
+import javafx.stage.WindowEvent;
 import org.apache.commons.io.FilenameUtils;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
-import xyz.gnas.elif.app.common.Utility;
+import xyz.gnas.elif.app.common.utility.DialogUtility;
+import xyz.gnas.elif.app.common.utility.ImageUtility;
+import xyz.gnas.elif.app.common.utility.WindowEventUtility;
 import xyz.gnas.elif.app.events.dialog.SimpleRenameEvent;
-import xyz.gnas.elif.app.events.explorer.ReloadEvent;
 import xyz.gnas.elif.core.logic.FileLogic;
 
 import java.io.File;
 
-import static xyz.gnas.elif.app.common.Utility.showConfirmation;
+import static xyz.gnas.elif.app.common.utility.DialogUtility.showConfirmation;
 
 public class SimpleRenameController {
     @FXML
@@ -36,11 +37,11 @@ public class SimpleRenameController {
     private File file;
 
     private void showError(Exception e, String message, boolean exit) {
-        Utility.showError(getClass(), e, message, exit);
+        DialogUtility.showError(getClass(), e, message, exit);
     }
 
     private void writeInfoLog(String log) {
-        Utility.writeInfoLog(getClass(), log);
+        DialogUtility.writeInfoLog(getClass(), log);
     }
 
     @Subscribe
@@ -50,7 +51,7 @@ public class SimpleRenameController {
             mivFolder.setVisible(file.isDirectory());
 
             if (!file.isDirectory()) {
-                imvFile.setImage(Utility.getFileIcon(file, true));
+                imvFile.setImage(ImageUtility.getFileIcon(file, true));
             }
 
             lblFile.setText(file.getAbsolutePath());
@@ -74,24 +75,25 @@ public class SimpleRenameController {
     }
 
     private void addHandlerToSceneAndWindow() {
-        txtName.sceneProperty().addListener(s -> {
-            try {
-                Scene scene = txtName.getScene();
-
-                if (scene != null) {
-                    scene.getWindow().setOnShown(l -> {
-                        try {
-                            // select only the name of the file by default
-                            txtName.requestFocus();
-                            String name = FilenameUtils.removeExtension(file.getName());
-                            txtName.selectRange(0, name.length());
-                        } catch (Exception e) {
-                            showError(e, "Error handling window shown event", false);
-                        }
-                    });
+        WindowEventUtility.bindWindowEventHandler(txtName, new WindowEventUtility.WindowEventHandler() {
+            @Override
+            public void handleShownEvent() {
+                try {
+                    // select only the name of the file by default
+                    txtName.requestFocus();
+                    String name = FilenameUtils.removeExtension(file.getName());
+                    txtName.selectRange(0, name.length());
+                } catch (Exception e) {
+                    showError(e, "Error handling window shown event", false);
                 }
-            } catch (Exception e) {
-                showError(e, "Error handling scene change event", false);
+            }
+
+            @Override
+            public void handleFocusedEvent() {
+            }
+
+            @Override
+            public void handleCloseEvent(WindowEvent windowEvent) {
             }
         });
     }
@@ -101,7 +103,7 @@ public class SimpleRenameController {
         try {
             switch (keyEvent.getCode()) {
                 case ENTER:
-                    apply(null);
+                    rename(null);
                     break;
 
                 case ESCAPE:
@@ -117,7 +119,7 @@ public class SimpleRenameController {
     }
 
     @FXML
-    private void apply(ActionEvent event) {
+    private void rename(ActionEvent event) {
         try {
             String newName = txtName.getText() == null ? "" : txtName.getText();
             File target = new File(file.getParent() + "\\" + newName);
@@ -132,7 +134,6 @@ public class SimpleRenameController {
             if (result) {
                 writeInfoLog("Raname file " + file.getAbsolutePath() + " to " + target.getAbsolutePath());
                 FileLogic.rename(file, target);
-                EventBus.getDefault().post(new ReloadEvent(target.getParent()));
                 hideDialog();
             }
         } catch (Exception e) {

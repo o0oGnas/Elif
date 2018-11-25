@@ -11,7 +11,7 @@
 <?import javafx.scene.layout.VBox?>
 <AnchorPane onKeyPressed="#keyPressed" prefWidth="400.0" xmlns="http://javafx.com/javafx/10.0.1"
             xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="xyz.gnas.elif.app.controllers.Dialog.SimpleRenameController">
+            fx:controller="xyz.gnas.elif.app.controllers.dialog.SimpleRenameController">
     <padding>
         <Insets right="10.0" top="10.0"/>
     </padding>
@@ -19,8 +19,7 @@
           AnchorPane.topAnchor="0.0">
         <HBox>
             <MaterialIconView fx:id="mivFolder" glyphName="FOLDER_OPEN" size="16"/>
-            <ImageView fx:id="imvFile" fitHeight="16.0" fitWidth="16.0" pickOnBounds="true"
-                       preserveRatio="true"/>
+            <ImageView fx:id="imvFile" fitHeight="16.0" fitWidth="16.0" pickOnBounds="true" preserveRatio="true"/>
             <Label fx:id="lblFile" text="File/folder ">
                 <HBox.margin>
                     <Insets left="10.0"/>
@@ -36,12 +35,12 @@
             <VBox.margin>
                 <Insets top="10.0"/>
             </VBox.margin>
-            <Button mnemonicParsing="false" onAction="#apply" text="Apply">
+            <Button mnemonicParsing="false" onAction="#rename" text="Rename">
                 <graphic>
                     <MaterialIconView glyphName="CHECK_CIRCLE" size="16"/>
                 </graphic>
             </Button>
-            <Button cancelButton="true" mnemonicParsing="false" onAction="#cancel" text="Cancel">
+            <Button mnemonicParsing="false" onAction="#cancel" text="Cancel">
                 <HBox.margin>
                     <Insets left="10.0"/>
                 </HBox.margin>

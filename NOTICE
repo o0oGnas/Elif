@@ -11,7 +11,7 @@ To see the full terms and conditions of these licenses as well as their notices,
 		+ Source: https://wiki.openjdk.java.net/display/OpenJFX/Main
 		+ License: GNU General Public License (GPL) Version 2, June 1991
 	- FontAwesomeFX:
-		Source: https://bitbucket.org/Jerady/fontawesomefx
+		+ Source: https://bitbucket.org/Jerady/fontawesomefx
 		+ License: Apache License Version 2.0, January 2004
 	- jbootx:
 		+ Source: https://github.com/dicolar/jbootx
@@ -39,6 +39,10 @@ To see the full terms and conditions of these licenses as well as their notices,
     		+ License: Flaticon Basic License - https://file000.flaticon.com/downloads/license/license.pdf
 	    + Rename icon:
     		+ Source: Edit - https://www.flaticon.com/free-icon/edit_148926#term=pencil&page=1&position=7
+    		+ Author: Smashicons - https://smashicons.com/
+    		+ License: Flaticon Basic License - https://file000.flaticon.com/downloads/license/license.pdf
+	    + Text editor icon:
+    		+ Source: File - https://www.flaticon.com/free-icon/file_138579#term=edit&page=1&position=30
     		+ Author: Smashicons - https://smashicons.com/
     		+ License: Flaticon Basic License - https://file000.flaticon.com/downloads/license/license.pdf
 	- Notification sound:

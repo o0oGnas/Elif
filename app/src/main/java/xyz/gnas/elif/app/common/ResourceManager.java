@@ -2,7 +2,7 @@ package xyz.gnas.elif.app.common;
 
 import javafx.scene.image.Image;
 import javafx.scene.media.Media;
-import xyz.gnas.elif.app.FXMain;
+import xyz.gnas.elif.app.main.FXMain;
 
 import java.net.URL;
 import java.util.LinkedList;
@@ -13,7 +13,8 @@ import java.util.List;
  */
 public class ResourceManager {
     private static Image appIcon;
-    private static Image renameSingleIcon;
+    private static Image simpleRenameIcon;
+    private static Image editAsTextIcon;
 
     private static Media notificationSound;
 
@@ -23,6 +24,7 @@ public class ResourceManager {
     private static URL operationFXML;
     private static URL explorerFXML;
     private static URL simpleRenameFXML;
+    private static URL editAsTextFXML;
 
     public static Image getAppIcon() {
         if (appIcon == null) {
@@ -40,12 +42,20 @@ public class ResourceManager {
         return FXMain.class.getClassLoader();
     }
 
-    public static Image getRenameSingleIcon() {
-        if (renameSingleIcon == null) {
-            renameSingleIcon = getIcon("rename_single.png");
+    public static Image getSimpleRenameIcon() {
+        if (simpleRenameIcon == null) {
+            simpleRenameIcon = getIcon("simple_rename.png");
         }
 
-        return renameSingleIcon;
+        return simpleRenameIcon;
+    }
+
+    public static Image getEditAsTextIcon() {
+        if (editAsTextIcon == null) {
+            editAsTextIcon = getIcon("edit_as_text.png");
+        }
+
+        return editAsTextIcon;
     }
 
     public static Media getNotificationSound() {
@@ -92,7 +102,7 @@ public class ResourceManager {
 
     public static URL getExplorerFXML() {
         if (explorerFXML == null) {
-            explorerFXML = getFXML("explorer/Explorer");
+            explorerFXML = getFXML("explorer/explorer");
         }
 
         return explorerFXML;
@@ -100,7 +110,7 @@ public class ResourceManager {
 
     public static URL getOperationFXML() {
         if (operationFXML == null) {
-            operationFXML = getFXML("operation/Operation");
+            operationFXML = getFXML("operation/operation");
         }
 
         return operationFXML;
@@ -116,5 +126,13 @@ public class ResourceManager {
 
     private static URL getDialogFXML(String fxml) {
         return getFXML("dialog/" + fxml);
+    }
+
+    public static URL getEditAsTextFXML() {
+        if (editAsTextFXML == null) {
+            editAsTextFXML = getDialogFXML("EditAsText");
+        }
+
+        return editAsTextFXML;
     }
 }

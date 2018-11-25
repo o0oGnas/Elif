@@ -10,16 +10,20 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
+import javafx.scene.control.Button;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
+import javafx.stage.WindowEvent;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import xyz.gnas.elif.app.common.ResourceManager;
-import xyz.gnas.elif.app.common.Utility;
+import xyz.gnas.elif.app.common.utility.DialogUtility;
+import xyz.gnas.elif.app.common.utility.WindowEventUtility;
+import xyz.gnas.elif.app.events.dialog.EditAsTextEvent;
 import xyz.gnas.elif.app.events.dialog.SimpleRenameEvent;
 import xyz.gnas.elif.app.events.explorer.ChangeItemSelectionEvent;
 import xyz.gnas.elif.app.events.explorer.FocusExplorerEvent;
@@ -33,7 +37,6 @@ import xyz.gnas.elif.app.events.operation.DeleteEvent;
 import xyz.gnas.elif.app.events.operation.InitialiseOperationEvent;
 import xyz.gnas.elif.app.events.operation.MoveEvent;
 import xyz.gnas.elif.app.events.operation.PasteEvent;
-import xyz.gnas.elif.app.events.window.ExitEvent;
 import xyz.gnas.elif.app.models.Setting;
 import xyz.gnas.elif.app.models.explorer.ExplorerItemModel;
 import xyz.gnas.elif.app.models.explorer.ExplorerModel;
@@ -51,25 +54,31 @@ import java.util.TreeMap;
 
 import static java.lang.Thread.sleep;
 import static javafx.application.Platform.runLater;
-import static xyz.gnas.elif.app.common.Utility.showAlert;
-import static xyz.gnas.elif.app.common.Utility.showConfirmation;
-import static xyz.gnas.elif.app.common.Utility.showCustomDialog;
+import static xyz.gnas.elif.app.common.utility.DialogUtility.showAlert;
+import static xyz.gnas.elif.app.common.utility.DialogUtility.showConfirmation;
+import static xyz.gnas.elif.app.common.utility.DialogUtility.showCustomDialog;
 
 public class AppController {
     @FXML
-    private HBox hboExplorer;
+    private HBox hbxExplorer;
 
     @FXML
-    private HBox hboRenameEditCopyMove;
+    private HBox hbxRenameEditCopyMove;
 
     @FXML
-    private HBox hboNewFolderFile;
+    private HBox hbxNewFolderFile;
 
     @FXML
     private ScrollPane scpOperation;
 
     @FXML
-    private VBox vboOperations;
+    private VBox vbxOperations;
+
+    @FXML
+    private Button btnSimpleRename;
+
+    @FXML
+    private Button btnEditAsText;
 
     private enum CopyMode {
         COPY, MOVE, PASTE
@@ -77,7 +86,9 @@ public class AppController {
 
     private final int THREAD_SLEEP_TIME = 500;
 
-    private Node singleRenameDialog = null;
+    private Node textEditorDialog;
+
+    private Node simpleRenameDialog;
 
     private List<Operation> operationList = new LinkedList<>();
 
@@ -92,15 +103,15 @@ public class AppController {
     private List<ExplorerItemModel> selectedItemList;
 
     private void showError(Exception e, String message, boolean exit) {
-        Utility.showError(getClass(), e, message, exit);
+        DialogUtility.showError(getClass(), e, message, exit);
     }
 
     private void writeErrorLog(String message, Throwable e) {
-        Utility.writeErrorLog(getClass(), message, e);
+        DialogUtility.writeErrorLog(getClass(), message, e);
     }
 
     private void writeInfoLog(String log) {
-        Utility.writeInfoLog(getClass(), log);
+        DialogUtility.writeInfoLog(getClass(), log);
     }
 
     private void postEvent(Object object) {
@@ -108,28 +119,10 @@ public class AppController {
     }
 
     @Subscribe
-    public void onExitEvent(ExitEvent event) {
-        try {
-            // show confirmation is there are running processes
-            if (!operationList.isEmpty()) {
-                if (showConfirmation("There are running operations, are you sure you want to exit?")) {
-                    for (Operation operation : operationList) {
-                        operation.setStopped(true);
-                    }
-                } else {
-                    event.getWindowEvent().consume();
-                }
-            }
-        } catch (Exception e) {
-            showError(e, "Error when closing the application", true);
-        }
-    }
-
-    @Subscribe
     public void onFocusExplorerEvent(FocusExplorerEvent event) {
         try {
             selectedModel = event.getModel();
-            hboNewFolderFile.setDisable(false);
+            hbxNewFolderFile.setDisable(false);
         } catch (Exception e) {
             showError(e, "Error when handling focus change event", false);
         }
@@ -141,7 +134,17 @@ public class AppController {
             selectedItemList = event.getItemList();
 
             if (selectedItemList != null && !selectedItemList.isEmpty()) {
-                hboRenameEditCopyMove.setDisable(false);
+                hbxRenameEditCopyMove.setDisable(false);
+
+                if (selectedItemList.size() == 1) {
+                    btnSimpleRename.setDisable(false);
+
+                    // only allow edit file as text
+                    btnEditAsText.setDisable(selectedItemList.get(0).getFile().isDirectory());
+                } else {
+                    btnSimpleRename.setDisable(true);
+                    btnEditAsText.setDisable(true);
+                }
             }
         } catch (Exception e) {
             showError(e, "Error when handling focus change event", false);
@@ -207,7 +210,8 @@ public class AppController {
 
         // Ask for choice if mode is copy and paths are different, for other modes always ask
         if ((checkDifferentPath || container.mode != CopyMode.COPY) && container.hasDuplicate) {
-            confirmResult = Utility.showOptions("There are files in the target folder with the same name", replace,
+            confirmResult = DialogUtility.showOptions("There are files in the target folder with the same name",
+                    replace,
                     skip, duplicate, cancel);
         }
 
@@ -223,7 +227,7 @@ public class AppController {
         }
 
         String operationName = container.mode == CopyMode.MOVE ? "Move" : "Copy";
-        container.operation = createNewOperation(operationName + " files to " + container.targetPath);
+        container.operation = createNewOperation(operationName + " files to \"" + container.targetPath + "\"");
         runCopyMasterThread(container, duplicate);
     }
 
@@ -247,7 +251,7 @@ public class AppController {
         operationList.add(operation);
         FXMLLoader loader = new FXMLLoader(ResourceManager.getOperationFXML());
         Node n = loader.load();
-        vboOperations.getChildren().add(0, n);
+        vbxOperations.getChildren().add(0, n);
         addOperationCompleteListener(operation, n);
         postEvent(new InitialiseOperationEvent(operation));
         return operation;
@@ -265,7 +269,7 @@ public class AppController {
                     }
 
                     operationList.remove(operation);
-                    vboOperations.getChildren().remove(n);
+                    vbxOperations.getChildren().remove(n);
                 }
             } catch (Exception e) {
                 showError(e, "Error removing operation from list", false);
@@ -319,7 +323,7 @@ public class AppController {
         runLater(() -> {
             try {
                 String name = container.mode == CopyMode.MOVE ? "Moving" : "Copying";
-                container.operation.setSuboperationName(name + " " + source.getFile().getAbsolutePath());
+                container.operation.setSuboperationName(name + " \"" + source.getFile().getAbsolutePath() + "\"");
             } catch (Exception e) {
                 showError(e, "Error when changing sub operation name", false);
             }
@@ -504,7 +508,7 @@ public class AppController {
     @Subscribe
     public void onDeleteEvent(DeleteEvent event) {
         try {
-            final List<ExplorerItemModel> sourceList = event.getSourceList();
+            List<ExplorerItemModel> sourceList = event.getSourceList();
 
             if (showConfirmation("Are you sure you want to delete selected files/folders (" + sourceList.size() + ")" + "?")) {
                 for (ExplorerItemModel item : sourceList) {
@@ -533,9 +537,18 @@ public class AppController {
     @Subscribe
     public void onRenameEvent(SimpleRenameEvent event) {
         try {
-            showCustomDialog("Simple rename", singleRenameDialog, ResourceManager.getRenameSingleIcon());
+            showCustomDialog("Simple rename", simpleRenameDialog, ResourceManager.getSimpleRenameIcon());
         } catch (Exception e) {
             showError(e, "Error handling simple rename event", false);
+        }
+    }
+
+    @Subscribe
+    public void onEditAsTextEvent(EditAsTextEvent event) {
+        try {
+            showCustomDialog("Edit as text", textEditorDialog, ResourceManager.getEditAsTextIcon());
+        } catch (Exception e) {
+            showError(e, "Error handling edit as text event", false);
         }
     }
 
@@ -568,24 +581,62 @@ public class AppController {
     private void initialize() {
         try {
             EventBus.getDefault().register(this);
+            handleCloseEvent();
             scpOperation.setManaged(false);
             scpOperation.managedProperty().bind(scpOperation.visibleProperty());
 
             // only show scroll pane if there are running operations
-            vboOperations.getChildren().addListener((ListChangeListener<Node>) l -> {
+            vbxOperations.getChildren().addListener((ListChangeListener<Node>) l -> {
                 try {
-                    scpOperation.setVisible(!vboOperations.getChildren().isEmpty());
+                    scpOperation.setVisible(!vbxOperations.getChildren().isEmpty());
                 } catch (Exception e) {
                     showError(e, "Error handling operation list change event", false);
                 }
             });
 
+            initialiseDialogs();
             initialiseExplorers();
-            FXMLLoader loader = new FXMLLoader(ResourceManager.getSimpleRenameFXML());
-            singleRenameDialog = loader.load();
-        } catch (Exception e) {
+        } catch (
+                Exception e) {
             showError(e, "Could not initialise app", true);
         }
+    }
+
+    private void handleCloseEvent() {
+        WindowEventUtility.bindWindowEventHandler(hbxExplorer, new WindowEventUtility.WindowEventHandler() {
+            @Override
+            public void handleShownEvent() {
+            }
+
+            @Override
+            public void handleFocusedEvent() {
+            }
+
+            @Override
+            public void handleCloseEvent(WindowEvent windowEvent) {
+                try {
+                    // show confirmation is there are running processes
+                    if (!operationList.isEmpty()) {
+                        if (showConfirmation("There are running operations, are you sure you want to exit?")) {
+                            for (Operation operation : operationList) {
+                                operation.setStopped(true);
+                            }
+                        } else {
+                            windowEvent.consume();
+                        }
+                    }
+                } catch (Exception e) {
+                    showError(e, "Error handling window exit event", false);
+                }
+            }
+        });
+    }
+
+    private void initialiseDialogs() throws IOException {
+        FXMLLoader loader = new FXMLLoader(ResourceManager.getSimpleRenameFXML());
+        simpleRenameDialog = loader.load();
+        loader = new FXMLLoader(ResourceManager.getEditAsTextFXML());
+        textEditorDialog = loader.load();
     }
 
     private void initialiseExplorers() throws IOException {
@@ -602,7 +653,7 @@ public class AppController {
         FXMLLoader loader = new FXMLLoader(ResourceManager.getExplorerFXML());
         Node explorer = loader.load();
         HBox.setHgrow(explorer, Priority.ALWAYS);
-        hboExplorer.getChildren().add(explorer);
+        hbxExplorer.getChildren().add(explorer);
         postEvent(new InitialiseExplorerEvent(model, isLeft));
     }
 
@@ -625,6 +676,15 @@ public class AppController {
     private void advancedRename(ActionEvent event) {
         try {
             checkNullAndPostEvent(new SimpleRenameEvent(selectedItemList.get(0).getFile()));
+        } catch (Exception e) {
+            showError(e, "Could not perform advanced rename", false);
+        }
+    }
+
+    @FXML
+    private void editAsText(ActionEvent event) {
+        try {
+            checkNullAndPostEvent(new EditAsTextEvent(selectedItemList.get(0).getFile()));
         } catch (Exception e) {
             showError(e, "Could not perform advanced rename", false);
         }

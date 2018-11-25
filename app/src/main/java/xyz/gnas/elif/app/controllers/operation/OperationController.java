@@ -1,4 +1,4 @@
-package xyz.gnas.elif.app.controllers.Operation;
+package xyz.gnas.elif.app.controllers.operation;
 
 import de.jensd.fx.glyphs.materialicons.MaterialIconView;
 import javafx.event.ActionEvent;
@@ -10,11 +10,11 @@ import javafx.scene.layout.HBox;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import xyz.gnas.elif.app.common.Configurations;
-import xyz.gnas.elif.app.common.Utility;
+import xyz.gnas.elif.app.common.utility.DialogUtility;
 import xyz.gnas.elif.app.events.operation.InitialiseOperationEvent;
 import xyz.gnas.elif.core.models.Operation;
 
-import static xyz.gnas.elif.app.common.Utility.showConfirmation;
+import static xyz.gnas.elif.app.common.utility.DialogUtility.showConfirmation;
 
 public class OperationController {
     @FXML
@@ -27,7 +27,7 @@ public class OperationController {
     private Label lblStatus;
 
     @FXML
-    private HBox hboActions;
+    private HBox hbxActions;
 
     @FXML
     private ProgressIndicator pgiProgress;
@@ -38,11 +38,11 @@ public class OperationController {
     private Operation operation;
 
     private void showError(Exception e, String message) {
-        Utility.showError(getClass(), e, message, false);
+        DialogUtility.showError(getClass(), e, message, false);
     }
 
     private void writeInfoLog(String log) {
-        Utility.writeInfoLog(getClass(), log);
+        DialogUtility.writeInfoLog(getClass(), log);
     }
 
     @Subscribe
@@ -51,8 +51,8 @@ public class OperationController {
             if (operation == null) {
                 operation = event.getOperation();
                 lblName.setText(operation.getName());
-                hboActions.disableProperty().bind(operation.stoppedProperty());
-                hboActions.disableProperty().bind(operation.completeProperty());
+                hbxActions.disableProperty().bind(operation.stoppedProperty());
+                hbxActions.disableProperty().bind(operation.completeProperty());
                 addSuboperationNameListener(operation);
                 addPercentageDoneListner(operation);
                 addPauseListener(operation);

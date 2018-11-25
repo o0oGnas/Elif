@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import xyz.gnas.elif.app.common.Configurations;
-import xyz.gnas.elif.app.common.Utility;
+import xyz.gnas.elif.app.common.utility.DialogUtility;
 import xyz.gnas.elif.app.events.explorer.ChangePathEvent;
 import xyz.gnas.elif.app.models.explorer.ExplorerModel;
 
@@ -51,7 +51,7 @@ public class Setting {
                 }
             }
         } catch (Exception e) {
-            Utility.showError(Setting.class, e, "Error getting setting", false);
+            DialogUtility.showError(Setting.class, e, "Error getting setting", false);
             initialiseDefaultSetting();
         }
 
@@ -72,7 +72,7 @@ public class Setting {
     @Subscribe
     public void onChangePathEvent(ChangePathEvent event) {
         try {
-            Utility.writeInfoLog(getClass(), "Saving settings to file");
+            DialogUtility.writeInfoLog(getClass(), "Saving settings to file");
             File file = new File(Configurations.SETTING_FILE);
             ObjectMapper mapper = new ObjectMapper();
             mapper.enable(SerializationFeature.INDENT_OUTPUT);
@@ -80,7 +80,7 @@ public class Setting {
             prettyPrinter.indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE);
             mapper.writeValue(file, this);
         } catch (Exception e) {
-            Utility.showError(getClass(), e, "Error saving paths to file", false);
+            DialogUtility.showError(getClass(), e, "Error saving paths to file", false);
         }
     }
 }

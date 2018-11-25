@@ -3,6 +3,7 @@
 <?import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView?>
 <?import de.jensd.fx.glyphs.materialdesignicons.MaterialDesignIconView?>
 <?import de.jensd.fx.glyphs.materialicons.MaterialIconView?>
+<?import de.jensd.fx.glyphs.octicons.OctIconView?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
@@ -17,11 +18,11 @@
 <?import javafx.scene.layout.VBox?>
 <AnchorPane fx:id="acpMain" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308"
             xmlns="http://javafx.com/javafx/10.0.1" xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="xyz.gnas.elif.app.controllers.Explorer.ExplorerController">
+            fx:controller="xyz.gnas.elif.app.controllers.explorer.ExplorerController">
     <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
           AnchorPane.topAnchor="0.0">
         <HBox alignment="CENTER_LEFT">
-            <ComboBox fx:id="cboDrive" prefWidth="170.0"/>
+            <ComboBox fx:id="cbbDrive" prefWidth="170.0"/>
             <Label fx:id="lblFolderPath">
                 <HBox.margin>
                     <Insets left="10.0"/>
@@ -38,8 +39,7 @@
                     <MaterialIconView glyphName="ARROW_BACK" size="16"/>
                 </graphic>
             </Button>
-            <Button fx:id="btnRoot" mnemonicParsing="false" onAction="#goToRoot" prefWidth="90.0"
-                    text="Root">
+            <Button fx:id="btnRoot" mnemonicParsing="false" onAction="#goToRoot" prefWidth="90.0" text="Root">
                 <graphic>
                     <MaterialIconView glyphName="HOME" size="16"/>
                 </graphic>
@@ -56,14 +56,12 @@
                 </HBox.margin>
             </Button>
             <HBox alignment="CENTER_RIGHT" HBox.hgrow="ALWAYS">
-                <Button mnemonicParsing="false" onAction="#scrollToTop" prefWidth="150.0"
-                        text="Scroll to top">
+                <Button mnemonicParsing="false" onAction="#scrollToTop" prefWidth="150.0" text="Scroll to top">
                     <graphic>
                         <MaterialIconView glyphName="KEYBOARD_ARROW_UP" size="16"/>
                     </graphic>
                 </Button>
-                <Button mnemonicParsing="false" onAction="#scrollToBottom" prefWidth="150.0"
-                        text="Scroll to bottom">
+                <Button mnemonicParsing="false" onAction="#scrollToBottom" prefWidth="150.0" text="Scroll to bottom">
                     <graphic>
                         <MaterialIconView glyphName="KEYBOARD_ARROW_DOWN" size="16"/>
                     </graphic>
@@ -74,7 +72,7 @@
             </HBox>
         </HBox>
         <TableView fx:id="tbvTable" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308"
-                   onKeyPressed="#tableKeyReleased" VBox.vgrow="ALWAYS">
+                   onKeyReleased="#tableKeyReleased" VBox.vgrow="ALWAYS">
             <placeholder>
                 <Label/>
             </placeholder>
@@ -88,11 +86,10 @@
                         </Label>
                     </graphic>
                 </TableColumn>
-                <TableColumn fx:id="tbcExtension" maxWidth="90.0" minWidth="90.0" prefWidth="90.0"
-                             sortable="false" styleClass="center-right-align">
+                <TableColumn fx:id="tbcExtension" maxWidth="90.0" minWidth="90.0" prefWidth="90.0" sortable="false"
+                             styleClass="center-right-align">
                     <graphic>
-                        <Label fx:id="lblExtension" contentDisplay="RIGHT" onMouseClicked="#sort"
-                               text="Extension">
+                        <Label fx:id="lblExtension" contentDisplay="RIGHT" onMouseClicked="#sort" text="Extension">
                             <graphic>
                                 <MaterialIconView fx:id="mivExtension" glyphName="KEYBOARD_ARROW_UP" size="16"
                                                   visible="false"/>
@@ -100,11 +97,10 @@
                         </Label>
                     </graphic>
                 </TableColumn>
-                <TableColumn fx:id="tbcSize" editable="false" maxWidth="120.0" minWidth="120.0"
-                             prefWidth="120.0" sortable="false" styleClass="center-right-align">
+                <TableColumn fx:id="tbcSize" editable="false" maxWidth="120.0" minWidth="120.0" prefWidth="120.0"
+                             sortable="false" styleClass="center-right-align">
                     <graphic>
-                        <Label fx:id="lblSize" contentDisplay="RIGHT" onMouseClicked="#sort"
-                               text="Size (bytes)">
+                        <Label fx:id="lblSize" contentDisplay="RIGHT" onMouseClicked="#sort" text="Size (bytes)">
                             <graphic>
                                 <MaterialIconView fx:id="mivSize" glyphName="KEYBOARD_ARROW_UP" size="16"
                                                   visible="false"/>
@@ -112,11 +108,10 @@
                         </Label>
                     </graphic>
                 </TableColumn>
-                <TableColumn fx:id="tbcDate" editable="false" maxWidth="150.0" minWidth="150.0"
-                             prefWidth="150.0" sortable="false" styleClass="center-right-align">
+                <TableColumn fx:id="tbcDate" editable="false" maxWidth="150.0" minWidth="150.0" prefWidth="150.0"
+                             sortable="false" styleClass="center-right-align">
                     <graphic>
-                        <Label fx:id="lblDate" contentDisplay="RIGHT" onMouseClicked="#sort"
-                               text="Last modified date">
+                        <Label fx:id="lblDate" contentDisplay="RIGHT" onMouseClicked="#sort" text="Last modified date">
                             <graphic>
                                 <MaterialIconView fx:id="mivDate" glyphName="KEYBOARD_ARROW_UP" size="16"
                                                   visible="false"/>
@@ -193,9 +188,9 @@
                             </content>
                         </CustomMenuItem>
                         <SeparatorMenuItem fx:id="smiDelete" hideOnClick="true"/>
-                        <CustomMenuItem onAction="#simpleRename">
+                        <CustomMenuItem fx:id="cmiSimpleRename" onAction="#simpleRename">
                             <content>
-                                <Label fx:id="lblRename" text="Rename (simple)">
+                                <Label fx:id="lblSimpleRename" text="Rename (simple)">
                                     <graphic>
                                         <MaterialIconView glyphName="EDIT" size="16"/>
                                     </graphic>
@@ -204,7 +199,7 @@
                         </CustomMenuItem>
                         <CustomMenuItem onAction="#advancedRename">
                             <content>
-                                <Label fx:id="lblRename1" text="Rename (advanced)">
+                                <Label fx:id="lblAdvancedRename" text="Rename (advanced)">
                                     <graphic>
                                         <FontAwesomeIconView glyphName="EDIT" size="16"/>
                                     </graphic>
@@ -212,6 +207,16 @@
                             </content>
                         </CustomMenuItem>
                         <SeparatorMenuItem hideOnClick="true"/>
+                        <CustomMenuItem fx:id="cmiEditAsText" onAction="#editAsText">
+                            <content>
+                                <Label fx:id="lblEditAsText" text="Edit as text">
+                                    <graphic>
+                                        <OctIconView glyphName="FILE" size="16"/>
+                                    </graphic>
+                                </Label>
+                            </content>
+                        </CustomMenuItem>
+                        <SeparatorMenuItem fx:id="smiEditAsText" hideOnClick="true"/>
                         <CustomMenuItem onAction="#addNewFolder">
                             <content>
                                 <Label fx:id="lblNewFolder" text="New folder">

@@ -27,7 +27,7 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <mainClass>xyz.gnas.elif.app.Main</mainClass>
+                    <mainClass>xyz.gnas.elif.app.main.Main</mainClass>
                 </configuration>
             </plugin>
 
@@ -39,7 +39,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>xyz.gnas.elif.app.Main</mainClass>
+                            <mainClass>xyz.gnas.elif.app.main.Main</mainClass>
                         </manifest>
                     </archive>
                 </configuration>

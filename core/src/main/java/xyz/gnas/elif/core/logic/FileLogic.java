@@ -4,9 +4,13 @@ import javafx.beans.property.DoubleProperty;
 import xyz.gnas.elif.core.models.Operation;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.channels.FileChannel;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 
@@ -25,7 +29,7 @@ public class FileLogic {
      */
     public static void copy(File source, File target, Operation operation, DoubleProperty progress)
             throws IOException, InterruptedException {
-        try (FileChannel inputChannel = new FileOutputStream(source).getChannel()) {
+        try (FileChannel inputChannel = new FileInputStream(source).getChannel()) {
             performCopy(inputChannel, target, operation, progress);
             completeProgress(progress);
         }
@@ -124,6 +128,31 @@ public class FileLogic {
         File folder = getNewFileOrFolder(parent, false);
         folder.mkdir();
         return folder;
+    }
+
+    /**
+     * Read file as text string.
+     *
+     * @param file the file to read
+     * @return the content of the file as a String
+     * @throws IOException the io exception
+     */
+    public static String readFileAsText(File file) throws IOException {
+        byte[] encoded = Files.readAllBytes(file.toPath());
+        return new String(encoded, Charset.defaultCharset());
+    }
+
+    /**
+     * Save text as file content
+     *
+     * @param file the file
+     * @param text the text content
+     * @throws FileNotFoundException the file not found exception
+     */
+    public static void saveTextToFile(File file, String text) throws FileNotFoundException {
+        try (PrintStream ps = new PrintStream(new FileOutputStream(file))) {
+            ps.print(text);
+        }
     }
 
     private static File getNewFileOrFolder(String parent, boolean isFile) {
