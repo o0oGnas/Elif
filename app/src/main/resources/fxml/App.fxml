@@ -11,92 +11,80 @@
 <?import javafx.scene.layout.VBox?>
 <AnchorPane xmlns="http://javafx.com/javafx/10.0.1" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="xyz.gnas.elif.app.controllers.AppController">
-    <children>
-        <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
-              AnchorPane.topAnchor="0.0">
-            <children>
-                <HBox fx:id="hboExplorer" VBox.vgrow="ALWAYS"/>
-                <ScrollPane fx:id="scpOperation" maxHeight="100.0" visible="false">
-                    <content>
-                        <VBox fx:id="vboOperations"/>
-                    </content>
-                </ScrollPane>
-                <HBox>
-                    <children>
-                        <HBox fx:id="hboRenameEditCopyMove" disable="true">
-                            <children>
-                                <Button mnemonicParsing="false" onAction="#simpleRename" prefWidth="180.0"
-                                        text="F2 - Simple rename">
-                                    <graphic>
-                                        <MaterialIconView glyphName="EDIT" size="16"/>
-                                    </graphic>
-                                </Button>
-                                <Button mnemonicParsing="false" onAction="#advancedRename" prefWidth="180.0"
-                                        text="F3 - Advanced rename">
-                                    <graphic>
-                                        <FontAwesomeIconView glyphName="EDIT" size="16"/>
-                                    </graphic>
-                                    <HBox.margin>
-                                        <Insets left="10.0"/>
-                                    </HBox.margin>
-                                </Button>
-                                <Button mnemonicParsing="false" prefWidth="180.0" text="F4 - Edit as text">
-                                    <HBox.margin>
-                                        <Insets left="10.0"/>
-                                    </HBox.margin>
-                                    <graphic>
-                                        <OctIconView glyphName="FILE" size="16"/>
-                                    </graphic>
-                                </Button>
-                                <Button mnemonicParsing="false" onAction="#copy" prefWidth="180.0" text="F5 - Copy">
-                                    <graphic>
-                                        <FontAwesomeIconView glyphName="COPY" size="16"/>
-                                    </graphic>
-                                    <HBox.margin>
-                                        <Insets left="10.0"/>
-                                    </HBox.margin>
-                                </Button>
-                                <Button mnemonicParsing="false" onAction="#move" prefWidth="180.0" text="F6 - Move">
-                                    <HBox.margin>
-                                        <Insets left="10.0"/>
-                                    </HBox.margin>
-                                    <graphic>
-                                        <MaterialIconView glyphName="COMPARE_ARROWS" size="16"/>
-                                    </graphic>
-                                </Button>
-                            </children>
-                        </HBox>
-                        <HBox fx:id="hboNewFolderFile" disable="true">
-                            <children>
-                                <Button mnemonicParsing="false" onAction="#addNewFolder" prefWidth="180.0"
-                                        text="F7 - New folder">
-                                    <HBox.margin>
-                                        <Insets left="10.0"/>
-                                    </HBox.margin>
-                                    <graphic>
-                                        <MaterialIconView glyphName="CREATE_NEW_FOLDER" size="16"/>
-                                    </graphic>
-                                </Button>
-                                <Button mnemonicParsing="false" onAction="#addNewFile" prefWidth="180.0"
-                                        text="F8 - New file">
-                                    <HBox.margin>
-                                        <Insets left="10.0"/>
-                                    </HBox.margin>
-                                    <graphic>
-                                        <MaterialIconView glyphName="DELETE_FOREVER" size="16"/>
-                                    </graphic>
-                                </Button>
-                            </children>
-                        </HBox>
-                    </children>
-                    <VBox.margin>
-                        <Insets top="10.0"/>
-                    </VBox.margin>
-                </HBox>
-            </children>
-        </VBox>
-    </children>
     <padding>
         <Insets bottom="10.0" left="10.0" right="10.0" top="10.0"/>
     </padding>
+    <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
+          AnchorPane.topAnchor="0.0">
+        <HBox fx:id="hboExplorer" VBox.vgrow="ALWAYS"/>
+        <ScrollPane fx:id="scpOperation" maxHeight="100.0" visible="false">
+            <VBox fx:id="vboOperations"/>
+        </ScrollPane>
+        <HBox>
+            <VBox.margin>
+                <Insets top="10.0"/>
+            </VBox.margin>
+            <HBox fx:id="hboRenameEditCopyMove" disable="true">
+                <Button mnemonicParsing="false" onAction="#simpleRename" prefWidth="180.0"
+                        text="F2 - Simple rename">
+                    <graphic>
+                        <MaterialIconView glyphName="EDIT" size="16"/>
+                    </graphic>
+                </Button>
+                <Button mnemonicParsing="false" onAction="#advancedRename" prefWidth="180.0"
+                        text="F3 - Advanced rename">
+                    <graphic>
+                        <FontAwesomeIconView glyphName="EDIT" size="16"/>
+                    </graphic>
+                    <HBox.margin>
+                        <Insets left="10.0"/>
+                    </HBox.margin>
+                </Button>
+                <Button mnemonicParsing="false" prefWidth="180.0" text="F4 - Edit as text">
+                    <HBox.margin>
+                        <Insets left="10.0"/>
+                    </HBox.margin>
+                    <graphic>
+                        <OctIconView glyphName="FILE" size="16"/>
+                    </graphic>
+                </Button>
+                <Button mnemonicParsing="false" onAction="#copy" prefWidth="180.0" text="F5 - Copy">
+                    <graphic>
+                        <FontAwesomeIconView glyphName="COPY" size="16"/>
+                    </graphic>
+                    <HBox.margin>
+                        <Insets left="10.0"/>
+                    </HBox.margin>
+                </Button>
+                <Button mnemonicParsing="false" onAction="#move" prefWidth="180.0" text="F6 - Move">
+                    <HBox.margin>
+                        <Insets left="10.0"/>
+                    </HBox.margin>
+                    <graphic>
+                        <MaterialIconView glyphName="COMPARE_ARROWS" size="16"/>
+                    </graphic>
+                </Button>
+            </HBox>
+            <HBox fx:id="hboNewFolderFile" disable="true">
+                <Button mnemonicParsing="false" onAction="#addNewFolder" prefWidth="180.0"
+                        text="F7 - New folder">
+                    <HBox.margin>
+                        <Insets left="10.0"/>
+                    </HBox.margin>
+                    <graphic>
+                        <MaterialIconView glyphName="CREATE_NEW_FOLDER" size="16"/>
+                    </graphic>
+                </Button>
+                <Button mnemonicParsing="false" onAction="#addNewFile" prefWidth="180.0"
+                        text="F8 - New file">
+                    <HBox.margin>
+                        <Insets left="10.0"/>
+                    </HBox.margin>
+                    <graphic>
+                        <MaterialIconView glyphName="DELETE_FOREVER" size="16"/>
+                    </graphic>
+                </Button>
+            </HBox>
+        </HBox>
+    </VBox>
 </AnchorPane>

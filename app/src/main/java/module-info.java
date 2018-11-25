@@ -19,6 +19,5 @@ module xyz.gnas.elif.app {
     requires org.apache.commons.io;
 
     requires org.slf4j;
-    requires ch.qos.logback.core;
     requires eventbus;
 }

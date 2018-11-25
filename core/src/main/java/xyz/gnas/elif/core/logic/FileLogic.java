@@ -4,12 +4,13 @@ import javafx.beans.property.DoubleProperty;
 import xyz.gnas.elif.core.models.Operation;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+
+import static java.lang.Thread.sleep;
 
 public class FileLogic {
     /**
@@ -22,28 +23,33 @@ public class FileLogic {
      *                  the method finishes
      * @throws IOException the io exception
      */
-    public static void copy(File source, File target, Operation operation, DoubleProperty progress) throws IOException, InterruptedException {
-        try (FileChannel inputChannel = new FileInputStream(source).getChannel()) {
-            long sourceSize = inputChannel.size();
+    public static void copy(File source, File target, Operation operation, DoubleProperty progress)
+            throws IOException, InterruptedException {
+        try (FileChannel inputChannel = new FileOutputStream(source).getChannel()) {
+            performCopy(inputChannel, target, operation, progress);
+            completeProgress(progress);
+        }
+    }
 
-            try (FileChannel outputChannel = new FileOutputStream(target).getChannel()) {
-                long stepSize = 1024 * 1024;
+    private static void performCopy(FileChannel inputChannel, File target, Operation operation,
+                                    DoubleProperty progress) throws IOException, InterruptedException {
+        long sourceSize = inputChannel.size();
 
-                for (long i = 0; i < sourceSize; i = i + stepSize) {
-                    while (operation.isPaused()) {
-                        Thread.sleep(500);
-                    }
+        try (FileChannel outputChannel = new FileOutputStream(target).getChannel()) {
+            long stepSize = 1024 * 1024;
 
-                    if (operation.isStopped()) {
-                        completeProgress(progress);
-                        break;
-                    } else {
-                        copyChunk(i, stepSize, sourceSize, inputChannel, outputChannel, progress);
-                    }
+            for (long i = 0; i < sourceSize; i = i + stepSize) {
+                while (operation.isPaused()) {
+                    sleep(500);
+                }
+
+                if (operation.isStopped()) {
+                    completeProgress(progress);
+                    break;
+                } else {
+                    copyChunk(i, stepSize, sourceSize, inputChannel, outputChannel, progress);
                 }
             }
-
-            completeProgress(progress);
         }
     }
 
@@ -64,7 +70,8 @@ public class FileLogic {
         progress.set(i * 1.0 / sourceSize);
     }
 
-    public static void move(File source, File target, Operation operation, DoubleProperty progress) throws IOException, InterruptedException {
+    public static void move(File source, File target, Operation operation, DoubleProperty progress)
+            throws IOException, InterruptedException {
         String sourceRoot = getRootPath(source);
         String targetRoot = getRootPath(target);
 
@@ -78,7 +85,7 @@ public class FileLogic {
 
             // delete source after copying
             if (!operation.isStopped()) {
-                source.delete();
+                delete(source);
             }
         }
     }
@@ -88,14 +95,31 @@ public class FileLogic {
         return path.substring(0, path.indexOf("\\") + 1);
     }
 
-    public static void delete(File file) {
+    /**
+     * Delete a file
+     *
+     * @param file the file
+     */
+    public static void delete(File file) throws IOException {
         file.delete();
     }
 
-    public static void rename(File source, File target) {
+    /**
+     * Rename a file
+     *
+     * @param source the file to rename
+     * @param target the file object representing result of renaming
+     */
+    public static void rename(File source, File target) throws IOException {
         source.renameTo(target);
     }
 
+    /**
+     * create a new folder
+     *
+     * @param parent the parent path of the folder
+     * @return the file object representing the new folder
+     */
     public static File addNewFolder(String parent) {
         File folder = getNewFileOrFolder(parent, false);
         folder.mkdir();
@@ -117,6 +141,13 @@ public class FileLogic {
         return fileOrFolder;
     }
 
+    /**
+     * create a new file
+     *
+     * @param parent the parent path of the file
+     * @return the file object representing the new file
+     * @throws IOException the io exception
+     */
     public static File addNewFile(String parent) throws IOException {
         File file = getNewFileOrFolder(parent, true);
         file.createNewFile();

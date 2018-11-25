@@ -20,7 +20,6 @@ import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import xyz.gnas.elif.app.common.ResourceManager;
 import xyz.gnas.elif.app.common.Utility;
-import xyz.gnas.elif.app.events.ExitEvent;
 import xyz.gnas.elif.app.events.dialog.SimpleRenameEvent;
 import xyz.gnas.elif.app.events.explorer.ChangeItemSelectionEvent;
 import xyz.gnas.elif.app.events.explorer.FocusExplorerEvent;
@@ -34,6 +33,7 @@ import xyz.gnas.elif.app.events.operation.DeleteEvent;
 import xyz.gnas.elif.app.events.operation.InitialiseOperationEvent;
 import xyz.gnas.elif.app.events.operation.MoveEvent;
 import xyz.gnas.elif.app.events.operation.PasteEvent;
+import xyz.gnas.elif.app.events.window.ExitEvent;
 import xyz.gnas.elif.app.models.Setting;
 import xyz.gnas.elif.app.models.explorer.ExplorerItemModel;
 import xyz.gnas.elif.app.models.explorer.ExplorerModel;
@@ -93,6 +93,10 @@ public class AppController {
 
     private void showError(Exception e, String message, boolean exit) {
         Utility.showError(getClass(), e, message, exit);
+    }
+
+    private void writeErrorLog(String message, Throwable e) {
+        Utility.writeErrorLog(getClass(), message, e);
     }
 
     private void writeInfoLog(String log) {
@@ -202,7 +206,7 @@ public class AppController {
                 !container.model.getFolder().getAbsolutePath().equalsIgnoreCase(container.targetPath);
 
         // Ask for choice if mode is copy and paths are different, for other modes always ask
-        if (((checkDifferentPath && container.mode == CopyMode.COPY) || container.mode != CopyMode.COPY) && container.hasDuplicate) {
+        if ((checkDifferentPath || container.mode != CopyMode.COPY) && container.hasDuplicate) {
             confirmResult = Utility.showOptions("There are files in the target folder with the same name", replace,
                     skip, duplicate, cancel);
         }
@@ -358,10 +362,7 @@ public class AppController {
                 try {
                     moveOrCopy(container, source, progress);
                 } catch (Exception e) {
-                    error.set(true);
-
-                    showError(e,
-                            "Error when copying " + source.getFile().getAbsolutePath() + " to " + target.getAbsolutePath(), false);
+                    handleCopyError(container, error, progress, source, target, e);
                 }
 
                 return 1;
@@ -371,7 +372,8 @@ public class AppController {
         monitorFileProgress(container, progress, error, source, target);
     }
 
-    private void moveOrCopy(CopyParameterContainer container, ExplorerItemModel source, DoubleProperty progress) throws IOException, InterruptedException {
+    private void moveOrCopy(CopyParameterContainer container, ExplorerItemModel source, DoubleProperty progress)
+            throws IOException, InterruptedException {
         File sourceFile = source.getFile();
 
         if (container.mode == CopyMode.MOVE) {
@@ -381,6 +383,29 @@ public class AppController {
         }
     }
 
+    private void handleCopyError(CopyParameterContainer container, BooleanProperty error, DoubleProperty progress,
+                                 ExplorerItemModel source,
+                                 File target, Exception e) {
+        error.set(true);
+        String sourcePath = source.getFile().getAbsolutePath();
+        writeErrorLog("Error when copying file", e);
+
+        runLater(() -> {
+            try {
+                // ask for confirmation to continue when there is an error
+                if (showConfirmation("Error when copying " + sourcePath + " to " + target.getAbsolutePath() + " - " + e.getMessage() +
+                        ". Do you want to " + "continue?")) {
+                    // considered the file with the error finished
+                    progress.set(1);
+                } else {
+                    container.operation.setStopped(true);
+                }
+            } catch (Exception ex) {
+                showError(e, "Error when handling copy error", false);
+            }
+        });
+    }
+
     private void monitorFileProgress(CopyParameterContainer container, DoubleProperty progress, BooleanProperty error
             , ExplorerItemModel source, File target) throws InterruptedException {
         double currentPercentageDone = container.operation.getPercentageDone();
@@ -388,7 +413,7 @@ public class AppController {
         // calculate the amount of contribution this file has to the total size of the operation
         double contribution = source.getSize() / container.totalSize;
 
-        while (progress.get() < 1) {
+        while (progress.get() < 1 && !container.operation.isStopped()) {
             setPercentageDone(container, currentPercentageDone + contribution * progress.get());
             sleep(THREAD_SLEEP_TIME);
         }
@@ -412,7 +437,7 @@ public class AppController {
 
         runLater(() -> {
             try {
-                // reload source folder if operation is move
+                // reload source folder if operation is move and there was no error
                 if (container.mode == CopyMode.MOVE && !container.operation.isStopped() && !error.get()) {
                     postEvent(new ReloadEvent(container.model.getFolder().getAbsolutePath()));
                 }
@@ -482,10 +507,20 @@ public class AppController {
             final List<ExplorerItemModel> sourceList = event.getSourceList();
 
             if (showConfirmation("Are you sure you want to delete selected files/folders (" + sourceList.size() + ")" + "?")) {
-                writeInfoLog("Deleting files");
-
                 for (ExplorerItemModel item : sourceList) {
-                    FileLogic.delete(item.getFile());
+                    writeInfoLog("Deleting file " + item.getFile().getAbsolutePath());
+
+                    try {
+                        FileLogic.delete(item.getFile());
+                    } catch (Exception e) {
+                        writeErrorLog("Error when deleting file", e);
+
+                        // ask for confirmation to continue when there is an error
+                        if (!showConfirmation("Error when deleting " + item.getFile().getAbsolutePath() + " - " + e.getMessage() + ". Do " +
+                                "you want to continue?")) {
+                            break;
+                        }
+                    }
                 }
 
                 postEvent(new ReloadEvent(event.getSourceModel().getFolder().getAbsolutePath()));
@@ -498,9 +533,9 @@ public class AppController {
     @Subscribe
     public void onRenameEvent(SimpleRenameEvent event) {
         try {
-            showCustomDialog("Single rename", singleRenameDialog, ResourceManager.getRenameSingleIcon());
+            showCustomDialog("Simple rename", singleRenameDialog, ResourceManager.getRenameSingleIcon());
         } catch (Exception e) {
-            showError(e, "Error handling single rename event", false);
+            showError(e, "Error handling simple rename event", false);
         }
     }
 
@@ -546,7 +581,7 @@ public class AppController {
             });
 
             initialiseExplorers();
-            FXMLLoader loader = new FXMLLoader(ResourceManager.getSingleRenameFXML());
+            FXMLLoader loader = new FXMLLoader(ResourceManager.getSimpleRenameFXML());
             singleRenameDialog = loader.load();
         } catch (Exception e) {
             showError(e, "Could not initialise app", true);

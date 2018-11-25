@@ -55,8 +55,6 @@ public class Setting {
             initialiseDefaultSetting();
         }
 
-        ExplorerModel leftModel = instance.leftModel;
-        ExplorerModel rightModel = instance.rightModel;
         return instance;
     }
 
@@ -71,18 +69,10 @@ public class Setting {
         subscribeInstance();
     }
 
-    private void showError(Exception e, String message, boolean exit) {
-        Utility.showError(getClass(), e, message, exit);
-    }
-
-    private void writeInfoLog(String log) {
-        Utility.writeInfoLog(getClass(), log);
-    }
-
     @Subscribe
     public void onChangePathEvent(ChangePathEvent event) {
         try {
-            writeInfoLog("Saving settings to file");
+            Utility.writeInfoLog(getClass(), "Saving settings to file");
             File file = new File(Configurations.SETTING_FILE);
             ObjectMapper mapper = new ObjectMapper();
             mapper.enable(SerializationFeature.INDENT_OUTPUT);
@@ -90,7 +80,7 @@ public class Setting {
             prettyPrinter.indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE);
             mapper.writeValue(file, this);
         } catch (Exception e) {
-            showError(e, "Error saving paths to file", false);
+            Utility.showError(getClass(), e, "Error saving paths to file", false);
         }
     }
 }

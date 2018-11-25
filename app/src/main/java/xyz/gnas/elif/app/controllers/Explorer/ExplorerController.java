@@ -52,6 +52,7 @@ import xyz.gnas.elif.app.events.operation.CopyToOtherEvent;
 import xyz.gnas.elif.app.events.operation.DeleteEvent;
 import xyz.gnas.elif.app.events.operation.MoveEvent;
 import xyz.gnas.elif.app.events.operation.PasteEvent;
+import xyz.gnas.elif.app.events.window.WindowFocusedEvent;
 import xyz.gnas.elif.app.models.explorer.ExplorerItemModel;
 import xyz.gnas.elif.app.models.explorer.ExplorerModel;
 import xyz.gnas.elif.core.logic.ClipboardLogic;
@@ -63,6 +64,7 @@ import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class ExplorerController {
@@ -180,6 +182,15 @@ public class ExplorerController {
     private List<ExplorerItemModel> selectedFileList = new ArrayList<>();
 
     @Subscribe
+    public void onWindowFocusedEvent(WindowFocusedEvent event) {
+        try {
+            updateItemList();
+        } catch (Exception e) {
+            showError(e, "Error updating list", false);
+        }
+    }
+
+    @Subscribe
     public void onInitialiseExplorerEvent(InitialiseExplorerEvent event) {
         try {
             if (model == null) {
@@ -197,12 +208,7 @@ public class ExplorerController {
     private void loadDrives() {
         ObservableList<File> driveList = cboDrive.getItems();
         driveList.clear();
-
-        // for each pathname in pathname array
-        for (File root : File.listRoots()) {
-            driveList.add(root);
-        }
-
+        Collections.addAll(driveList, File.listRoots());
         selectInitialDrive();
 
         // add listener to drive combo box after initialising
@@ -402,11 +408,11 @@ public class ExplorerController {
         Label lbl = new Label(FileSystemView.getFileSystemView().getSystemDisplayName(item));
         lbl.setTextFill(Color.BLACK);
         HBox hbo = new HBox(imv, lbl);
-        hbo.setMargin(lbl, new Insets(0, 0, 0, 10));
+        HBox.setMargin(lbl, new Insets(0, 0, 0, 10));
 
         // make the icon vertically center
-        hbo.setMargin(imv, new Insets(0, 0, 5, 0));
-        hbo.setHgrow(lbl, Priority.ALWAYS);
+        HBox.setMargin(imv, new Insets(0, 0, 5, 0));
+        HBox.setHgrow(lbl, Priority.ALWAYS);
         hbo.setAlignment(Pos.CENTER_LEFT);
         hbo.setPadding(new Insets(5, 5, 5, 5));
         return hbo;
@@ -590,7 +596,7 @@ public class ExplorerController {
 
     private void setDoubleClickHandler() {
         tbvTable.setRowFactory(f -> {
-            TableRow<ExplorerItemModel> row = new TableRow<ExplorerItemModel>();
+            TableRow<ExplorerItemModel> row = new TableRow<>();
 
             row.setOnMouseClicked(event -> {
                 try {

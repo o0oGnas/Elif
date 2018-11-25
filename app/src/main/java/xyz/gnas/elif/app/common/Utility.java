@@ -21,6 +21,7 @@ import javax.swing.filechooser.FileSystemView;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.HashMap;
@@ -48,20 +49,11 @@ public final class Utility {
     public static void showError(Class callingClass, Throwable e, String message, boolean exit) {
         runLater(() -> {
             try {
-                // Get stack trace as string
-                StringWriter sw = new StringWriter();
-                PrintWriter pw = new PrintWriter(sw);
-                e.printStackTrace(pw);
-                String stackTrace = sw.toString();
-
+                String stackTrace = getStrackTrace(e);
                 GridPane expContent = getExpandableContent(stackTrace);
-
                 Alert alert = new Alert(AlertType.ERROR);
-                alert.setTitle("Error");
-                alert.setHeaderText("An error has occurred!");
-                alert.setContentText(message + ". See details below");
+                initialiseAlert(alert, "Error", "An error has occurred!", message + ". See details below");
                 alert.getDialogPane().setExpandableContent(expContent);
-
                 writeErrorLog(callingClass, message, e);
             } catch (Exception ex) {
                 writeErrorLog(Utility.class, "Could not display error", ex);
@@ -73,16 +65,29 @@ public final class Utility {
         });
     }
 
+    private static String getStrackTrace(Throwable e) throws IOException {
+        try (StringWriter sw = new StringWriter()) {
+            try (PrintWriter pw = new PrintWriter(sw)) {
+                e.printStackTrace(pw);
+                return sw.toString();
+            }
+        }
+    }
+
+    private static void initialiseAlert(Alert alert, String title, String headerText, String contentText) {
+        alert.setTitle(title);
+        alert.setHeaderText(headerText);
+        alert.setContentText(contentText);
+    }
+
     private static GridPane getExpandableContent(String sStackTrace) {
         TextArea textArea = new TextArea(sStackTrace);
         textArea.setEditable(false);
         textArea.setWrapText(true);
-
         textArea.setMaxWidth(Double.MAX_VALUE);
         textArea.setMaxHeight(Double.MAX_VALUE);
         GridPane.setVgrow(textArea, Priority.ALWAYS);
         GridPane.setHgrow(textArea, Priority.ALWAYS);
-
         GridPane expContent = new GridPane();
         expContent.setMaxWidth(Double.MAX_VALUE);
         expContent.add(textArea, 0, 0);
@@ -111,9 +116,7 @@ public final class Utility {
         runLater(() -> {
             try {
                 Alert alert = new Alert(AlertType.NONE);
-                alert.setTitle("Message");
-                alert.setHeaderText(headerText);
-                alert.setContentText(message);
+                initialiseAlert(alert, "Message", headerText, message);
                 alert.getDialogPane().getButtonTypes().add(ButtonType.OK);
                 alert.showAndWait();
             } catch (Exception e) {
@@ -160,18 +163,14 @@ public final class Utility {
 
     public static boolean showConfirmation(String message) {
         Alert alert = new Alert(AlertType.CONFIRMATION);
-        alert.setTitle("Confirmation");
-        alert.setHeaderText("Please confirm this action");
-        alert.setContentText(message);
+        initialiseAlert(alert, "Confirmation", "Please confirm this action", message);
         Optional<ButtonType> result = alert.showAndWait();
         return result.isPresent() && result.get() == ButtonType.OK;
     }
 
     public static String showOptions(String message, String... options) {
         Alert alert = new Alert(AlertType.CONFIRMATION);
-        alert.setTitle("Option selection required");
-        alert.setHeaderText(message);
-        alert.setContentText("Please select an option below");
+        initialiseAlert(alert, "Option selection required", message, "Please select an option below");
         alert.getButtonTypes().clear();
 
         for (String option : options) {
@@ -181,10 +180,19 @@ public final class Utility {
 
         addCloseButton(alert.getDialogPane());
         Optional<ButtonType> result = alert.showAndWait();
-        ButtonType selectedOption = result.get();
+        return getOptionResult(result);
+    }
 
-        if (result.isPresent() && selectedOption != ButtonType.CLOSE) {
-            return selectedOption.getText();
+
+    private static String getOptionResult(Optional<ButtonType> result) {
+        if (result.isPresent()) {
+            ButtonType selectedOption = result.get();
+
+            if (selectedOption == ButtonType.CLOSE) {
+                return null;
+            } else {
+                return selectedOption.getText();
+            }
         } else {
             return null;
         }
@@ -197,7 +205,13 @@ public final class Utility {
         boolean checkCacheByName = CACHE_BY_NAME_EXTENSION.contains("," + extension + ",");
         boolean checkHasNameCache = useCache && checkCacheByName && nameIconMap.containsKey(name);
         boolean checkHasExtensionCache = useCache && !checkCacheByName && extensionIconMap.containsKey(extension);
+        return checkCacheAndGetWritableImage(checkCacheByName, checkHasNameCache, checkHasExtensionCache, name,
+                extension, file, useCache);
+    }
 
+    private static WritableImage checkCacheAndGetWritableImage(boolean checkCacheByName, boolean checkHasNameCache,
+                                                               boolean checkHasExtensionCache, String name,
+                                                               String extension, File file, boolean useCache) {
         if (checkHasNameCache) {
             return nameIconMap.get(name);
         } else if (checkHasExtensionCache) {
@@ -219,8 +233,7 @@ public final class Utility {
 
     private static WritableImage getWritableImage(File file) {
         Icon icon = FileSystemView.getFileSystemView().getSystemIcon(file);
-        BufferedImage bi = new BufferedImage(icon.getIconWidth(), icon.getIconHeight(),
-                BufferedImage.TYPE_INT_ARGB);
+        BufferedImage bi = new BufferedImage(icon.getIconWidth(), icon.getIconHeight(), BufferedImage.TYPE_INT_ARGB);
         Graphics g = bi.createGraphics();
         icon.paintIcon(null, g, 0, 0);
         WritableImage wr = new WritableImage(bi.getWidth(), bi.getHeight());

@@ -9,9 +9,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * @author Gnas
- * @Description Manage resources, including lazy initialisation
- * @Date Oct 10, 2018
+ * Manage resources, including lazy initialisation
  */
 public class ResourceManager {
     private static Image appIcon;
@@ -24,7 +22,7 @@ public class ResourceManager {
     private static URL appFXML;
     private static URL operationFXML;
     private static URL explorerFXML;
-    private static URL singleRenameFXML;
+    private static URL simpleRenameFXML;
 
     public static Image getAppIcon() {
         if (appIcon == null) {
@@ -64,7 +62,7 @@ public class ResourceManager {
 
     public static List<String> getCSSList() {
         if (cssList == null) {
-            cssList = new LinkedList<String>();
+            cssList = new LinkedList<>();
             cssList.add(getCSS("app"));
             cssList.add(getCSS("theme"));
         }
@@ -108,12 +106,12 @@ public class ResourceManager {
         return operationFXML;
     }
 
-    public static URL getSingleRenameFXML() {
-        if (singleRenameFXML == null) {
-            singleRenameFXML = getDialogFXML("SingleRename");
+    public static URL getSimpleRenameFXML() {
+        if (simpleRenameFXML == null) {
+            simpleRenameFXML = getDialogFXML("SimpleRename");
         }
 
-        return singleRenameFXML;
+        return simpleRenameFXML;
     }
 
     private static URL getDialogFXML(String fxml) {

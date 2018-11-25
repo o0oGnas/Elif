@@ -37,8 +37,8 @@ public class OperationController {
 
     private Operation operation;
 
-    private void showError(Exception e, String message, boolean exit) {
-        Utility.showError(getClass(), e, message, exit);
+    private void showError(Exception e, String message) {
+        Utility.showError(getClass(), e, message, false);
     }
 
     private void writeInfoLog(String log) {
@@ -58,7 +58,7 @@ public class OperationController {
                 addPauseListener(operation);
             }
         } catch (Exception e) {
-            showError(e, "Error handling initialise operation event", false);
+            showError(e, "Error handling initialise operation event");
         }
     }
 
@@ -67,7 +67,7 @@ public class OperationController {
             try {
                 lblStatus.setText(operation.getSuboperationName());
             } catch (Exception e) {
-                showError(e, "Could not update suboperation name", false);
+                showError(e, "Could not update suboperation name");
             }
         });
     }
@@ -77,7 +77,7 @@ public class OperationController {
             try {
                 pgiProgress.setProgress(operation.getPercentageDone());
             } catch (Exception e) {
-                showError(e, "Could not update progress indicator", false);
+                showError(e, "Could not update progress indicator");
             }
         });
     }
@@ -99,7 +99,7 @@ public class OperationController {
                     lblStatus.setText(status);
                 }
             } catch (Exception e) {
-                showError(e, "Error handing operation paused event", false);
+                showError(e, "Error handing operation paused event");
             }
         });
     }
@@ -109,7 +109,7 @@ public class OperationController {
         try {
             EventBus.getDefault().register(this);
         } catch (Exception e) {
-            showError(e, "Could not initialise operation item", false);
+            showError(e, "Could not initialise operation item");
         }
     }
 
@@ -120,7 +120,7 @@ public class OperationController {
             String pauseResume = operation.isPaused() ? "Pausing" : "Resuming";
             writeInfoLog(pauseResume + " operation [" + operation.getName() + "]");
         } catch (Exception e) {
-            showError(e, "Could not pause/resume operation [" + operation.getName() + "]", false);
+            showError(e, "Could not pause/resume operation [" + operation.getName() + "]");
         }
     }
 
@@ -132,7 +132,7 @@ public class OperationController {
                 writeInfoLog("Stopping operation [" + operation.getName() + "]");
             }
         } catch (Exception e) {
-            showError(e, "Could not stop operation [" + operation.getName() + "]", false);
+            showError(e, "Could not stop operation [" + operation.getName() + "]");
         }
     }
 }
