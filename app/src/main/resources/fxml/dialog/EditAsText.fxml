@@ -9,32 +9,26 @@
 <?import javafx.scene.layout.VBox?>
 <AnchorPane onKeyReleased="#keyReleased" xmlns="http://javafx.com/javafx/10.0.1" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="xyz.gnas.elif.app.controllers.dialog.EditAsTextController">
-    <children>
-        <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
-              AnchorPane.topAnchor="0.0">
-            <children>
-                <TextArea fx:id="ttaContent" prefHeight="500.0" prefWidth="500.0"/>
-                <HBox alignment="CENTER">
-                    <children>
-                        <Button fx:id="btnSave" mnemonicParsing="false" onAction="#save" text="Save">
-                            <graphic>
-                                <MaterialIconView glyphName="CHECK_CIRCLE" size="16"/>
-                            </graphic>
-                        </Button>
-                        <Button mnemonicParsing="false" onAction="#cancel" text="Cancel">
-                            <HBox.margin>
-                                <Insets left="10.0"/>
-                            </HBox.margin>
-                            <graphic>
-                                <MaterialIconView glyphName="CANCEL" size="16"/>
-                            </graphic>
-                        </Button>
-                    </children>
-                    <VBox.margin>
-                        <Insets top="10.0"/>
-                    </VBox.margin>
-                </HBox>
-            </children>
-        </VBox>
-    </children>
+    <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
+          AnchorPane.topAnchor="0.0">
+        <TextArea fx:id="ttaContent" prefHeight="800.0" prefWidth="1500.0"/>
+        <HBox alignment="CENTER">
+            <VBox.margin>
+                <Insets top="10.0"/>
+            </VBox.margin>
+            <Button fx:id="btnSave" disable="true" mnemonicParsing="false" onAction="#save" text="Save">
+                <graphic>
+                    <MaterialIconView glyphName="CHECK_CIRCLE" size="16"/>
+                </graphic>
+            </Button>
+            <Button mnemonicParsing="false" onAction="#cancel" text="Cancel">
+                <HBox.margin>
+                    <Insets left="10.0"/>
+                </HBox.margin>
+                <graphic>
+                    <MaterialIconView glyphName="CANCEL" size="16"/>
+                </graphic>
+            </Button>
+        </HBox>
+    </VBox>
 </AnchorPane>

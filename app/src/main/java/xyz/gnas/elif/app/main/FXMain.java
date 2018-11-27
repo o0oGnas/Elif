@@ -5,7 +5,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import xyz.gnas.elif.app.common.ResourceManager;
-import xyz.gnas.elif.app.common.utility.DialogUtility;
+import xyz.gnas.elif.app.common.utility.LogUtility;
 
 public class FXMain extends Application {
     public static void main(String[] args) {
@@ -13,15 +13,14 @@ public class FXMain extends Application {
     }
 
     private void writeErrorLog(String errorMessage, Throwable e) {
-        DialogUtility.writeErrorLog(getClass(), errorMessage, e);
+        LogUtility.writeErrorLog(getClass(), errorMessage, e);
     }
 
     @Override
     public void start(Stage stage) {
         try {
-            Thread.setDefaultUncaughtExceptionHandler((Thread t, Throwable e) ->
-                    writeErrorLog("Uncaught exception", e));
-
+            Thread.setDefaultUncaughtExceptionHandler(
+                    (Thread t, Throwable e) -> writeErrorLog("Uncaught exception", e));
             stage.setTitle("Elif");
             stage.getIcons().add(ResourceManager.getAppIcon());
             stage.setMaximized(true);

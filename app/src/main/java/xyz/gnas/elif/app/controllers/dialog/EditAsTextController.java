@@ -12,16 +12,17 @@ import javafx.scene.input.KeyEvent;
 import javafx.stage.WindowEvent;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
-import xyz.gnas.elif.app.common.utility.CodeRunnerUtility;
-import xyz.gnas.elif.app.common.utility.CodeRunnerUtility.Runner;
-import xyz.gnas.elif.app.common.utility.DialogUtility;
-import xyz.gnas.elif.app.common.utility.WindowEventUtility;
+import xyz.gnas.elif.app.common.utility.LogUtility;
+import xyz.gnas.elif.app.common.utility.code.CodeRunnerUtility;
+import xyz.gnas.elif.app.common.utility.code.Runner;
+import xyz.gnas.elif.app.common.utility.window.WindowEventHandler;
 import xyz.gnas.elif.app.events.dialog.EditAsTextEvent;
 import xyz.gnas.elif.core.logic.FileLogic;
 
 import java.io.File;
 
 import static xyz.gnas.elif.app.common.utility.DialogUtility.showConfirmation;
+import static xyz.gnas.elif.app.common.utility.window.WindowEventUtility.bindWindowEventHandler;
 
 public class EditAsTextController {
     @FXML
@@ -41,12 +42,12 @@ public class EditAsTextController {
     }
 
     private void writeInfoLog(String log) {
-        DialogUtility.writeInfoLog(getClass(), log);
+        LogUtility.writeInfoLog(getClass(), log);
     }
 
     @Subscribe
     public void onEditAsTextEvent(EditAsTextEvent event) {
-        executeRunner("Error handling edit as text event", () -> {
+        executeRunner("Error when handling edit as text event", () -> {
             file = event.getFile();
             ttaContent.textProperty().removeListener(textAreaListener);
             ttaContent.setText(FileLogic.readFileAsText(file));
@@ -60,7 +61,7 @@ public class EditAsTextController {
         executeRunner("Could not initialise edit as text dialog", () -> {
             EventBus.getDefault().register(this);
 
-            textAreaListener = (observableValue, s, t1) -> executeRunner("Error handling text change event",
+            textAreaListener = (observableValue, s, t1) -> executeRunner("Error when handling text change event",
                     () -> hasNewContent.set(true));
 
             handleCloseEvent();
@@ -68,7 +69,7 @@ public class EditAsTextController {
     }
 
     private void handleCloseEvent() {
-        WindowEventUtility.bindWindowEventHandler(getClass(), ttaContent, new WindowEventUtility.WindowEventHandler() {
+        bindWindowEventHandler(getClass(), ttaContent, new WindowEventHandler() {
             @Override
             public void handleShownEvent() {
             }

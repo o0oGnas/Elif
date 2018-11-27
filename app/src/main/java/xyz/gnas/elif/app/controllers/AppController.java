@@ -22,17 +22,15 @@ import javafx.stage.WindowEvent;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import xyz.gnas.elif.app.common.ResourceManager;
-import xyz.gnas.elif.app.common.utility.CodeRunnerUtility;
-import xyz.gnas.elif.app.common.utility.CodeRunnerUtility.ExceptionHandler;
-import xyz.gnas.elif.app.common.utility.CodeRunnerUtility.MainThreadTaskRunner;
-import xyz.gnas.elif.app.common.utility.CodeRunnerUtility.Runner;
-import xyz.gnas.elif.app.common.utility.CodeRunnerUtility.SideThreadTaskRunner;
 import xyz.gnas.elif.app.common.utility.DialogUtility;
-import xyz.gnas.elif.app.common.utility.WindowEventUtility;
+import xyz.gnas.elif.app.common.utility.LogUtility;
+import xyz.gnas.elif.app.common.utility.code.CodeRunnerUtility;
+import xyz.gnas.elif.app.common.utility.code.MainThreadTaskRunner;
+import xyz.gnas.elif.app.common.utility.code.Runner;
+import xyz.gnas.elif.app.common.utility.code.SideThreadTaskRunner;
+import xyz.gnas.elif.app.common.utility.window.WindowEventHandler;
 import xyz.gnas.elif.app.events.dialog.EditAsTextEvent;
 import xyz.gnas.elif.app.events.dialog.SimpleRenameEvent;
-import xyz.gnas.elif.app.events.explorer.ChangeItemSelectionEvent;
-import xyz.gnas.elif.app.events.explorer.FocusExplorerEvent;
 import xyz.gnas.elif.app.events.explorer.InitialiseExplorerEvent;
 import xyz.gnas.elif.app.events.explorer.ReloadEvent;
 import xyz.gnas.elif.app.events.operation.AddNewFileEvent;
@@ -43,7 +41,8 @@ import xyz.gnas.elif.app.events.operation.DeleteEvent;
 import xyz.gnas.elif.app.events.operation.InitialiseOperationEvent;
 import xyz.gnas.elif.app.events.operation.MoveEvent;
 import xyz.gnas.elif.app.events.operation.PasteEvent;
-import xyz.gnas.elif.app.models.Setting;
+import xyz.gnas.elif.app.models.ApplicationModel;
+import xyz.gnas.elif.app.models.SettingModel;
 import xyz.gnas.elif.app.models.explorer.ExplorerItemModel;
 import xyz.gnas.elif.app.models.explorer.ExplorerModel;
 import xyz.gnas.elif.core.logic.ClipboardLogic;
@@ -63,6 +62,8 @@ import static javafx.application.Platform.runLater;
 import static xyz.gnas.elif.app.common.utility.DialogUtility.showAlert;
 import static xyz.gnas.elif.app.common.utility.DialogUtility.showConfirmation;
 import static xyz.gnas.elif.app.common.utility.DialogUtility.showCustomDialog;
+import static xyz.gnas.elif.app.common.utility.code.CodeRunnerUtility.executeRunnerAndHandleException;
+import static xyz.gnas.elif.app.common.utility.window.WindowEventUtility.bindWindowEventHandler;
 
 public class AppController {
     @FXML
@@ -92,21 +93,13 @@ public class AppController {
 
     private final int THREAD_SLEEP_TIME = 500;
 
+    private ApplicationModel model = ApplicationModel.getInstance();
+
     private Node textEditorDialog;
 
     private Node simpleRenameDialog;
 
     private ObservableList<Operation> operationList = FXCollections.observableArrayList();
-
-    /**
-     * The model of the currently selected tab
-     */
-    private ExplorerModel selectedModel;
-
-    /**
-     * List of selected items in the last active tab
-     */
-    private List<ExplorerItemModel> selectedItemList;
 
     private void executeRunner(String errorMessage, Runner runner) {
         CodeRunnerUtility.executeRunner(getClass(), errorMessage, runner);
@@ -116,16 +109,20 @@ public class AppController {
         CodeRunnerUtility.executeRunnerOrExit(getClass(), errorMessage, runner);
     }
 
-    private void executeRunnerAndHandleException(Runner runner, ExceptionHandler handler) {
-        CodeRunnerUtility.executeRunnerAndHandleException(runner, handler);
+    private void runInSideThread(String errorMessage, Runner runner) {
+        new Thread(new SideThreadTaskRunner(getClass(), errorMessage, runner)).start();
+    }
+
+    private void runInMainThread(String errorMessage, Runner runner) {
+        runLater(new MainThreadTaskRunner(getClass(), errorMessage, runner));
     }
 
     private void writeErrorLog(String message, Throwable e) {
-        DialogUtility.writeErrorLog(getClass(), message, e);
+        LogUtility.writeErrorLog(getClass(), message, e);
     }
 
     private void writeInfoLog(String log) {
-        DialogUtility.writeInfoLog(getClass(), log);
+        LogUtility.writeInfoLog(getClass(), log);
     }
 
     private void postEvent(Object object) {
@@ -133,44 +130,15 @@ public class AppController {
     }
 
     @Subscribe
-    public void onFocusExplorerEvent(FocusExplorerEvent event) {
-        executeRunner("Error handling focus explorer event", () -> {
-            selectedModel = event.getModel();
-            hbxNewFolderFile.setDisable(false);
-        });
-    }
-
-    @Subscribe
-    public void onChangeItemSelectionEvent(ChangeItemSelectionEvent event) {
-        executeRunner("Error handling item selection change evnet", () -> {
-            selectedItemList = event.getItemList();
-
-            if (selectedItemList != null && !selectedItemList.isEmpty()) {
-                hbxRenameEditCopyMove.setDisable(false);
-
-                if (selectedItemList.size() == 1) {
-                    btnSimpleRename.setDisable(false);
-
-                    // only allow edit file as text
-                    btnEditAsText.setDisable(selectedItemList.get(0).getFile().isDirectory());
-                } else {
-                    btnSimpleRename.setDisable(true);
-                    btnEditAsText.setDisable(true);
-                }
-            }
-        });
-    }
-
-    @Subscribe
     public void onCopyToOtherEvent(CopyToOtherEvent event) {
-        executeRunner("Error handling copy to other tab event", () -> copy(event.getSourceModel(),
+        executeRunner("Error when handling copy to other tab event", () -> copy(event.getSourceModel(),
                 event.getSourceList(), getTargetPath(event.getSourceModel()), CopyMode.COPY));
     }
 
     private String getTargetPath(ExplorerModel sourceModel) {
-        Setting setting = Setting.getInstance();
-        ExplorerModel leftModel = setting.getLeftModel();
-        ExplorerModel targetModel = sourceModel == leftModel ? setting.getRightModel() : leftModel;
+        SettingModel settingModel = ApplicationModel.getInstance().getSetting();
+        ExplorerModel leftModel = settingModel.getLeftModel();
+        ExplorerModel targetModel = sourceModel == leftModel ? settingModel.getRightModel() : leftModel;
         return targetModel.getFolder().getAbsolutePath();
     }
 
@@ -272,7 +240,7 @@ public class AppController {
 
     private void addOperationCompleteListener(Operation operation, Node n) {
         operation.completeProperty().addListener(
-                l -> executeRunner("Error handling operation complete property change", () -> {
+                l -> executeRunner("Error when handling operation complete property change", () -> {
                     if (operation.isComplete()) {
                         // play notification sound is operation is not stopped
                         if (!operation.isStopped()) {
@@ -285,14 +253,6 @@ public class AppController {
                         vbxOperations.getChildren().remove(n);
                     }
                 }));
-    }
-
-    private void runInSideThread(String errorMessage, Runner runner) {
-        new Thread(new SideThreadTaskRunner(getClass(), errorMessage, runner)).start();
-    }
-
-    private void runInMainThread(String errorMessage, Runner runner) {
-        runLater(new MainThreadTaskRunner(getClass(), errorMessage, runner));
     }
 
     private void processSourceTargetMap(CopyParameterContainer container, String duplicate) throws InterruptedException {
@@ -366,7 +326,7 @@ public class AppController {
         String sourcePath = source.getFile().getAbsolutePath();
         writeErrorLog("Error when copying file", e);
 
-        runInMainThread("Error handling copy error", () -> {
+        runInMainThread("Error when handling copy error", () -> {
             // ask for confirmation to continue when there is an error
             if (showConfirmation("Error when copying " + sourcePath + " to " + target.getAbsolutePath() + "\n" +
                     e.getMessage() + "\nDo you want to continue?")) {
@@ -415,7 +375,7 @@ public class AppController {
 
     @Subscribe
     public void onCopyToClipboardEvent(CopyToClipboardEvent event) {
-        executeRunner("Error handling copy to clipboard event", () -> {
+        executeRunner("Error when handling copy to clipboard event", () -> {
             List<File> fileList = new LinkedList<>();
 
             for (ExplorerItemModel item : event.getSourceList()) {
@@ -428,7 +388,7 @@ public class AppController {
 
     @Subscribe
     public void onPasteEvent(PasteEvent event) {
-        executeRunner("Error handling paste event", () -> {
+        executeRunner("Error when handling paste event", () -> {
             List<File> fileList = ClipboardLogic.getFiles();
 
             if (fileList != null && !fileList.isEmpty()) {
@@ -459,13 +419,13 @@ public class AppController {
 
     @Subscribe
     public void onMoveEvent(MoveEvent event) {
-        executeRunner("Error handling move event", () -> copy(event.getSourceModel(), event.getSourceList(),
+        executeRunner("Error when handling move event", () -> copy(event.getSourceModel(), event.getSourceList(),
                 getTargetPath(event.getSourceModel()), CopyMode.MOVE));
     }
 
     @Subscribe
     public void onDeleteEvent(DeleteEvent event) {
-        executeRunner("Error handling delete event", () -> {
+        executeRunner("Error when handling delete event", () -> {
             List<ExplorerItemModel> sourceList = event.getSourceList();
             BooleanProperty breakLoop = new SimpleBooleanProperty();
 
@@ -494,33 +454,34 @@ public class AppController {
 
     @Subscribe
     public void onRenameEvent(SimpleRenameEvent event) {
-        executeRunner("Error handling simple rename event", () -> showCustomDialog("Simple rename",
+        executeRunner("Error when handling simple rename event", () -> showCustomDialog("Simple rename",
                 simpleRenameDialog, ResourceManager.getSimpleRenameIcon()));
     }
 
     @Subscribe
     public void onEditAsTextEvent(EditAsTextEvent event) {
-        executeRunner("Error handling edit as text event", () -> showCustomDialog("Edit as text", textEditorDialog,
+        executeRunner("Error when handling edit as text event", () -> showCustomDialog("Edit as text", textEditorDialog,
                 ResourceManager.getEditAsTextIcon()));
     }
 
     @Subscribe
     public void onAddNewFolderEvent(AddNewFolderEvent event) {
-        executeRunner("Error handling add new folder event", () -> {
-            File folder = FileLogic.addNewFolder(selectedModel.getFolder().getAbsolutePath());
+        executeRunner("Error when handling add new folder event", () -> {
+            File folder =
+                    FileLogic.addNewFolder(model.getSelectedExplorerModel().getFolder().getAbsolutePath());
             reloadAndRenameNewFileFolder(folder);
         });
     }
 
     private void reloadAndRenameNewFileFolder(File fileOrFolder) {
-        postEvent(new ReloadEvent(selectedModel.getFolder().getAbsolutePath()));
+        postEvent(new ReloadEvent(model.getSelectedExplorerModel().getFolder().getAbsolutePath()));
         postEvent(new SimpleRenameEvent(fileOrFolder));
     }
 
     @Subscribe
     public void onAddNewFileEvent(AddNewFileEvent event) {
-        executeRunner("Error handling add new file event", () -> {
-            File file = FileLogic.addNewFile(selectedModel.getFolder().getAbsolutePath());
+        executeRunner("Error when handling add new file event", () -> {
+            File file = FileLogic.addNewFile(model.getSelectedExplorerModel().getFolder().getAbsolutePath());
             reloadAndRenameNewFileFolder(file);
         });
     }
@@ -529,13 +490,14 @@ public class AppController {
     private void initialize() {
         executeRunnerOrExit("Could not initialise app", () -> {
             EventBus.getDefault().register(this);
+            addListenerToSelectedModelAndItemList();
             handleCloseEvent();
             scpOperation.setManaged(false);
             scpOperation.managedProperty().bind(scpOperation.visibleProperty());
 
             // only show scroll pane if there are running operations
-            operationList.addListener(
-                    (ListChangeListener<Operation>) l -> executeRunner("Error handling operation  list change event",
+            operationList.addListener((ListChangeListener<Operation>) l ->
+                    executeRunner("Error when handling operation  list change event",
                             () -> scpOperation.setVisible(!operationList.isEmpty())));
 
             initialiseDialogs();
@@ -543,8 +505,55 @@ public class AppController {
         });
     }
 
+    private void addListenerToSelectedModelAndItemList() {
+        model.selectedExplorerModelProperty().addListener(l -> {
+            if (model.getSelectedExplorerModel() != null) {
+                hbxNewFolderFile.setDisable(false);
+            }
+        });
+
+        bindListenerToSelectedItemList();
+
+        model.selectedItemListProperty().addListener(
+                l -> executeRunner("Error when handling item selection change event", () -> {
+                    updateFunctionButtons();
+                    bindListenerToSelectedItemList();
+                }));
+    }
+
+    private void bindListenerToSelectedItemList() {
+        ObservableList<ExplorerItemModel> selectedItemList = model.getSelectedItemList();
+
+        if (selectedItemList != null) {
+            selectedItemList.addListener((ListChangeListener<? super ExplorerItemModel>) l ->
+                    executeRunner("Error when handling changes to selected item list", () -> {
+                        updateFunctionButtons();
+                    }));
+        }
+    }
+
+    private void updateFunctionButtons() {
+        ObservableList<ExplorerItemModel> selectedItemList = model.getSelectedItemList();
+
+        if (selectedItemList.isEmpty()) {
+            hbxRenameEditCopyMove.setDisable(true);
+        } else {
+            hbxRenameEditCopyMove.setDisable(false);
+
+            if (selectedItemList.size() == 1) {
+                btnSimpleRename.setDisable(false);
+
+                // only allow edit file as text
+                btnEditAsText.setDisable(selectedItemList.get(0).getFile().isDirectory());
+            } else {
+                btnSimpleRename.setDisable(true);
+                btnEditAsText.setDisable(true);
+            }
+        }
+    }
+
     private void handleCloseEvent() {
-        WindowEventUtility.bindWindowEventHandler(getClass(), hbxExplorer, new WindowEventUtility.WindowEventHandler() {
+        bindWindowEventHandler(getClass(), hbxExplorer, new WindowEventHandler() {
             @Override
             public void handleShownEvent() {
             }
@@ -554,21 +563,23 @@ public class AppController {
             }
 
             @Override
-            public void handleCloseEvent(WindowEvent windowEvent) {
-                executeRunnerOrExit("Error handling window exit event", () -> {
-                    // show confirmation is there are running processes
-                    if (!operationList.isEmpty()) {
-                        if (showConfirmation("There are running operations, are you sure you want to exit?")) {
-                            for (Operation operation : operationList) {
-                                operation.setStopped(true);
-                            }
-                        } else {
-                            windowEvent.consume();
-                        }
-                    }
-                });
+            public void handleCloseEvent(WindowEvent event) {
+                executeRunnerOrExit("Error when handling window exit event",
+                        () -> checkRunningOperationsAndConfirmClose(event));
             }
         });
+    }
+
+    private void checkRunningOperationsAndConfirmClose(WindowEvent event) {
+        if (!operationList.isEmpty()) {
+            if (showConfirmation("There are running operations, are you sure you want to exit?")) {
+                for (Operation operation : operationList) {
+                    operation.setStopped(true);
+                }
+            } else {
+                event.consume();
+            }
+        }
     }
 
     private void initialiseDialogs() throws IOException {
@@ -579,13 +590,13 @@ public class AppController {
     }
 
     private void initialiseExplorers() throws IOException {
-        Setting setting = Setting.getInstance();
+        SettingModel settingModel = model.getSetting();
 
         // load both sides
         writeInfoLog("Loading left side");
-        loadExplorer(setting.getLeftModel(), true);
+        loadExplorer(settingModel.getLeftModel(), true);
         writeInfoLog("Loading right side");
-        loadExplorer(setting.getRightModel(), false);
+        loadExplorer(settingModel.getRightModel(), false);
     }
 
     private void loadExplorer(ExplorerModel model, boolean isLeft) throws IOException {
@@ -599,7 +610,7 @@ public class AppController {
     @FXML
     private void simpleRename(ActionEvent event) {
         executeRunner("Could not perform simple rename",
-                () -> postEvent(new SimpleRenameEvent(selectedItemList.get(0).getFile())));
+                () -> postEvent(new SimpleRenameEvent(model.getSelectedItemList().get(0).getFile())));
     }
 
     @FXML
@@ -609,28 +620,31 @@ public class AppController {
     @FXML
     private void editAsText(ActionEvent event) {
         executeRunner("Could not edit as text",
-                () -> postEvent(new EditAsTextEvent(selectedItemList.get(0).getFile())));
+                () -> postEvent(new EditAsTextEvent(model.getSelectedItemList().get(0).getFile())));
     }
 
     @FXML
     private void copy(ActionEvent event) {
-        executeRunner("Could not copy to other tab", () -> postEvent(new CopyToOtherEvent(selectedModel,
-                selectedItemList)));
+        executeRunner("Could not copy to other tab",
+                () -> postEvent(new CopyToOtherEvent(model.getSelectedExplorerModel(),
+                        model.getSelectedItemList())));
     }
 
     @FXML
     private void move(ActionEvent event) {
-        executeRunner("Could not move files", () -> postEvent(new MoveEvent(selectedModel, selectedItemList)));
+        executeRunner("Could not move files", () -> postEvent(new MoveEvent(model.getSelectedExplorerModel(),
+                model.getSelectedItemList())));
     }
 
     @FXML
     private void addNewFolder(ActionEvent event) {
-        executeRunner("Could not add new folder", () -> postEvent(new AddNewFolderEvent(selectedModel)));
+        executeRunner("Could not add new folder",
+                () -> postEvent(new AddNewFolderEvent(model.getSelectedExplorerModel())));
     }
 
     @FXML
     private void addNewFile(ActionEvent event) {
-        executeRunner("Could not add new file", () -> postEvent(new AddNewFileEvent(selectedModel)));
+        executeRunner("Could not add new file", () -> postEvent(new AddNewFileEvent(model.getSelectedExplorerModel())));
     }
 
     /**

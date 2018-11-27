@@ -41,7 +41,7 @@
                     <MaterialIconView fx:id="mivPauseResume" glyphName="PAUSE" size="16"/>
                 </graphic>
             </Button>
-            <Button fx:id="btnStop" mnemonicParsing="false" onAction="#stop" prefWidth="100.0" text="Stop">
+            <Button mnemonicParsing="false" onAction="#stop" prefWidth="100.0" text="Stop">
                 <HBox.margin>
                     <Insets left="10.0"/>
                 </HBox.margin>

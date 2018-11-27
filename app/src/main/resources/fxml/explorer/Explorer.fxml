@@ -72,7 +72,7 @@
             </HBox>
         </HBox>
         <TableView fx:id="tbvTable" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308"
-                   onKeyReleased="#tableKeyReleased" VBox.vgrow="ALWAYS">
+                   onKeyPressed="#tableKeyPressed" VBox.vgrow="ALWAYS">
             <placeholder>
                 <Label/>
             </placeholder>
@@ -149,7 +149,7 @@
                                 </Label>
                             </content>
                         </CustomMenuItem>
-                        <CustomMenuItem fx:id="cmiCopyToClipboard" onAction="#copyToClipboard">
+                        <CustomMenuItem onAction="#copyToClipboard">
                             <content>
                                 <Label fx:id="lblCopyToClipboard" text="Copy to clipboard">
                                     <graphic>
@@ -187,7 +187,7 @@
                                 </Label>
                             </content>
                         </CustomMenuItem>
-                        <SeparatorMenuItem fx:id="smiDelete" hideOnClick="true"/>
+                        <SeparatorMenuItem hideOnClick="true"/>
                         <CustomMenuItem fx:id="cmiSimpleRename" onAction="#simpleRename">
                             <content>
                                 <Label fx:id="lblSimpleRename" text="Rename (simple)">

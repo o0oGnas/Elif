@@ -21,8 +21,15 @@ public class ExplorerItemModel implements Comparable<ExplorerItemModel> {
     public ExplorerItemModel(File file) {
         this.file = file;
         String fileName = file.getName();
-        name = FilenameUtils.removeExtension(fileName);
-        extension = file.isDirectory() ? "[Folder]" : FilenameUtils.getExtension(fileName);
+
+        if (file.isDirectory()) {
+            name = fileName;
+            extension = "[Folder]";
+        } else {
+            name = FilenameUtils.removeExtension(fileName);
+            extension = FilenameUtils.getExtension(fileName);
+        }
+
         long fileSize = file.length();
         size = fileSize >= 0 ? fileSize : -1;
         date = Calendar.getInstance();

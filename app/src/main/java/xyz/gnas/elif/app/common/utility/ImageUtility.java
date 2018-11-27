@@ -28,6 +28,13 @@ public class ImageUtility {
      */
     private static Map<String, WritableImage> nameIconMap = new HashMap<>();
 
+    /**
+     * Gets icon of a File object
+     *
+     * @param file     the file
+     * @param useCache flag for using cache or not
+     * @return the icon
+     */
     public static WritableImage getFileIcon(File file, boolean useCache) {
         String fileName = file.getName();
         String extension = FilenameUtils.getExtension(fileName).toUpperCase();

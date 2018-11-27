@@ -1,10 +1,8 @@
 package xyz.gnas.elif.app.controllers.explorer;
 
 import de.jensd.fx.glyphs.materialicons.MaterialIconView;
-import javafx.beans.InvalidationListener;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
@@ -20,11 +18,11 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.control.SeparatorMenuItem;
-import javafx.scene.control.TableCell;
+import javafx.scene.control.SingleSelectionModel;
 import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableColumn.CellDataFeatures;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
+import javafx.scene.control.TableView.TableViewSelectionModel;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
@@ -34,20 +32,21 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.paint.Color;
 import javafx.stage.WindowEvent;
-import javafx.util.Callback;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import xyz.gnas.elif.app.common.Configurations;
-import xyz.gnas.elif.app.common.utility.CodeRunnerUtility;
-import xyz.gnas.elif.app.common.utility.CodeRunnerUtility.Runner;
-import xyz.gnas.elif.app.common.utility.DialogUtility;
 import xyz.gnas.elif.app.common.utility.ImageUtility;
-import xyz.gnas.elif.app.common.utility.WindowEventUtility;
+import xyz.gnas.elif.app.common.utility.LogUtility;
+import xyz.gnas.elif.app.common.utility.code.CodeRunnerUtility;
+import xyz.gnas.elif.app.common.utility.code.Runner;
+import xyz.gnas.elif.app.common.utility.code.RunnerWithIntReturn;
+import xyz.gnas.elif.app.common.utility.code.RunnerWithObjectReturn;
+import xyz.gnas.elif.app.common.utility.window.WindowEventHandler;
+import xyz.gnas.elif.app.common.utility.window.WindowEventUtility;
+import xyz.gnas.elif.app.controllers.explorer.ExplorerTableCellCallback.Column;
 import xyz.gnas.elif.app.events.dialog.EditAsTextEvent;
 import xyz.gnas.elif.app.events.dialog.SimpleRenameEvent;
-import xyz.gnas.elif.app.events.explorer.ChangeItemSelectionEvent;
 import xyz.gnas.elif.app.events.explorer.ChangePathEvent;
-import xyz.gnas.elif.app.events.explorer.FocusExplorerEvent;
 import xyz.gnas.elif.app.events.explorer.InitialiseExplorerEvent;
 import xyz.gnas.elif.app.events.explorer.ReloadEvent;
 import xyz.gnas.elif.app.events.explorer.SwitchTabEvent;
@@ -58,6 +57,7 @@ import xyz.gnas.elif.app.events.operation.CopyToOtherEvent;
 import xyz.gnas.elif.app.events.operation.DeleteEvent;
 import xyz.gnas.elif.app.events.operation.MoveEvent;
 import xyz.gnas.elif.app.events.operation.PasteEvent;
+import xyz.gnas.elif.app.models.ApplicationModel;
 import xyz.gnas.elif.app.models.explorer.ExplorerItemModel;
 import xyz.gnas.elif.app.models.explorer.ExplorerModel;
 import xyz.gnas.elif.core.logic.ClipboardLogic;
@@ -65,10 +65,9 @@ import xyz.gnas.elif.core.logic.ClipboardLogic;
 import javax.swing.filechooser.FileSystemView;
 import java.awt.Desktop;
 import java.io.File;
-import java.text.DecimalFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 
 public class ExplorerController {
@@ -188,7 +187,9 @@ public class ExplorerController {
 
     private final int MIN_TABLE_CONTEXT_MENU_ITEM_WIDTH = 150;
 
-    private ExplorerModel model;
+    private ApplicationModel applicationModel = ApplicationModel.getInstance();
+
+    private ExplorerModel explorerModel;
 
     private Label currentSortLabel;
 
@@ -208,17 +209,16 @@ public class ExplorerController {
         CodeRunnerUtility.executeRunnerOrExit(getClass(), errorMessage, runner);
     }
 
-    private int executeRunnerWithIntReturn(String errorMessage, int errorReturnValue,
-                                           CodeRunnerUtility.RunnerWithIntReturn runner) {
+    private int executeRunnerWithIntReturn(String errorMessage, int errorReturnValue, RunnerWithIntReturn runner) {
         return CodeRunnerUtility.executeRunnerWithIntReturn(getClass(), errorMessage, errorReturnValue, runner);
     }
 
-    private Object executeRunnerWithObjectReturn(String errorMessage, CodeRunnerUtility.RunnerWithObjectReturn runner) {
+    private Object executeRunnerWithObjectReturn(String errorMessage, RunnerWithObjectReturn runner) {
         return CodeRunnerUtility.executeRunnerWithObjectReturn(getClass(), errorMessage, runner);
     }
 
     private void writeInfoLog(String log) {
-        DialogUtility.writeInfoLog(getClass(), log);
+        LogUtility.writeInfoLog(getClass(), log);
     }
 
     private void postEvent(Object object) {
@@ -228,10 +228,10 @@ public class ExplorerController {
     @Subscribe
     public void onInitialiseExplorerEvent(InitialiseExplorerEvent event) {
         executeRunnerOrExit("Could not initialise explorer", () -> {
-            if (model == null) {
-                model = event.getModel();
+            if (explorerModel == null) {
+                explorerModel = event.getModel();
 
-                // add right padding if model is left, left padding if model is right
+                // add right padding if explorerModel is left, left padding if explorerModel is right
                 acpMain.setPadding(event.isLeft() ? new Insets(0, 5, 0, 0) : new Insets(0, 0, 0, 5));
                 loadDrives();
             }
@@ -245,11 +245,11 @@ public class ExplorerController {
         selectInitialDrive();
         cbbDrive.getSelectionModel().selectedItemProperty().addListener(
                 (ObservableValue<? extends File> observable, File oldValue, File newValue) ->
-                        executeRunner("Error handling drive selection", () -> changeCurrentPath(newValue)));
+                        executeRunner("Error when handling drive selection", () -> changeCurrentPath(newValue)));
     }
 
     private void selectInitialDrive() {
-        if (model.getFolder() == null) {
+        if (explorerModel.getFolder() == null) {
             // select first drive by default
             if (!cbbDrive.getItems().isEmpty()) {
                 cbbDrive.getSelectionModel().select(0);
@@ -263,23 +263,24 @@ public class ExplorerController {
         ObservableList<File> driveList = cbbDrive.getItems();
         String driveOfPath = getRootPath();
         boolean validPath = false;
+        SingleSelectionModel selectionModel = cbbDrive.getSelectionModel();
 
         for (int i = 0; i < driveList.size(); ++i) {
             if (driveOfPath.equalsIgnoreCase(driveList.get(i).getAbsolutePath())) {
-                cbbDrive.getSelectionModel().select(i);
-                changeCurrentPath(model.getFolder());
+                selectionModel.select(i);
+                changeCurrentPath(explorerModel.getFolder());
                 validPath = true;
                 break;
             }
         }
 
         if (!validPath) {
-            cbbDrive.getSelectionModel().select(0);
+            selectionModel.select(0);
         }
     }
 
     private String getRootPath() {
-        String path = model.getFolder().getAbsolutePath();
+        String path = explorerModel.getFolder().getAbsolutePath();
         return path.substring(0, path.indexOf("\\") + 1);
     }
 
@@ -289,25 +290,21 @@ public class ExplorerController {
     private void changeCurrentPath(File path) {
         String absolutePath = path.getAbsolutePath();
         writeInfoLog("Navigating to " + absolutePath);
-        model.setFolder(path);
+        explorerModel.setFolder(path);
         lblFolderPath.setText(absolutePath);
         boolean isRoot = path.getParentFile() == null;
         btnBack.setDisable(isRoot);
         btnRoot.setDisable(isRoot);
-        updateItemListAndScrollToTop();
-        postEvent(new ChangePathEvent(model));
-    }
-
-    private void updateItemListAndScrollToTop() {
         updateItemList();
         scrollToTop(null);
+        postEvent(new ChangePathEvent(explorerModel));
     }
 
     private void updateItemList() {
         writeInfoLog("Updating item list");
         ObservableList<ExplorerItemModel> itemList = tbvTable.getItems();
         itemList.clear();
-        File[] children = model.getFolder().listFiles();
+        File[] children = explorerModel.getFolder().listFiles();
 
         if (children != null) {
             for (File child : children) {
@@ -322,10 +319,10 @@ public class ExplorerController {
 
     @Subscribe
     public void onChangePathEvent(ChangePathEvent event) {
-        executeRunner("Error handling change path event", () -> {
+        executeRunner("Error when handling change path event", () -> {
             ExplorerModel eventModel = event.getModel();
 
-            if (model != eventModel) {
+            if (explorerModel != eventModel) {
                 File otherFile = eventModel.getFolder();
                 cmiCopyToOther.setDisable(otherFile == null);
 
@@ -340,17 +337,17 @@ public class ExplorerController {
 
     @Subscribe
     public void onReloadEvent(ReloadEvent event) {
-        executeRunner("Error handling reload event", () -> {
-            if (event.getPath().equalsIgnoreCase(model.getFolder().getAbsolutePath())) {
-                updateItemList();
+        executeRunner("Error when handling reload event", () -> {
+            if (event.getPath().equalsIgnoreCase(explorerModel.getFolder().getAbsolutePath())) {
+                updateAndReselect();
             }
         });
     }
 
     @Subscribe
     public void onSwitchTabEvent(SwitchTabEvent event) {
-        executeRunner("Error handling switch tab event", () -> {
-            if (event.getModel() != model) {
+        executeRunner("Error when handling switch tab event", () -> {
+            if (event.getModel() != explorerModel) {
                 tbvTable.requestFocus();
             }
         });
@@ -368,20 +365,41 @@ public class ExplorerController {
     }
 
     private void handleWindowFocusedEvent() {
-        WindowEventUtility.bindWindowEventHandler(getClass(), acpMain, new WindowEventUtility.WindowEventHandler() {
+        WindowEventUtility.bindWindowEventHandler(getClass(), acpMain, new WindowEventHandler() {
             @Override
             public void handleShownEvent() {
             }
 
             @Override
             public void handleFocusedEvent() {
-                executeRunner("Error handling window focused event", () -> updateItemList());
+                executeRunner("Error when handling window focused event", () -> {
+                    // only reselect for the focused tab
+                    if (applicationModel.getSelectedExplorerModel() == explorerModel) {
+                        updateAndReselect();
+                    } else {
+                        updateItemList();
+                    }
+                });
             }
 
             @Override
             public void handleCloseEvent(WindowEvent windowEvent) {
             }
         });
+    }
+
+    private void updateAndReselect() {
+        TableViewSelectionModel<ExplorerItemModel> selectionModel = tbvTable.getSelectionModel();
+        List<ExplorerItemModel> oldSelectedList = new LinkedList<>(selectionModel.getSelectedItems());
+        updateItemList();
+
+        for (ExplorerItemModel selectedItem : oldSelectedList) {
+            for (ExplorerItemModel item : tbvTable.getItems()) {
+                if (selectedItem.getFile().getAbsolutePath().equalsIgnoreCase(item.getFile().getAbsolutePath())) {
+                    selectionModel.select(item);
+                }
+            }
+        }
     }
 
     private void initialiseDriveComboBox() {
@@ -490,8 +508,8 @@ public class ExplorerController {
         tbvTable.focusedProperty().addListener(l ->
                 executeRunner("Error when handling table focus change event", () -> {
                     if (tbvTable.isFocused()) {
-                        postEvent(new FocusExplorerEvent(model));
-                        postEvent(new ChangeItemSelectionEvent(getSelectedItems()));
+                        applicationModel.setSelectedExplorerModel(explorerModel);
+                        applicationModel.setSelectedItemList(getSelectedItems());
                     }
                 }));
 
@@ -510,7 +528,6 @@ public class ExplorerController {
                 executeRunner("Error when handling change to item selection", () -> {
                     updateSelectedFoldersAndFiles();
                     updateTableContextMenu();
-                    postEvent(new ChangeItemSelectionEvent(getSelectedItems()));
                 }));
     }
 
@@ -541,7 +558,7 @@ public class ExplorerController {
     }
 
     private void initialiseTableContextMenu() {
-        ctmTable.setOnShowing(l -> executeRunner("Error handling table context menu shown event",
+        ctmTable.setOnShowing(l -> executeRunner("Error when handling table context menu shown event",
                 () -> cmiPaste.setVisible(ClipboardLogic.clipboardHasFiles()))
         );
 
@@ -590,7 +607,7 @@ public class ExplorerController {
         }
     }
 
-    private List<ExplorerItemModel> getSelectedItems() {
+    private ObservableList<ExplorerItemModel> getSelectedItems() {
         return tbvTable.getSelectionModel().getSelectedItems();
     }
 
@@ -618,7 +635,7 @@ public class ExplorerController {
         tbvTable.setRowFactory(f -> {
             TableRow<ExplorerItemModel> row = new TableRow<>();
 
-            row.setOnMouseClicked(event -> executeRunner("Error handling double click", () -> {
+            row.setOnMouseClicked(event -> executeRunner("Error when handling double click", () -> {
                 if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2 && (!row.isEmpty())) {
                     runOrGoToByItem(row.getItem());
                 }
@@ -654,14 +671,14 @@ public class ExplorerController {
         tbc.setCellValueFactory(new ExplorerTableCellValue());
         tbc.setCellFactory(new ExplorerTableCellCallback(column));
 
-        tbc.widthProperty().addListener(l -> executeRunner("Error handling change to column width",
+        tbc.widthProperty().addListener(l -> executeRunner("Error when handling change to column width",
                 () -> lbl.setPrefWidth(tbc.getWidth())));
     }
 
     @FXML
     private void back(ActionEvent event) {
         executeRunner("Could not navigate back", () -> {
-            File parent = model.getFolder().getParentFile();
+            File parent = explorerModel.getFolder().getParentFile();
 
             if (parent != null) {
                 changeCurrentPath(parent);
@@ -676,7 +693,7 @@ public class ExplorerController {
 
     @FXML
     private void reload(ActionEvent event) {
-        executeRunner("Could not reload", this::updateItemListAndScrollToTop);
+        executeRunner("Could not reload", () -> updateAndReselect());
     }
 
     @FXML
@@ -737,7 +754,7 @@ public class ExplorerController {
 
     @FXML
     private void copyToOther(ActionEvent event) {
-        executeRunner("Could not copy to other tab", () -> checkEmptyAndPostEvent(new CopyToOtherEvent(model,
+        executeRunner("Could not copy to other tab", () -> checkEmptyAndPostEvent(new CopyToOtherEvent(explorerModel,
                 getSelectedItems())));
     }
 
@@ -749,24 +766,26 @@ public class ExplorerController {
 
     @FXML
     private void copyToClipboard(ActionEvent event) {
-        executeRunner("Could not copy to clipboard", () -> checkEmptyAndPostEvent(new CopyToClipboardEvent(model,
-                getSelectedItems())));
+        executeRunner("Could not copy to clipboard",
+                () -> checkEmptyAndPostEvent(new CopyToClipboardEvent(explorerModel,
+                        getSelectedItems())));
     }
 
     @FXML
     private void paste(ActionEvent event) {
-        executeRunner("Could not paste", () -> postEvent(new PasteEvent(model)));
+        executeRunner("Could not paste", () -> postEvent(new PasteEvent(explorerModel)));
     }
 
     @FXML
     private void move(ActionEvent event) {
-        executeRunner("Could not copy to clipboard", () -> checkEmptyAndPostEvent(new MoveEvent(model,
+        executeRunner("Could not copy to clipboard", () -> checkEmptyAndPostEvent(new MoveEvent(explorerModel,
                 getSelectedItems())));
     }
 
     @FXML
     private void delete(ActionEvent event) {
-        executeRunner("Could not delete", () -> checkEmptyAndPostEvent(new DeleteEvent(model, getSelectedItems())));
+        executeRunner("Could not delete", () -> checkEmptyAndPostEvent(new DeleteEvent(explorerModel,
+                getSelectedItems())));
     }
 
     @FXML
@@ -787,16 +806,16 @@ public class ExplorerController {
 
     @FXML
     private void addNewFolder(ActionEvent event) {
-        executeRunner("Could not add new folder", () -> postEvent(new AddNewFolderEvent(model)));
+        executeRunner("Could not add new folder", () -> postEvent(new AddNewFolderEvent(explorerModel)));
     }
 
     @FXML
     private void addNewFile(ActionEvent event) {
-        executeRunner("Could not add new file", () -> postEvent(new AddNewFileEvent(model)));
+        executeRunner("Could not add new file", () -> postEvent(new AddNewFileEvent(explorerModel)));
     }
 
     @FXML
-    private void tableKeyReleased(KeyEvent event) {
+    private void tableKeyPressed(KeyEvent event) {
         executeRunner("Could not handle key event", () -> {
             if (event.isControlDown()) {
                 handleControlModifierEvent(event);
@@ -832,7 +851,7 @@ public class ExplorerController {
     private void handleNoModifierEvent(KeyEvent event) {
         switch (event.getCode()) {
             case TAB:
-                postEvent(new SwitchTabEvent(model));
+                postEvent(new SwitchTabEvent(explorerModel));
                 break;
 
             case ENTER:
@@ -882,120 +901,6 @@ public class ExplorerController {
 
             default:
                 break;
-        }
-    }
-
-    /**
-     * Column enum, used by ExplorerTableCell to determine how to display the data
-     */
-    private enum Column {
-        Name, Extension, Size, Date
-    }
-
-    /**
-     * Custom value for table columns
-     */
-    private class ExplorerTableCellValue implements Callback<TableColumn.CellDataFeatures<ExplorerItemModel,
-            ExplorerItemModel>, ObservableValue<ExplorerItemModel>> {
-        @Override
-        public ObservableValue<ExplorerItemModel> call(CellDataFeatures<ExplorerItemModel, ExplorerItemModel> param) {
-            return new ObservableValue<>() {
-                @Override
-                public void removeListener(InvalidationListener listener) {
-                }
-
-                @Override
-                public void addListener(InvalidationListener listener) {
-                }
-
-                @Override
-                public void removeListener(ChangeListener<? super ExplorerItemModel> listener) {
-                }
-
-                @Override
-                public ExplorerItemModel getValue() {
-                    return (ExplorerItemModel) executeRunnerWithObjectReturn("Error getting value for table cell",
-                            () -> param.getValue());
-                }
-
-                @Override
-                public void addListener(ChangeListener<? super ExplorerItemModel> listener) {
-                }
-            };
-        }
-    }
-
-    /**
-     * Custom cell display for table columns
-     */
-    private class ExplorerTableCellCallback implements Callback<TableColumn<ExplorerItemModel, ExplorerItemModel>,
-            TableCell<ExplorerItemModel, ExplorerItemModel>> {
-        private Column column;
-
-        public ExplorerTableCellCallback(Column column) {
-            this.column = column;
-        }
-
-        @Override
-        public TableCell<ExplorerItemModel, ExplorerItemModel> call(TableColumn<ExplorerItemModel, ExplorerItemModel> param) {
-            return new ExplorerTableCell() {
-            };
-        }
-
-        private class ExplorerTableCell extends TableCell<ExplorerItemModel, ExplorerItemModel> {
-            @Override
-            protected void updateItem(ExplorerItemModel item, boolean empty) {
-                executeRunner("Error when displaying item", () -> {
-                    super.updateItem(item, empty);
-
-                    if (empty || item == null) {
-                        setGraphic(null);
-                    } else {
-                        display(item);
-                    }
-                });
-            }
-
-            private void display(ExplorerItemModel item) {
-                switch (column) {
-                    case Name:
-                        setIcon(item);
-                        setText(item.getName());
-                        break;
-
-                    case Extension:
-                        setText(item.getExtension());
-                        break;
-
-                    case Size:
-                        DecimalFormat format = new DecimalFormat("#,###");
-                        setText(format.format(item.getSize()));
-                        break;
-
-                    case Date:
-                        SimpleDateFormat dateFormat = new SimpleDateFormat("dd MMM yyyy HH:mm");
-                        setText(dateFormat.format(item.getDate().getTime()));
-                        break;
-
-                    default:
-                        break;
-                }
-            }
-
-            private void setIcon(ExplorerItemModel item) {
-                // show icon depending on file or folder
-                File file = item.getFile();
-
-                if (file.isDirectory()) {
-                    MaterialIconView mivFolder = new MaterialIconView();
-                    mivFolder.setGlyphName(Configurations.FOLDER_GRYPH);
-                    mivFolder.setGlyphSize(16);
-                    setGraphic(mivFolder);
-                } else {
-                    ImageView imv = new ImageView(ImageUtility.getFileIcon(file, true));
-                    setGraphic(imv);
-                }
-            }
         }
     }
 }

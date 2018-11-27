@@ -104,7 +104,7 @@ public class FileLogic {
      *
      * @param file the file
      */
-    public static void delete(File file) throws IOException {
+    public static void delete(File file) {
         file.delete();
     }
 
@@ -114,7 +114,7 @@ public class FileLogic {
      * @param source the file to rename
      * @param target the file object representing result of renaming
      */
-    public static void rename(File source, File target) throws IOException {
+    public static void rename(File source, File target) {
         source.renameTo(target);
     }
 

@@ -11,17 +11,18 @@ import javafx.stage.WindowEvent;
 import org.apache.commons.io.FilenameUtils;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
-import xyz.gnas.elif.app.common.utility.CodeRunnerUtility;
-import xyz.gnas.elif.app.common.utility.CodeRunnerUtility.Runner;
-import xyz.gnas.elif.app.common.utility.DialogUtility;
 import xyz.gnas.elif.app.common.utility.ImageUtility;
-import xyz.gnas.elif.app.common.utility.WindowEventUtility;
+import xyz.gnas.elif.app.common.utility.LogUtility;
+import xyz.gnas.elif.app.common.utility.code.CodeRunnerUtility;
+import xyz.gnas.elif.app.common.utility.code.Runner;
+import xyz.gnas.elif.app.common.utility.window.WindowEventHandler;
 import xyz.gnas.elif.app.events.dialog.SimpleRenameEvent;
 import xyz.gnas.elif.core.logic.FileLogic;
 
 import java.io.File;
 
 import static xyz.gnas.elif.app.common.utility.DialogUtility.showConfirmation;
+import static xyz.gnas.elif.app.common.utility.window.WindowEventUtility.bindWindowEventHandler;
 
 public class SimpleRenameController {
     @FXML
@@ -43,12 +44,12 @@ public class SimpleRenameController {
     }
 
     private void writeInfoLog(String log) {
-        DialogUtility.writeInfoLog(getClass(), log);
+        LogUtility.writeInfoLog(getClass(), log);
     }
 
     @Subscribe
     public void onSimpleRenameEvent(SimpleRenameEvent event) {
-        executeRunner("Error handling simple rename event", () -> {
+        executeRunner("Error when handling simple rename event", () -> {
             file = event.getFile();
             mivFolder.setVisible(file.isDirectory());
 
@@ -73,7 +74,7 @@ public class SimpleRenameController {
     }
 
     private void addHandlerToSceneAndWindow() {
-        WindowEventUtility.bindWindowEventHandler(getClass(), txtName, new WindowEventUtility.WindowEventHandler() {
+        bindWindowEventHandler(getClass(), txtName, new WindowEventHandler() {
             @Override
             public void handleShownEvent() {
                 // select only the name of the file by default
@@ -137,6 +138,6 @@ public class SimpleRenameController {
 
     @FXML
     private void cancel(ActionEvent event) {
-        executeRunner("Could not cancel rename", () -> hideDialog());
+        executeRunner("Could not cancel rename", this::hideDialog);
     }
 }
