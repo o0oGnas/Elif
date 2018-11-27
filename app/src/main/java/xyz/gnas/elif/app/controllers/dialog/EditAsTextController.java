@@ -12,6 +12,8 @@ import javafx.scene.input.KeyEvent;
 import javafx.stage.WindowEvent;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
+import xyz.gnas.elif.app.common.utility.CodeRunnerUtility;
+import xyz.gnas.elif.app.common.utility.CodeRunnerUtility.Runner;
 import xyz.gnas.elif.app.common.utility.DialogUtility;
 import xyz.gnas.elif.app.common.utility.WindowEventUtility;
 import xyz.gnas.elif.app.events.dialog.EditAsTextEvent;
@@ -34,8 +36,8 @@ public class EditAsTextController {
 
     private BooleanProperty hasNewContent = new SimpleBooleanProperty();
 
-    private void showError(Exception e, String message, boolean exit) {
-        DialogUtility.showError(getClass(), e, message, exit);
+    private void executeRunner(String errorMessage, Runner runner) {
+        CodeRunnerUtility.executeRunner(getClass(), errorMessage, runner);
     }
 
     private void writeInfoLog(String log) {
@@ -44,38 +46,29 @@ public class EditAsTextController {
 
     @Subscribe
     public void onEditAsTextEvent(EditAsTextEvent event) {
-        try {
+        executeRunner("Error handling edit as text event", () -> {
             file = event.getFile();
             ttaContent.textProperty().removeListener(textAreaListener);
             ttaContent.setText(FileLogic.readFileAsText(file));
             ttaContent.textProperty().addListener(textAreaListener);
             btnSave.disableProperty().bind(hasNewContent.not());
-        } catch (Exception e) {
-            showError(e, "Error handling edit as text event", false);
-        }
+        });
     }
 
     @FXML
     private void initialize() {
-        try {
+        executeRunner("Could not initialise edit as text dialog", () -> {
             EventBus.getDefault().register(this);
 
-            textAreaListener = (observableValue, s, t1) -> {
-                try {
-                    hasNewContent.set(true);
-                } catch (Exception e) {
-                    showError(e, "Error handling text change event", false);
-                }
-            };
+            textAreaListener = (observableValue, s, t1) -> executeRunner("Error handling text change event",
+                    () -> hasNewContent.set(true));
 
             handleCloseEvent();
-        } catch (Exception e) {
-            showError(e, "Could not initialise edit as text dialog", true);
-        }
+        });
     }
 
     private void handleCloseEvent() {
-        WindowEventUtility.bindWindowEventHandler(ttaContent, new WindowEventUtility.WindowEventHandler() {
+        WindowEventUtility.bindWindowEventHandler(getClass(), ttaContent, new WindowEventUtility.WindowEventHandler() {
             @Override
             public void handleShownEvent() {
             }
@@ -97,7 +90,7 @@ public class EditAsTextController {
 
     @FXML
     private void keyReleased(KeyEvent keyEvent) {
-        try {
+        executeRunner("Could not handle key event", () -> {
             if (keyEvent.isControlDown()) {
                 if (keyEvent.getCode() == KeyCode.S) {
                     save(null);
@@ -106,14 +99,12 @@ public class EditAsTextController {
             } else if (keyEvent.getCode() == KeyCode.ESCAPE) {
                 cancel(null);
             }
-        } catch (Exception e) {
-            showError(e, "Could not handle key event", false);
-        }
+        });
     }
 
     @FXML
     private void save(ActionEvent event) {
-        try {
+        executeRunner("Could not save text edit", () -> {
             writeInfoLog("Saving text to file " + file.getAbsolutePath());
             FileLogic.saveTextToFile(file, ttaContent.getText());
 
@@ -121,9 +112,7 @@ public class EditAsTextController {
             if (event != null) {
                 hideDialog();
             }
-        } catch (Exception e) {
-            showError(e, "Could not save text edit", false);
-        }
+        });
     }
 
     private void hideDialog() {
@@ -132,14 +121,12 @@ public class EditAsTextController {
 
     @FXML
     private void cancel(ActionEvent event) {
-        try {
+        executeRunner("Could not cancel edit as text", () -> {
             // show confirm if there are unsaved changes
             if (!hasNewContent.get() || showConfirmation("There are unsaved changes, are you sure you want to close " +
                     "without saving first?")) {
                 hideDialog();
             }
-        } catch (Exception e) {
-            showError(e, "Could not cancel edit as text", false);
-        }
+        });
     }
 }

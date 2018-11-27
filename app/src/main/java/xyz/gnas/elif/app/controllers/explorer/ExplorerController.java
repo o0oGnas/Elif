@@ -38,6 +38,8 @@ import javafx.util.Callback;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import xyz.gnas.elif.app.common.Configurations;
+import xyz.gnas.elif.app.common.utility.CodeRunnerUtility;
+import xyz.gnas.elif.app.common.utility.CodeRunnerUtility.Runner;
 import xyz.gnas.elif.app.common.utility.DialogUtility;
 import xyz.gnas.elif.app.common.utility.ImageUtility;
 import xyz.gnas.elif.app.common.utility.WindowEventUtility;
@@ -63,7 +65,6 @@ import xyz.gnas.elif.core.logic.ClipboardLogic;
 import javax.swing.filechooser.FileSystemView;
 import java.awt.Desktop;
 import java.io.File;
-import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -106,6 +107,9 @@ public class ExplorerController {
 
     @FXML
     private Label lblCopyToClipboard;
+
+    @FXML
+    private Label lblPaste;
 
     @FXML
     private Label lblMove;
@@ -186,22 +190,44 @@ public class ExplorerController {
 
     private ExplorerModel model;
 
-    /**
-     * Flag to tell the current sorting columns
-     */
     private Label currentSortLabel;
 
     /**
-     * Flag to tell current sorting order
+     * current sorting order
      */
     private BooleanProperty isDescending = new SimpleBooleanProperty();
 
     private List<ExplorerItemModel> selectedFolderList = new ArrayList<>();
     private List<ExplorerItemModel> selectedFileList = new ArrayList<>();
 
+    private void executeRunner(String errorMessage, Runner runner) {
+        CodeRunnerUtility.executeRunner(getClass(), errorMessage, runner);
+    }
+
+    private void executeRunnerOrExit(String errorMessage, Runner runner) {
+        CodeRunnerUtility.executeRunnerOrExit(getClass(), errorMessage, runner);
+    }
+
+    private int executeRunnerWithIntReturn(String errorMessage, int errorReturnValue,
+                                           CodeRunnerUtility.RunnerWithIntReturn runner) {
+        return CodeRunnerUtility.executeRunnerWithIntReturn(getClass(), errorMessage, errorReturnValue, runner);
+    }
+
+    private Object executeRunnerWithObjectReturn(String errorMessage, CodeRunnerUtility.RunnerWithObjectReturn runner) {
+        return CodeRunnerUtility.executeRunnerWithObjectReturn(getClass(), errorMessage, runner);
+    }
+
+    private void writeInfoLog(String log) {
+        DialogUtility.writeInfoLog(getClass(), log);
+    }
+
+    private void postEvent(Object object) {
+        EventBus.getDefault().post(object);
+    }
+
     @Subscribe
     public void onInitialiseExplorerEvent(InitialiseExplorerEvent event) {
-        try {
+        executeRunnerOrExit("Could not initialise explorer", () -> {
             if (model == null) {
                 model = event.getModel();
 
@@ -209,9 +235,7 @@ public class ExplorerController {
                 acpMain.setPadding(event.isLeft() ? new Insets(0, 5, 0, 0) : new Insets(0, 0, 0, 5));
                 loadDrives();
             }
-        } catch (Exception e) {
-            showError(e, "Could not initialise explorer", true);
-        }
+        });
     }
 
     private void loadDrives() {
@@ -219,9 +243,9 @@ public class ExplorerController {
         driveList.clear();
         Collections.addAll(driveList, File.listRoots());
         selectInitialDrive();
-
-        // add listener to drive combo box after initialising
-        addListenerToDriveComboBox();
+        cbbDrive.getSelectionModel().selectedItemProperty().addListener(
+                (ObservableValue<? extends File> observable, File oldValue, File newValue) ->
+                        executeRunner("Error handling drive selection", () -> changeCurrentPath(newValue)));
     }
 
     private void selectInitialDrive() {
@@ -237,8 +261,6 @@ public class ExplorerController {
 
     private void selectDriveFromSetting() {
         ObservableList<File> driveList = cbbDrive.getItems();
-        // select drive that is chosen by the current path
-        // get the drive path of the current path
         String driveOfPath = getRootPath();
         boolean validPath = false;
 
@@ -262,7 +284,7 @@ public class ExplorerController {
     }
 
     /**
-     * Change current path and generate change path event
+     * Change current path, update list and generate change path event
      */
     private void changeCurrentPath(File path) {
         String absolutePath = path.getAbsolutePath();
@@ -283,10 +305,8 @@ public class ExplorerController {
 
     private void updateItemList() {
         writeInfoLog("Updating item list");
-
         ObservableList<ExplorerItemModel> itemList = tbvTable.getItems();
         itemList.clear();
-
         File[] children = model.getFolder().listFiles();
 
         if (children != null) {
@@ -300,24 +320,13 @@ public class ExplorerController {
         tbvTable.refresh();
     }
 
-    private void addListenerToDriveComboBox() {
-        cbbDrive.getSelectionModel().selectedItemProperty()
-                .addListener((ObservableValue<? extends File> observable, File oldValue, File newValue) -> {
-                    try {
-                        changeCurrentPath(newValue);
-                    } catch (Exception e) {
-                        showError(e, "Error handling drive selection", false);
-                    }
-                });
-    }
-
     @Subscribe
     public void onChangePathEvent(ChangePathEvent event) {
-        try {
+        executeRunner("Error handling change path event", () -> {
             ExplorerModel eventModel = event.getModel();
 
             if (model != eventModel) {
-                File otherFile = event.getModel().getFolder();
+                File otherFile = eventModel.getFolder();
                 cmiCopyToOther.setDisable(otherFile == null);
 
                 if (otherFile != null) {
@@ -326,77 +335,51 @@ public class ExplorerController {
                     lblMove.setText("Move to " + otherPath);
                 }
             }
-        } catch (Exception e) {
-            showError(e, "Error handling change path event", false);
-        }
+        });
     }
 
     @Subscribe
     public void onReloadEvent(ReloadEvent event) {
-        try {
+        executeRunner("Error handling reload event", () -> {
             if (event.getPath().equalsIgnoreCase(model.getFolder().getAbsolutePath())) {
                 updateItemList();
             }
-        } catch (Exception e) {
-            showError(e, "Error handling reload  event", false);
-        }
+        });
     }
 
     @Subscribe
     public void onSwitchTabEvent(SwitchTabEvent event) {
-        try {
+        executeRunner("Error handling switch tab event", () -> {
             if (event.getModel() != model) {
                 tbvTable.requestFocus();
             }
-        } catch (Exception e) {
-            showError(e, "Error handling switch tab event", false);
-        }
-    }
-
-    private void showError(Exception e, String message, boolean exit) {
-        DialogUtility.showError(getClass(), e, message, exit);
-    }
-
-    private void writeInfoLog(String log) {
-        DialogUtility.writeInfoLog(getClass(), log);
-    }
-
-    private void postEvent(Object object) {
-        EventBus.getDefault().post(object);
+        });
     }
 
     @FXML
     private void initialize() {
-        try {
+        executeRunnerOrExit("Could not initialise explorer", () -> {
             EventBus.getDefault().register(this);
             handleWindowFocusedEvent();
             initialiseDriveComboBox();
             initialiseSortImages();
             initialiseTable();
-        } catch (Exception e) {
-            showError(e, "Could not initialise explorer", true);
-        }
+        });
     }
 
     private void handleWindowFocusedEvent() {
-        WindowEventUtility.bindWindowEventHandler(acpMain, new WindowEventUtility.WindowEventHandler() {
+        WindowEventUtility.bindWindowEventHandler(getClass(), acpMain, new WindowEventUtility.WindowEventHandler() {
             @Override
             public void handleShownEvent() {
-
             }
 
             @Override
             public void handleFocusedEvent() {
-                try {
-                    updateItemList();
-                } catch (Exception e) {
-                    showError(e, "Error handling window focused event", false);
-                }
+                executeRunner("Error handling window focused event", () -> updateItemList());
             }
 
             @Override
             public void handleCloseEvent(WindowEvent windowEvent) {
-
             }
         });
     }
@@ -407,14 +390,13 @@ public class ExplorerController {
     }
 
     /**
-     * Wrapper method for displaying both lists of drives and selected
-     * drive
+     * Wrapper method for displaying both lists of drives and selected drive
      */
     private ListCell<File> getListCell() {
         return new ListCell<>() {
             @Override
             protected void updateItem(File item, boolean empty) {
-                try {
+                executeRunner("Error displaying drives", () -> {
                     super.updateItem(item, empty);
 
                     if (item == null || empty) {
@@ -422,13 +404,17 @@ public class ExplorerController {
                     } else {
                         setGraphic(getDriveItem(item));
                     }
-                } catch (Exception e) {
-                    showError(e, "Error displaying drives", false);
-                }
+                });
             }
         };
     }
 
+    /**
+     * get a Node to show the drive
+     *
+     * @param item the File object representing the drive
+     * @return the Node object
+     */
     private HBox getDriveItem(File item) {
         ImageView imv = new ImageView(ImageUtility.getFileIcon(item, false));
         Label lbl = new Label(FileSystemView.getFileSystemView().getSystemDisplayName(item));
@@ -448,17 +434,13 @@ public class ExplorerController {
         hideSortImages();
         mivName.setVisible(true);
 
-        isDescending.addListener(l -> {
-            try {
-                String glyph = isDescending.get() ? Configurations.DESCENDING : Configurations.ASCENDING;
-                mivName.setGlyphName(glyph);
-                mivExtension.setGlyphName(glyph);
-                mivSize.setGlyphName(glyph);
-                mivDate.setGlyphName(glyph);
-            } catch (Exception e) {
-                showError(e, "Error when handling change to sort order", false);
-            }
-        });
+        isDescending.addListener(l -> executeRunner("Error when handling change to sort order", () -> {
+            String glyph = isDescending.get() ? Configurations.DESCENDING_GLYPH : Configurations.ASCENDING_GLYPH;
+            mivName.setGlyphName(glyph);
+            mivExtension.setGlyphName(glyph);
+            mivSize.setGlyphName(glyph);
+            mivDate.setGlyphName(glyph);
+        }));
     }
 
     private void hideSortImages() {
@@ -472,31 +454,26 @@ public class ExplorerController {
         String sortOrder = isDescending.get() ? "Descending" : "Ascending";
         writeInfoLog("Sorting list by " + currentSortLabel.getText() + " - " + sortOrder);
 
-        tbvTable.getItems().sort((ExplorerItemModel o1, ExplorerItemModel o2) -> {
-            try {
-                boolean descending = isDescending.get();
-                boolean IsDirectory1 = o1.getFile().isDirectory();
+        tbvTable.getItems().sort((ExplorerItemModel o1, ExplorerItemModel o2) ->
+                executeRunnerWithIntReturn("Error when sorting table", 0, () -> {
+                    boolean descending = isDescending.get();
+                    boolean IsDirectory1 = o1.getFile().isDirectory();
 
-                // only sort if both are files or folders, otherwise folder comes first
-                if (IsDirectory1 == o2.getFile().isDirectory()) {
-                    if (currentSortLabel == lblName) {
-                        return getSortResult(descending, o1.getName(), o2.getName());
-                    } else if (currentSortLabel == lblExtension) {
-                        return getSortResult(descending, o1.getExtension(), o2.getExtension());
-                    } else if (currentSortLabel == lblSize) {
-                        return getSortResult(descending, o1.getSize(), o2.getSize());
+                    // only sort if both are files or folders, otherwise folder comes first
+                    if (IsDirectory1 == o2.getFile().isDirectory()) {
+                        if (currentSortLabel == lblName) {
+                            return getSortResult(descending, o1.getName(), o2.getName());
+                        } else if (currentSortLabel == lblExtension) {
+                            return getSortResult(descending, o1.getExtension(), o2.getExtension());
+                        } else if (currentSortLabel == lblSize) {
+                            return getSortResult(descending, o1.getSize(), o2.getSize());
+                        } else {
+                            return getSortResult(descending, o1.getDate(), o2.getDate());
+                        }
                     } else {
-                        return getSortResult(descending, o1.getDate(), o2.getDate());
+                        return IsDirectory1 ? -1 : 1;
                     }
-                } else {
-                    return IsDirectory1 ? -1 : 1;
-                }
-            } catch (Exception e) {
-                showError(e, "Error when sorting table", false);
-            }
-
-            return 0;
-        });
+                }));
     }
 
     /**
@@ -510,16 +487,13 @@ public class ExplorerController {
         // sort by name initially
         currentSortLabel = lblName;
 
-        tbvTable.focusedProperty().addListener(l -> {
-            try {
-                if (tbvTable.isFocused()) {
-                    postEvent(new FocusExplorerEvent(model));
-                    postEvent(new ChangeItemSelectionEvent(getSelectedItems()));
-                }
-            } catch (Exception e) {
-                showError(e, "Error when handling focus change event", false);
-            }
-        });
+        tbvTable.focusedProperty().addListener(l ->
+                executeRunner("Error when handling table focus change event", () -> {
+                    if (tbvTable.isFocused()) {
+                        postEvent(new FocusExplorerEvent(model));
+                        postEvent(new ChangeItemSelectionEvent(getSelectedItems()));
+                    }
+                }));
 
         addListenerToSelectedItems();
         initialiseTableContextMenu();
@@ -532,15 +506,12 @@ public class ExplorerController {
     }
 
     private void addListenerToSelectedItems() {
-        tbvTable.getSelectionModel().getSelectedItems().addListener((ListChangeListener<ExplorerItemModel>) l -> {
-            try {
-                updateSelectedFoldersAndFiles();
-                updateTableContextMenu();
-                postEvent(new ChangeItemSelectionEvent(getSelectedItems()));
-            } catch (Exception e) {
-                showError(e, "Error when handling change to item selection", false);
-            }
-        });
+        tbvTable.getSelectionModel().getSelectedItems().addListener((ListChangeListener<ExplorerItemModel>) l ->
+                executeRunner("Error when handling change to item selection", () -> {
+                    updateSelectedFoldersAndFiles();
+                    updateTableContextMenu();
+                    postEvent(new ChangeItemSelectionEvent(getSelectedItems()));
+                }));
     }
 
     private void updateTableContextMenu() {
@@ -548,7 +519,6 @@ public class ExplorerController {
         cmiSimpleRename.setVisible(false);
         cmiEditAsText.setVisible(false);
 
-        // if only files are selected
         if (selectedFolderList.isEmpty()) {
             if (!selectedFileList.isEmpty()) {
                 cmiRunOrGoto.setVisible(true);
@@ -571,13 +541,9 @@ public class ExplorerController {
     }
 
     private void initialiseTableContextMenu() {
-        ctmTable.setOnShowing(l -> {
-            try {
-                cmiPaste.setVisible(ClipboardLogic.clipboardHasFiles());
-            } catch (Exception e) {
-                showError(e, "Error handling table context menu shown event", false);
-            }
-        });
+        ctmTable.setOnShowing(l -> executeRunner("Error handling table context menu shown event",
+                () -> cmiPaste.setVisible(ClipboardLogic.clipboardHasFiles()))
+        );
 
         smiRunOrGoTo.visibleProperty().bind(cmiRunOrGoto.visibleProperty());
         smiEditAsText.visibleProperty().bindBidirectional(cmiEditAsText.visibleProperty());
@@ -588,21 +554,19 @@ public class ExplorerController {
     private void setRunOrGoToLabelWidth() {
         lblRunOrGoTo.setMinWidth(MIN_TABLE_CONTEXT_MENU_ITEM_WIDTH);
 
-        lblRunOrGoTo.widthProperty().addListener(l -> {
-            try {
-                // resize label to minimum width if it's less than minimum
-                if (lblRunOrGoTo.getWidth() < MIN_TABLE_CONTEXT_MENU_ITEM_WIDTH) {
-                    lblRunOrGoTo.autosize();
-                }
-            } catch (Exception e) {
-                showError(e, "Error when handling run or go to label width change", false);
-            }
-        });
+        lblRunOrGoTo.widthProperty().addListener(l ->
+                executeRunner("Error when handling run or go to label width change", () -> {
+                    // resize label to minimum width if it's less than minimum
+                    if (lblRunOrGoTo.getWidth() < MIN_TABLE_CONTEXT_MENU_ITEM_WIDTH) {
+                        lblRunOrGoTo.autosize();
+                    }
+                }));
     }
 
     private void bindTableMenuItemsWidthProperty() {
         lblCopyToOther.prefWidthProperty().bind(lblRunOrGoTo.widthProperty());
         lblCopyToClipboard.prefWidthProperty().bind(lblRunOrGoTo.widthProperty());
+        lblPaste.prefWidthProperty().bind(lblRunOrGoTo.widthProperty());
         lblMove.prefWidthProperty().bind(lblRunOrGoTo.widthProperty());
         lblDelete.prefWidthProperty().bind(lblRunOrGoTo.widthProperty());
         lblSimpleRename.prefWidthProperty().bind(lblRunOrGoTo.widthProperty());
@@ -631,7 +595,7 @@ public class ExplorerController {
     }
 
     private void setRunContextMenuItem() {
-        mivRunOrGoTo.setGlyphName("POWER_SETTINGS_NEW");
+        mivRunOrGoTo.setGlyphName(Configurations.RUN_FILE_GLYPH);
         String run = "Run ";
         int size = selectedFileList.size();
 
@@ -645,7 +609,7 @@ public class ExplorerController {
     }
 
     private void setGoToContextMenuItem() {
-        mivRunOrGoTo.setGlyphName("OPEN_IN_BROWSER");
+        mivRunOrGoTo.setGlyphName(Configurations.GO_TO_GLYPH);
         ExplorerItemModel item = selectedFolderList.get(0);
         lblRunOrGoTo.setText("Go to " + item.getFile().getAbsolutePath());
     }
@@ -654,15 +618,11 @@ public class ExplorerController {
         tbvTable.setRowFactory(f -> {
             TableRow<ExplorerItemModel> row = new TableRow<>();
 
-            row.setOnMouseClicked(event -> {
-                try {
-                    if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2 && (!row.isEmpty())) {
-                        runOrGoToByItem(row.getItem());
-                    }
-                } catch (Exception e) {
-                    showError(e, "Error handling double click", false);
+            row.setOnMouseClicked(event -> executeRunner("Error handling double click", () -> {
+                if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2 && (!row.isEmpty())) {
+                    runOrGoToByItem(row.getItem());
                 }
-            });
+            }));
 
             return row;
         });
@@ -680,85 +640,58 @@ public class ExplorerController {
         } else {
             String path = file.getAbsolutePath();
 
-            try {
+            executeRunner("Error opening file " + path, () -> {
                 writeInfoLog("Running file " + path);
                 Desktop.getDesktop().open(file);
-            } catch (IOException e) {
-                showError(e, "Error opening file " + path, false);
-            }
+            });
         }
     }
 
     /**
-     * Wrapper to reduce copy paste
+     * Wrapper to initialise column
      */
     private void initialiseColumn(TableColumn<ExplorerItemModel, ExplorerItemModel> tbc, Label lbl, Column column) {
         tbc.setCellValueFactory(new ExplorerTableCellValue());
         tbc.setCellFactory(new ExplorerTableCellCallback(column));
 
-        tbc.widthProperty().addListener(l -> {
-            try {
-                lbl.setPrefWidth(tbc.getWidth());
-            } catch (Exception e) {
-                showError(e, "Error when listening to changes to column width", false);
-            }
-        });
+        tbc.widthProperty().addListener(l -> executeRunner("Error handling change to column width",
+                () -> lbl.setPrefWidth(tbc.getWidth())));
     }
 
     @FXML
     private void back(ActionEvent event) {
-        try {
+        executeRunner("Could not navigate back", () -> {
             File parent = model.getFolder().getParentFile();
 
             if (parent != null) {
                 changeCurrentPath(parent);
             }
-        } catch (Exception e) {
-            showError(e, "Could not navigate back", false);
-        }
+        });
     }
 
     @FXML
     private void goToRoot(ActionEvent event) {
-        try {
-            changeCurrentPath(new File(getRootPath()));
-        } catch (Exception e) {
-            showError(e, "Could not go to root", false);
-        }
+        executeRunner("Could not go to root", () -> changeCurrentPath(new File(getRootPath())));
     }
 
     @FXML
     private void reload(ActionEvent event) {
-        try {
-            updateItemListAndScrollToTop();
-        } catch (Exception e) {
-            showError(e, "Could not reload", false);
-        }
+        executeRunner("Could not reload", this::updateItemListAndScrollToTop);
     }
 
     @FXML
     private void scrollToTop(ActionEvent event) {
-        try {
-            writeInfoLog("Scrolling to top");
-            tbvTable.scrollTo(0);
-        } catch (Exception e) {
-            showError(e, "Could not scroll to top", false);
-        }
+        executeRunner("Could not scroll to top", () -> tbvTable.scrollTo(0));
     }
 
     @FXML
     private void scrollToBottom(ActionEvent event) {
-        try {
-            writeInfoLog("Scrolling to bottom");
-            tbvTable.scrollTo(tbvTable.getItems().size() - 1);
-        } catch (Exception e) {
-            showError(e, "Could not scroll to bottom", false);
-        }
+        executeRunner("Could not scroll to bottom", () -> tbvTable.scrollTo(tbvTable.getItems().size() - 1));
     }
 
     @FXML
     private void sort(MouseEvent event) {
-        try {
+        executeRunner("Could not sort items", () -> {
             hideSortImages();
             Label previousLabel = currentSortLabel;
             currentSortLabel = (Label) event.getSource();
@@ -773,9 +706,7 @@ public class ExplorerController {
 
             showSortImage();
             sortItemList();
-        } catch (Exception e) {
-            showError(e, "Could not sort items", false);
-        }
+        });
     }
 
     private void showSortImage() {
@@ -792,8 +723,8 @@ public class ExplorerController {
 
     @FXML
     private void runOrGoTo(ActionEvent event) {
-        try {
-            // navigate into top folder if no files are selected
+        executeRunner("Could not run or go to selection", () -> {
+            // navigate into selected folder
             if (selectedFileList.isEmpty()) {
                 runOrGoToByItem(selectedFolderList.get(0));
             } else { // otherwise run the files
@@ -801,18 +732,13 @@ public class ExplorerController {
                     runOrGoToByItem(item);
                 }
             }
-        } catch (Exception e) {
-            showError(e, "Could not run or go to selection", false);
-        }
+        });
     }
 
     @FXML
     private void copyToOther(ActionEvent event) {
-        try {
-            checkEmptyAndPostEvent(new CopyToOtherEvent(model, getSelectedItems()));
-        } catch (Exception e) {
-            showError(e, "Could not copy to other tab", false);
-        }
+        executeRunner("Could not copy to other tab", () -> checkEmptyAndPostEvent(new CopyToOtherEvent(model,
+                getSelectedItems())));
     }
 
     private void checkEmptyAndPostEvent(Object event) {
@@ -823,99 +749,61 @@ public class ExplorerController {
 
     @FXML
     private void copyToClipboard(ActionEvent event) {
-        try {
-            checkEmptyAndPostEvent(new CopyToClipboardEvent(model, getSelectedItems()));
-        } catch (Exception e) {
-            showError(e, "Could not copy to clipboard", false);
-        }
+        executeRunner("Could not copy to clipboard", () -> checkEmptyAndPostEvent(new CopyToClipboardEvent(model,
+                getSelectedItems())));
     }
 
     @FXML
     private void paste(ActionEvent event) {
-        try {
-            postEvent(new PasteEvent(model));
-        } catch (Exception e) {
-            showError(e, "Could not paste", false);
-        }
+        executeRunner("Could not paste", () -> postEvent(new PasteEvent(model)));
     }
 
     @FXML
     private void move(ActionEvent event) {
-        try {
-            checkEmptyAndPostEvent(new MoveEvent(model, getSelectedItems()));
-        } catch (Exception e) {
-            showError(e, "Could not copy to clipboard", false);
-        }
+        executeRunner("Could not copy to clipboard", () -> checkEmptyAndPostEvent(new MoveEvent(model,
+                getSelectedItems())));
     }
 
     @FXML
     private void delete(ActionEvent event) {
-        try {
-            checkEmptyAndPostEvent(new DeleteEvent(model, getSelectedItems()));
-        } catch (Exception e) {
-            showError(e, "Could not delete", false);
-        }
+        executeRunner("Could not delete", () -> checkEmptyAndPostEvent(new DeleteEvent(model, getSelectedItems())));
     }
 
     @FXML
     private void simpleRename(ActionEvent event) {
-        try {
-            postEvent(new SimpleRenameEvent(tbvTable.getSelectionModel().getSelectedItem().getFile()));
-        } catch (Exception e) {
-            showError(e, "Could not perform simple rename", false);
-        }
+        executeRunner("Could not perform simple rename",
+                () -> postEvent(new SimpleRenameEvent(tbvTable.getSelectionModel().getSelectedItem().getFile())));
     }
 
     @FXML
     private void advancedRename(ActionEvent event) {
-        try {
-        } catch (Exception e) {
-            showError(e, "Could not perform advanced rename", false);
-        }
     }
 
     @FXML
     private void editAsText(ActionEvent event) {
-        try {
-            postEvent(new EditAsTextEvent(tbvTable.getSelectionModel().getSelectedItem().getFile()));
-        } catch (Exception e) {
-            showError(e, "Could not edit as text", false);
-        }
+        executeRunner("Could not edit as text",
+                () -> postEvent(new EditAsTextEvent(tbvTable.getSelectionModel().getSelectedItem().getFile())));
     }
 
     @FXML
     private void addNewFolder(ActionEvent event) {
-        try {
-            postEvent(new AddNewFolderEvent(model));
-        } catch (Exception e) {
-            showError(e, "Could not add new folder", false);
-        }
+        executeRunner("Could not add new folder", () -> postEvent(new AddNewFolderEvent(model)));
     }
 
     @FXML
     private void addNewFile(ActionEvent event) {
-        try {
-            postEvent(new AddNewFileEvent(model));
-        } catch (Exception e) {
-            showError(e, "Could not add new file", false);
-        }
+        executeRunner("Could not add new file", () -> postEvent(new AddNewFileEvent(model)));
     }
 
     @FXML
     private void tableKeyReleased(KeyEvent event) {
-        try {
-            handleKeyEvent(event);
-        } catch (Exception e) {
-            showError(e, "Could not handle key event", false);
-        }
-    }
-
-    private void handleKeyEvent(KeyEvent event) {
-        if (event.isControlDown()) {
-            handleControlModifierEvent(event);
-        } else {
-            handleNoModifierEvent(event);
-        }
+        executeRunner("Could not handle key event", () -> {
+            if (event.isControlDown()) {
+                handleControlModifierEvent(event);
+            } else {
+                handleNoModifierEvent(event);
+            }
+        });
     }
 
     private void handleControlModifierEvent(KeyEvent event) {
@@ -998,8 +886,7 @@ public class ExplorerController {
     }
 
     /**
-     * Column enum, used by ExplorerTableCell to determine how to
-     * display the data
+     * Column enum, used by ExplorerTableCell to determine how to display the data
      */
     private enum Column {
         Name, Extension, Size, Date
@@ -1027,12 +914,8 @@ public class ExplorerController {
 
                 @Override
                 public ExplorerItemModel getValue() {
-                    try {
-                        return param.getValue();
-                    } catch (Exception e) {
-                        showError(e, "Error getting value for table cell", false);
-                        return null;
-                    }
+                    return (ExplorerItemModel) executeRunnerWithObjectReturn("Error getting value for table cell",
+                            () -> param.getValue());
                 }
 
                 @Override
@@ -1062,7 +945,7 @@ public class ExplorerController {
         private class ExplorerTableCell extends TableCell<ExplorerItemModel, ExplorerItemModel> {
             @Override
             protected void updateItem(ExplorerItemModel item, boolean empty) {
-                try {
+                executeRunner("Error when displaying item", () -> {
                     super.updateItem(item, empty);
 
                     if (empty || item == null) {
@@ -1070,9 +953,7 @@ public class ExplorerController {
                     } else {
                         display(item);
                     }
-                } catch (Exception e) {
-                    showError(e, "Error when displaying item", false);
-                }
+                });
             }
 
             private void display(ExplorerItemModel item) {
@@ -1107,7 +988,7 @@ public class ExplorerController {
 
                 if (file.isDirectory()) {
                     MaterialIconView mivFolder = new MaterialIconView();
-                    mivFolder.setGlyphName("FOLDER_OPEN");
+                    mivFolder.setGlyphName(Configurations.FOLDER_GRYPH);
                     mivFolder.setGlyphSize(16);
                     setGraphic(mivFolder);
                 } else {

@@ -4,6 +4,7 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.stage.Window;
 import javafx.stage.WindowEvent;
+import xyz.gnas.elif.app.common.utility.CodeRunnerUtility.Runner;
 
 public class WindowEventUtility {
     public interface WindowEventHandler {
@@ -14,55 +15,46 @@ public class WindowEventUtility {
         void handleCloseEvent(WindowEvent windowEvent);
     }
 
-    private static void showError(Throwable e, String message, boolean exit) {
-        DialogUtility.showError(WindowEventUtility.class, e, message, exit);
+    private static void executeRunner(Class callerClass, String errorMessage, Runner runner) {
+        CodeRunnerUtility.executeRunner(callerClass, errorMessage, runner);
     }
 
-    public static void bindWindowEventHandler(Node node, WindowEventHandler handler) {
-        bindSceneListener(node, handler);
+    public static void bindWindowEventHandler(Class callerClass, Node node, WindowEventHandler handler) {
+        bindSceneListener(callerClass, node, handler);
 
-        node.sceneProperty().addListener(s -> {
-            try {
-                bindSceneListener(node, handler);
-            } catch (Exception e) {
-                showError(e, "Error handling scene change event", false);
-            }
-        });
+        node.sceneProperty().addListener(s -> executeRunner(callerClass, "Error handling scene change event",
+                () -> bindSceneListener(callerClass, node, handler)));
     }
 
-    private static void bindSceneListener(Node node, WindowEventHandler handler) {
+    private static void bindSceneListener(Class callerClass, Node node, WindowEventHandler handler) {
         Scene scene = node.getScene();
 
         if (scene != null) {
-            bindWindowListener(scene, handler);
+            bindWindowListener(callerClass, scene, handler);
 
-            scene.windowProperty().addListener(w -> {
-                try {
-                    bindWindowListener(scene, handler);
-                } catch (Exception e) {
-                    showError(e, "Error handling window change event", false);
-                }
-            });
+            scene.windowProperty().addListener(w -> executeRunner(callerClass, "Error handling window change event",
+                    () -> bindWindowListener(callerClass, scene, handler)));
         }
     }
 
-    private static void bindWindowListener(Scene scene, WindowEventHandler handler) {
+    private static void bindWindowListener(Class callerClass, Scene scene, WindowEventHandler handler) {
         Window window = scene.getWindow();
 
         if (window != null) {
-            window.setOnShown(l -> handler.handleShownEvent());
+            window.setOnShown(l -> executeRunner(callerClass, "Error handling window shown event",
+                    handler::handleShownEvent));
 
             window.focusedProperty().addListener(l -> {
-                try {
+                executeRunner(callerClass, "Error handling window focused event", () -> {
                     if (window.isFocused()) {
                         handler.handleFocusedEvent();
                     }
-                } catch (Exception e) {
-                    showError(e, "Error handling window focused event", false);
-                }
+                });
             });
 
-            window.setOnCloseRequest((WindowEvent windowEvent) -> handler.handleCloseEvent(windowEvent));
+            window.setOnCloseRequest((WindowEvent windowEvent) ->
+                    executeRunner(callerClass, "Error handling window close event",
+                            () -> handler.handleCloseEvent(windowEvent)));
         }
     }
 }

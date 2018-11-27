@@ -21,7 +21,7 @@ import java.util.Optional;
 import static javafx.application.Platform.runLater;
 
 public final class DialogUtility {
-    public static void showError(Class callingClass, Throwable e, String message, boolean exit) {
+    public static void showError(Class callingClass, String message, Throwable e, boolean exit) {
         runLater(() -> {
             try {
                 String stackTrace = getStrackTrace(e);
@@ -50,12 +50,6 @@ public final class DialogUtility {
         }
     }
 
-    private static void initialiseAlert(Alert alert, String title, String headerText, String contentText) {
-        alert.setTitle(title);
-        alert.setHeaderText(headerText);
-        alert.setContentText(contentText);
-    }
-
     private static GridPane getExpandableContent(String sStackTrace) {
         TextArea textArea = new TextArea(sStackTrace);
         textArea.setEditable(false);
@@ -68,6 +62,12 @@ public final class DialogUtility {
         expContent.setMaxWidth(Double.MAX_VALUE);
         expContent.add(textArea, 0, 0);
         return expContent;
+    }
+
+    private static void initialiseAlert(Alert alert, String title, String headerText, String contentText) {
+        alert.setTitle(title);
+        alert.setHeaderText(headerText);
+        alert.setContentText(contentText);
     }
 
     public static void writeErrorLog(Class callingClass, String message, Throwable e) {

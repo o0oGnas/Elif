@@ -21,7 +21,7 @@ public class Operation {
 
     private BooleanProperty complete = new SimpleBooleanProperty();
 
-    private DoubleProperty percentageDone = new SimpleDoubleProperty();
+    private DoubleProperty completedAmount = new SimpleDoubleProperty();
 
     public String getName() {
         return name;
@@ -79,16 +79,19 @@ public class Operation {
         this.complete.set(complete);
     }
 
-    public double getPercentageDone() {
-        return percentageDone.get();
+    /**
+     * @return the completed amount of the operation, from 0 to 1
+     */
+    public double getCompletedAmount() {
+        return completedAmount.get();
     }
 
-    public DoubleProperty percentageDoneProperty() {
-        return percentageDone;
+    public DoubleProperty completedAmountProperty() {
+        return completedAmount;
     }
 
-    public void setPercentageDone(double percentageDone) {
-        this.percentageDone.set(percentageDone);
+    public void setCompletedAmount(double completedAmount) {
+        this.completedAmount.set(completedAmount);
     }
 
     public Operation(String name) {

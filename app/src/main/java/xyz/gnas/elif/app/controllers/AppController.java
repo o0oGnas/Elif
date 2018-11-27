@@ -4,8 +4,9 @@ import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
+import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
-import javafx.concurrent.Task;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -21,6 +22,11 @@ import javafx.stage.WindowEvent;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import xyz.gnas.elif.app.common.ResourceManager;
+import xyz.gnas.elif.app.common.utility.CodeRunnerUtility;
+import xyz.gnas.elif.app.common.utility.CodeRunnerUtility.ExceptionHandler;
+import xyz.gnas.elif.app.common.utility.CodeRunnerUtility.MainThreadTaskRunner;
+import xyz.gnas.elif.app.common.utility.CodeRunnerUtility.Runner;
+import xyz.gnas.elif.app.common.utility.CodeRunnerUtility.SideThreadTaskRunner;
 import xyz.gnas.elif.app.common.utility.DialogUtility;
 import xyz.gnas.elif.app.common.utility.WindowEventUtility;
 import xyz.gnas.elif.app.events.dialog.EditAsTextEvent;
@@ -90,7 +96,7 @@ public class AppController {
 
     private Node simpleRenameDialog;
 
-    private List<Operation> operationList = new LinkedList<>();
+    private ObservableList<Operation> operationList = FXCollections.observableArrayList();
 
     /**
      * The model of the currently selected tab
@@ -102,8 +108,16 @@ public class AppController {
      */
     private List<ExplorerItemModel> selectedItemList;
 
-    private void showError(Exception e, String message, boolean exit) {
-        DialogUtility.showError(getClass(), e, message, exit);
+    private void executeRunner(String errorMessage, Runner runner) {
+        CodeRunnerUtility.executeRunner(getClass(), errorMessage, runner);
+    }
+
+    private void executeRunnerOrExit(String errorMessage, Runner runner) {
+        CodeRunnerUtility.executeRunnerOrExit(getClass(), errorMessage, runner);
+    }
+
+    private void executeRunnerAndHandleException(Runner runner, ExceptionHandler handler) {
+        CodeRunnerUtility.executeRunnerAndHandleException(runner, handler);
     }
 
     private void writeErrorLog(String message, Throwable e) {
@@ -120,17 +134,15 @@ public class AppController {
 
     @Subscribe
     public void onFocusExplorerEvent(FocusExplorerEvent event) {
-        try {
+        executeRunner("Error handling focus explorer event", () -> {
             selectedModel = event.getModel();
             hbxNewFolderFile.setDisable(false);
-        } catch (Exception e) {
-            showError(e, "Error when handling focus change event", false);
-        }
+        });
     }
 
     @Subscribe
     public void onChangeItemSelectionEvent(ChangeItemSelectionEvent event) {
-        try {
+        executeRunner("Error handling item selection change evnet", () -> {
             selectedItemList = event.getItemList();
 
             if (selectedItemList != null && !selectedItemList.isEmpty()) {
@@ -146,18 +158,13 @@ public class AppController {
                     btnEditAsText.setDisable(true);
                 }
             }
-        } catch (Exception e) {
-            showError(e, "Error when handling focus change event", false);
-        }
+        });
     }
 
     @Subscribe
     public void onCopyToOtherEvent(CopyToOtherEvent event) {
-        try {
-            copy(event.getSourceModel(), event.getSourceList(), getTargetPath(event.getSourceModel()), CopyMode.COPY);
-        } catch (Exception e) {
-            showError(e, "Error when copying to other tab", false);
-        }
+        executeRunner("Error handling copy to other tab event", () -> copy(event.getSourceModel(),
+                event.getSourceList(), getTargetPath(event.getSourceModel()), CopyMode.COPY));
     }
 
     private String getTargetPath(ExplorerModel sourceModel) {
@@ -228,7 +235,13 @@ public class AppController {
 
         String operationName = container.mode == CopyMode.MOVE ? "Move" : "Copy";
         container.operation = createNewOperation(operationName + " files to \"" + container.targetPath + "\"");
-        runCopyMasterThread(container, duplicate);
+
+        runInSideThread("Error running copy task", () -> {
+            processSourceTargetMap(container, duplicate);
+
+            runInMainThread("Error updating complete status for operation",
+                    () -> container.operation.setComplete(true));
+        });
     }
 
     private void removeExistingFiles(CopyParameterContainer container) {
@@ -258,51 +271,28 @@ public class AppController {
     }
 
     private void addOperationCompleteListener(Operation operation, Node n) {
-        operation.completeProperty().addListener(l -> {
-            try {
-                if (operation.isComplete()) {
-                    // play notification sound is operation is not stopped
-                    if (!operation.isStopped()) {
-                        Media media = ResourceManager.getNotificationSound();
-                        MediaPlayer mediaPlayer = new MediaPlayer(media);
-                        mediaPlayer.play();
+        operation.completeProperty().addListener(
+                l -> executeRunner("Error handling operation complete property change", () -> {
+                    if (operation.isComplete()) {
+                        // play notification sound is operation is not stopped
+                        if (!operation.isStopped()) {
+                            Media media = ResourceManager.getNotificationSound();
+                            MediaPlayer mediaPlayer = new MediaPlayer(media);
+                            mediaPlayer.play();
+                        }
+
+                        operationList.remove(operation);
+                        vbxOperations.getChildren().remove(n);
                     }
-
-                    operationList.remove(operation);
-                    vbxOperations.getChildren().remove(n);
-                }
-            } catch (Exception e) {
-                showError(e, "Error removing operation from list", false);
-            }
-        });
+                }));
     }
 
-    private void runCopyMasterThread(CopyParameterContainer container, String duplicate) {
-        runNewThread(new Task<>() {
-            @Override
-            protected Integer call() {
-                try {
-                    processSourceTargetMap(container, duplicate);
-
-                    runLater(() -> {
-                                try {
-                                    container.operation.setComplete(true);
-                                } catch (Exception e) {
-                                    showError(e, "Error when completing copy master thread", false);
-                                }
-                            }
-                    );
-                } catch (Exception e) {
-                    showError(e, "Error when copying files", false);
-                }
-
-                return 1;
-            }
-        });
+    private void runInSideThread(String errorMessage, Runner runner) {
+        new Thread(new SideThreadTaskRunner(getClass(), errorMessage, runner)).start();
     }
 
-    private void runNewThread(Task<Integer> task) {
-        new Thread(task).start();
+    private void runInMainThread(String errorMessage, Runner runner) {
+        runLater(new MainThreadTaskRunner(getClass(), errorMessage, runner));
     }
 
     private void processSourceTargetMap(CopyParameterContainer container, String duplicate) throws InterruptedException {
@@ -314,23 +304,15 @@ public class AppController {
             if (container.operation.isStopped()) {
                 break;
             } else {
-                createCopySuboperation(container, source, duplicate);
+                runInMainThread("Error creating new operation", () -> {
+                    String name = container.mode == CopyMode.MOVE ? "Moving" : "Copying";
+                    container.operation.setSuboperationName(name + " \"" + source.getFile().getAbsolutePath() + "\"");
+                });
+
+                checkAndUpdateSourceTargetMap(container, source, duplicate);
+                copyFile(container, source);
             }
         }
-    }
-
-    private void createCopySuboperation(CopyParameterContainer container, ExplorerItemModel source, String duplicate) throws InterruptedException {
-        runLater(() -> {
-            try {
-                String name = container.mode == CopyMode.MOVE ? "Moving" : "Copying";
-                container.operation.setSuboperationName(name + " \"" + source.getFile().getAbsolutePath() + "\"");
-            } catch (Exception e) {
-                showError(e, "Error when changing sub operation name", false);
-            }
-        });
-
-        checkAndUpdateSourceTargetMap(container, source, duplicate);
-        copyFile(container, source);
     }
 
     private void checkAndUpdateSourceTargetMap(CopyParameterContainer container, ExplorerItemModel source,
@@ -360,18 +342,9 @@ public class AppController {
         BooleanProperty error = new SimpleBooleanProperty();
         File target = container.sourceTargetMap.get(source);
 
-        runNewThread(new Task<>() {
-            @Override
-            protected Integer call() {
-                try {
-                    moveOrCopy(container, source, progress);
-                } catch (Exception e) {
-                    handleCopyError(container, error, progress, source, target, e);
-                }
-
-                return 1;
-            }
-        });
+        runInSideThread("Error running file copy task",
+                () -> executeRunnerAndHandleException(() -> moveOrCopy(container, source, progress),
+                        (Exception e) -> handleCopyError(container, error, progress, source, target, e)));
 
         monitorFileProgress(container, progress, error, source, target);
     }
@@ -388,75 +361,61 @@ public class AppController {
     }
 
     private void handleCopyError(CopyParameterContainer container, BooleanProperty error, DoubleProperty progress,
-                                 ExplorerItemModel source,
-                                 File target, Exception e) {
+                                 ExplorerItemModel source, File target, Exception e) {
         error.set(true);
         String sourcePath = source.getFile().getAbsolutePath();
         writeErrorLog("Error when copying file", e);
 
-        runLater(() -> {
-            try {
-                // ask for confirmation to continue when there is an error
-                if (showConfirmation("Error when copying " + sourcePath + " to " + target.getAbsolutePath() + " - " + e.getMessage() +
-                        ". Do you want to " + "continue?")) {
-                    // considered the file with the error finished
-                    progress.set(1);
-                } else {
-                    container.operation.setStopped(true);
-                }
-            } catch (Exception ex) {
-                showError(e, "Error when handling copy error", false);
+        runInMainThread("Error handling copy error", () -> {
+            // ask for confirmation to continue when there is an error
+            if (showConfirmation("Error when copying " + sourcePath + " to " + target.getAbsolutePath() + "\n" +
+                    e.getMessage() + "\nDo you want to continue?")) {
+                // consider the file with the error as finished
+                progress.set(1);
+            } else {
+                container.operation.setStopped(true);
             }
         });
     }
 
-    private void monitorFileProgress(CopyParameterContainer container, DoubleProperty progress, BooleanProperty error
-            , ExplorerItemModel source, File target) throws InterruptedException {
-        double currentPercentageDone = container.operation.getPercentageDone();
+    private void monitorFileProgress(CopyParameterContainer container, DoubleProperty progress, BooleanProperty error,
+                                     ExplorerItemModel source, File target) throws InterruptedException {
+        double currentCompletedAmount = container.operation.getCompletedAmount();
 
         // calculate the amount of contribution this file has to the total size of the operation
         double contribution = source.getSize() / container.totalSize;
 
         while (progress.get() < 1 && !container.operation.isStopped()) {
-            setPercentageDone(container, currentPercentageDone + contribution * progress.get());
+            setCompletedAmount(container, currentCompletedAmount + contribution * progress.get());
             sleep(THREAD_SLEEP_TIME);
         }
 
-        finishCopyFileProgress(container, error, target, currentPercentageDone, contribution);
+        finishCopyFileProgress(container, error, target, currentCompletedAmount, contribution);
     }
 
-    private void setPercentageDone(CopyParameterContainer container, double percent) {
-        runLater(() -> {
-            try {
-                container.operation.setPercentageDone(percent);
-            } catch (Exception e) {
-                showError(e, "Error updating operation progress", false);
-            }
-        });
+    private void setCompletedAmount(CopyParameterContainer container, double percent) {
+        runInMainThread("Error updating completed amount",
+                () -> container.operation.setCompletedAmount(percent));
     }
 
     private void finishCopyFileProgress(CopyParameterContainer container, BooleanProperty error, File target,
                                         double currentPercentageDone, double contribution) {
-        setPercentageDone(container, currentPercentageDone + contribution);
+        setCompletedAmount(container, currentPercentageDone + contribution);
 
-        runLater(() -> {
-            try {
-                // reload source folder if operation is move and there was no error
-                if (container.mode == CopyMode.MOVE && !container.operation.isStopped() && !error.get()) {
-                    postEvent(new ReloadEvent(container.model.getFolder().getAbsolutePath()));
-                }
-
-                // reload target folder each time a file process is finished
-                postEvent(new ReloadEvent(target.getParent()));
-            } catch (Exception e) {
-                showError(e, "Error updating finished progress", false);
+        runInMainThread("Error creating reload event", () -> {
+            // reload source folder if operation is move and there was no error
+            if (container.mode == CopyMode.MOVE && !container.operation.isStopped() && !error.get()) {
+                postEvent(new ReloadEvent(container.model.getFolder().getAbsolutePath()));
             }
+
+            // reload target folder each time a file process is finished
+            postEvent(new ReloadEvent(target.getParent()));
         });
     }
 
     @Subscribe
     public void onCopyToClipboardEvent(CopyToClipboardEvent event) {
-        try {
+        executeRunner("Error handling copy to clipboard event", () -> {
             List<File> fileList = new LinkedList<>();
 
             for (ExplorerItemModel item : event.getSourceList()) {
@@ -464,26 +423,16 @@ public class AppController {
             }
 
             ClipboardLogic.copyToClipboard(fileList);
-        } catch (Exception e) {
-            showError(e, "Error when copying to clipboard", false);
-        }
+        });
     }
 
     @Subscribe
     public void onPasteEvent(PasteEvent event) {
-        try {
+        executeRunner("Error handling paste event", () -> {
             List<File> fileList = ClipboardLogic.getFiles();
 
             if (fileList != null && !fileList.isEmpty()) {
-                List<ExplorerItemModel> sourceList = new LinkedList<>();
-
-                for (File source : fileList) {
-                    // only paste if source file still exists
-                    if (source.exists()) {
-                        ExplorerItemModel item = new ExplorerItemModel(source);
-                        sourceList.add(item);
-                    }
-                }
+                List<ExplorerItemModel> sourceList = convertFileListToSourceList(fileList);
 
                 if (!sourceList.isEmpty()) {
                     writeInfoLog("Pasting files from clipboard");
@@ -491,75 +440,76 @@ public class AppController {
                     copy(event.getSourceModel(), sourceList, model.getFolder().getAbsolutePath(), CopyMode.PASTE);
                 }
             }
-        } catch (Exception e) {
-            showError(e, "Error when pasting from clipboard", false);
+        });
+    }
+
+    private List<ExplorerItemModel> convertFileListToSourceList(List<File> fileList) {
+        List<ExplorerItemModel> sourceList = new LinkedList<>();
+
+        for (File source : fileList) {
+            // only paste if source file still exists
+            if (source.exists()) {
+                ExplorerItemModel item = new ExplorerItemModel(source);
+                sourceList.add(item);
+            }
         }
+
+        return sourceList;
     }
 
     @Subscribe
     public void onMoveEvent(MoveEvent event) {
-        try {
-            copy(event.getSourceModel(), event.getSourceList(), getTargetPath(event.getSourceModel()), CopyMode.MOVE);
-        } catch (Exception e) {
-            showError(e, "Error when moving files", false);
-        }
+        executeRunner("Error handling move event", () -> copy(event.getSourceModel(), event.getSourceList(),
+                getTargetPath(event.getSourceModel()), CopyMode.MOVE));
     }
 
     @Subscribe
     public void onDeleteEvent(DeleteEvent event) {
-        try {
+        executeRunner("Error handling delete event", () -> {
             List<ExplorerItemModel> sourceList = event.getSourceList();
+            BooleanProperty breakLoop = new SimpleBooleanProperty();
 
             if (showConfirmation("Are you sure you want to delete selected files/folders (" + sourceList.size() + ")" + "?")) {
                 for (ExplorerItemModel item : sourceList) {
                     writeInfoLog("Deleting file " + item.getFile().getAbsolutePath());
 
-                    try {
-                        FileLogic.delete(item.getFile());
-                    } catch (Exception e) {
+                    executeRunnerAndHandleException(() -> FileLogic.delete(item.getFile()), (Exception e) -> {
                         writeErrorLog("Error when deleting file", e);
 
                         // ask for confirmation to continue when there is an error
-                        if (!showConfirmation("Error when deleting " + item.getFile().getAbsolutePath() + " - " + e.getMessage() + ". Do " +
-                                "you want to continue?")) {
-                            break;
+                        if (!showConfirmation("Error when deleting " + item.getFile().getAbsolutePath() + "\n" + e.getMessage() + "\nDo you want to continue?")) {
+                            breakLoop.set(true);
                         }
+                    });
+
+                    if (breakLoop.get()) {
+                        break;
                     }
                 }
 
                 postEvent(new ReloadEvent(event.getSourceModel().getFolder().getAbsolutePath()));
             }
-        } catch (Exception e) {
-            showError(e, "Error when deleting files", false);
-        }
+        });
     }
 
     @Subscribe
     public void onRenameEvent(SimpleRenameEvent event) {
-        try {
-            showCustomDialog("Simple rename", simpleRenameDialog, ResourceManager.getSimpleRenameIcon());
-        } catch (Exception e) {
-            showError(e, "Error handling simple rename event", false);
-        }
+        executeRunner("Error handling simple rename event", () -> showCustomDialog("Simple rename",
+                simpleRenameDialog, ResourceManager.getSimpleRenameIcon()));
     }
 
     @Subscribe
     public void onEditAsTextEvent(EditAsTextEvent event) {
-        try {
-            showCustomDialog("Edit as text", textEditorDialog, ResourceManager.getEditAsTextIcon());
-        } catch (Exception e) {
-            showError(e, "Error handling edit as text event", false);
-        }
+        executeRunner("Error handling edit as text event", () -> showCustomDialog("Edit as text", textEditorDialog,
+                ResourceManager.getEditAsTextIcon()));
     }
 
     @Subscribe
     public void onAddNewFolderEvent(AddNewFolderEvent event) {
-        try {
+        executeRunner("Error handling add new folder event", () -> {
             File folder = FileLogic.addNewFolder(selectedModel.getFolder().getAbsolutePath());
             reloadAndRenameNewFileFolder(folder);
-        } catch (Exception e) {
-            showError(e, "Error when adding new folder", false);
-        }
+        });
     }
 
     private void reloadAndRenameNewFileFolder(File fileOrFolder) {
@@ -569,41 +519,32 @@ public class AppController {
 
     @Subscribe
     public void onAddNewFileEvent(AddNewFileEvent event) {
-        try {
+        executeRunner("Error handling add new file event", () -> {
             File file = FileLogic.addNewFile(selectedModel.getFolder().getAbsolutePath());
             reloadAndRenameNewFileFolder(file);
-        } catch (Exception e) {
-            showError(e, "Error when adding new file", false);
-        }
+        });
     }
 
     @FXML
     private void initialize() {
-        try {
+        executeRunnerOrExit("Could not initialise app", () -> {
             EventBus.getDefault().register(this);
             handleCloseEvent();
             scpOperation.setManaged(false);
             scpOperation.managedProperty().bind(scpOperation.visibleProperty());
 
             // only show scroll pane if there are running operations
-            vbxOperations.getChildren().addListener((ListChangeListener<Node>) l -> {
-                try {
-                    scpOperation.setVisible(!vbxOperations.getChildren().isEmpty());
-                } catch (Exception e) {
-                    showError(e, "Error handling operation list change event", false);
-                }
-            });
+            operationList.addListener(
+                    (ListChangeListener<Operation>) l -> executeRunner("Error handling operation  list change event",
+                            () -> scpOperation.setVisible(!operationList.isEmpty())));
 
             initialiseDialogs();
             initialiseExplorers();
-        } catch (
-                Exception e) {
-            showError(e, "Could not initialise app", true);
-        }
+        });
     }
 
     private void handleCloseEvent() {
-        WindowEventUtility.bindWindowEventHandler(hbxExplorer, new WindowEventUtility.WindowEventHandler() {
+        WindowEventUtility.bindWindowEventHandler(getClass(), hbxExplorer, new WindowEventUtility.WindowEventHandler() {
             @Override
             public void handleShownEvent() {
             }
@@ -614,7 +555,7 @@ public class AppController {
 
             @Override
             public void handleCloseEvent(WindowEvent windowEvent) {
-                try {
+                executeRunnerOrExit("Error handling window exit event", () -> {
                     // show confirmation is there are running processes
                     if (!operationList.isEmpty()) {
                         if (showConfirmation("There are running operations, are you sure you want to exit?")) {
@@ -625,9 +566,7 @@ public class AppController {
                             windowEvent.consume();
                         }
                     }
-                } catch (Exception e) {
-                    showError(e, "Error handling window exit event", false);
-                }
+                });
             }
         });
     }
@@ -659,71 +598,39 @@ public class AppController {
 
     @FXML
     private void simpleRename(ActionEvent event) {
-        try {
-            checkNullAndPostEvent(new SimpleRenameEvent(selectedItemList.get(0).getFile()));
-        } catch (Exception e) {
-            showError(e, "Could not perform simple rename", false);
-        }
-    }
-
-    private void checkNullAndPostEvent(Object event) {
-        if (selectedItemList != null) {
-            postEvent(event);
-        }
+        executeRunner("Could not perform simple rename",
+                () -> postEvent(new SimpleRenameEvent(selectedItemList.get(0).getFile())));
     }
 
     @FXML
     private void advancedRename(ActionEvent event) {
-        try {
-            checkNullAndPostEvent(new SimpleRenameEvent(selectedItemList.get(0).getFile()));
-        } catch (Exception e) {
-            showError(e, "Could not perform advanced rename", false);
-        }
     }
 
     @FXML
     private void editAsText(ActionEvent event) {
-        try {
-            checkNullAndPostEvent(new EditAsTextEvent(selectedItemList.get(0).getFile()));
-        } catch (Exception e) {
-            showError(e, "Could not perform advanced rename", false);
-        }
+        executeRunner("Could not edit as text",
+                () -> postEvent(new EditAsTextEvent(selectedItemList.get(0).getFile())));
     }
 
     @FXML
     private void copy(ActionEvent event) {
-        try {
-            checkNullAndPostEvent(new CopyToOtherEvent(selectedModel, selectedItemList));
-        } catch (Exception e) {
-            showError(e, "Could not copy files", false);
-        }
+        executeRunner("Could not copy to other tab", () -> postEvent(new CopyToOtherEvent(selectedModel,
+                selectedItemList)));
     }
 
     @FXML
     private void move(ActionEvent event) {
-        try {
-            checkNullAndPostEvent(new MoveEvent(selectedModel, selectedItemList));
-        } catch (Exception e) {
-            showError(e, "Could not move files", false);
-        }
+        executeRunner("Could not move files", () -> postEvent(new MoveEvent(selectedModel, selectedItemList)));
     }
 
     @FXML
     private void addNewFolder(ActionEvent event) {
-        try {
-            checkNullAndPostEvent(new AddNewFolderEvent(selectedModel));
-        } catch (Exception e) {
-            showError(e, "Could not delete files", false);
-        }
+        executeRunner("Could not add new folder", () -> postEvent(new AddNewFolderEvent(selectedModel)));
     }
 
     @FXML
     private void addNewFile(ActionEvent event) {
-        try {
-            checkNullAndPostEvent(new AddNewFileEvent(selectedModel));
-        } catch (Exception e) {
-            showError(e, "Could not delete files", false);
-        }
+        executeRunner("Could not add new file", () -> postEvent(new AddNewFileEvent(selectedModel)));
     }
 
     /**

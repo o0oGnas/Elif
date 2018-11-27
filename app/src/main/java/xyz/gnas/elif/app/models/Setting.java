@@ -7,6 +7,9 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import xyz.gnas.elif.app.common.Configurations;
+import xyz.gnas.elif.app.common.utility.CodeRunnerUtility;
+import xyz.gnas.elif.app.common.utility.CodeRunnerUtility.ExceptionHandler;
+import xyz.gnas.elif.app.common.utility.CodeRunnerUtility.Runner;
 import xyz.gnas.elif.app.common.utility.DialogUtility;
 import xyz.gnas.elif.app.events.explorer.ChangePathEvent;
 import xyz.gnas.elif.app.models.explorer.ExplorerModel;
@@ -37,8 +40,16 @@ public class Setting {
     public Setting() {
     }
 
+    private static void executeRunner(String errorMessage, Runner runner) {
+        CodeRunnerUtility.executeRunner(Setting.class, errorMessage, runner);
+    }
+
+    private static void executeRunnerAndHandleException(Runner runner, ExceptionHandler handler) {
+        CodeRunnerUtility.executeRunnerAndHandleException(runner, handler);
+    }
+
     public static Setting getInstance() {
-        try {
+        executeRunnerAndHandleException(() -> {
             if (instance == null) {
                 ObjectMapper mapper = new ObjectMapper();
                 File file = new File(Configurations.SETTING_FILE);
@@ -50,10 +61,10 @@ public class Setting {
                     initialiseDefaultSetting();
                 }
             }
-        } catch (Exception e) {
-            DialogUtility.showError(Setting.class, e, "Error getting setting", false);
+        }, (Exception e) -> {
+            DialogUtility.showError(Setting.class, "Error getting setting", e, false);
             initialiseDefaultSetting();
-        }
+        });
 
         return instance;
     }
@@ -71,7 +82,7 @@ public class Setting {
 
     @Subscribe
     public void onChangePathEvent(ChangePathEvent event) {
-        try {
+        executeRunner("Error handling change path event", () -> {
             DialogUtility.writeInfoLog(getClass(), "Saving settings to file");
             File file = new File(Configurations.SETTING_FILE);
             ObjectMapper mapper = new ObjectMapper();
@@ -79,8 +90,6 @@ public class Setting {
             DefaultPrettyPrinter prettyPrinter = new DefaultPrettyPrinter();
             prettyPrinter.indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE);
             mapper.writeValue(file, this);
-        } catch (Exception e) {
-            DialogUtility.showError(getClass(), e, "Error saving paths to file", false);
-        }
+        });
     }
 }

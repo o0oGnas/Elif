@@ -11,6 +11,8 @@ import javafx.stage.WindowEvent;
 import org.apache.commons.io.FilenameUtils;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
+import xyz.gnas.elif.app.common.utility.CodeRunnerUtility;
+import xyz.gnas.elif.app.common.utility.CodeRunnerUtility.Runner;
 import xyz.gnas.elif.app.common.utility.DialogUtility;
 import xyz.gnas.elif.app.common.utility.ImageUtility;
 import xyz.gnas.elif.app.common.utility.WindowEventUtility;
@@ -36,8 +38,8 @@ public class SimpleRenameController {
 
     private File file;
 
-    private void showError(Exception e, String message, boolean exit) {
-        DialogUtility.showError(getClass(), e, message, exit);
+    private void executeRunner(String errorMessage, Runner runner) {
+        CodeRunnerUtility.executeRunner(getClass(), errorMessage, runner);
     }
 
     private void writeInfoLog(String log) {
@@ -45,8 +47,8 @@ public class SimpleRenameController {
     }
 
     @Subscribe
-    public void onRenameEvent(SimpleRenameEvent event) {
-        try {
+    public void onSimpleRenameEvent(SimpleRenameEvent event) {
+        executeRunner("Error handling simple rename event", () -> {
             file = event.getFile();
             mivFolder.setVisible(file.isDirectory());
 
@@ -56,36 +58,28 @@ public class SimpleRenameController {
 
             lblFile.setText(file.getAbsolutePath());
             txtName.setText(file.getName());
-        } catch (Exception e) {
-            showError(e, "Error handling single rename event", false);
-        }
+        });
     }
 
     @FXML
     private void initialize() {
-        try {
+        executeRunner("Could not initialise simple rename dialog", () -> {
             EventBus.getDefault().register(this);
             mivFolder.managedProperty().bind(mivFolder.visibleProperty());
             imvFile.managedProperty().bind(imvFile.visibleProperty());
             imvFile.visibleProperty().bind(mivFolder.visibleProperty().not());
             addHandlerToSceneAndWindow();
-        } catch (Exception e) {
-            showError(e, "Could not initialise single rename dialog", true);
-        }
+        });
     }
 
     private void addHandlerToSceneAndWindow() {
-        WindowEventUtility.bindWindowEventHandler(txtName, new WindowEventUtility.WindowEventHandler() {
+        WindowEventUtility.bindWindowEventHandler(getClass(), txtName, new WindowEventUtility.WindowEventHandler() {
             @Override
             public void handleShownEvent() {
-                try {
-                    // select only the name of the file by default
-                    txtName.requestFocus();
-                    String name = FilenameUtils.removeExtension(file.getName());
-                    txtName.selectRange(0, name.length());
-                } catch (Exception e) {
-                    showError(e, "Error handling window shown event", false);
-                }
+                // select only the name of the file by default
+                txtName.requestFocus();
+                String name = FilenameUtils.removeExtension(file.getName());
+                txtName.selectRange(0, name.length());
             }
 
             @Override
@@ -100,7 +94,7 @@ public class SimpleRenameController {
 
     @FXML
     private void keyPressed(KeyEvent keyEvent) {
-        try {
+        executeRunner("Could not handle key event", () -> {
             switch (keyEvent.getCode()) {
                 case ENTER:
                     rename(null);
@@ -113,14 +107,12 @@ public class SimpleRenameController {
                 default:
                     break;
             }
-        } catch (Exception e) {
-            showError(e, "Could not handle key event", false);
-        }
+        });
     }
 
     @FXML
     private void rename(ActionEvent event) {
-        try {
+        executeRunner("Could not apply rename", () -> {
             String newName = txtName.getText() == null ? "" : txtName.getText();
             File target = new File(file.getParent() + "\\" + newName);
             boolean result = true;
@@ -136,9 +128,7 @@ public class SimpleRenameController {
                 FileLogic.rename(file, target);
                 hideDialog();
             }
-        } catch (Exception e) {
-            showError(e, "Could not apply rename", false);
-        }
+        });
     }
 
     private void hideDialog() {
@@ -147,10 +137,6 @@ public class SimpleRenameController {
 
     @FXML
     private void cancel(ActionEvent event) {
-        try {
-            hideDialog();
-        } catch (Exception e) {
-            showError(e, "Could not cancel rename", false);
-        }
+        executeRunner("Could not cancel rename", () -> hideDialog());
     }
 }

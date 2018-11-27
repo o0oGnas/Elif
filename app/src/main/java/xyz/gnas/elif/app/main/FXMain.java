@@ -5,19 +5,22 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import xyz.gnas.elif.app.common.ResourceManager;
-
-import static xyz.gnas.elif.app.common.utility.DialogUtility.writeErrorLog;
+import xyz.gnas.elif.app.common.utility.DialogUtility;
 
 public class FXMain extends Application {
     public static void main(String[] args) {
         launch(args);
     }
 
+    private void writeErrorLog(String errorMessage, Throwable e) {
+        DialogUtility.writeErrorLog(getClass(), errorMessage, e);
+    }
+
     @Override
     public void start(Stage stage) {
         try {
-            Thread.setDefaultUncaughtExceptionHandler((Thread t, Throwable e) -> writeErrorLog(getClass(), "Uncaught "
-                    + "exception", e));
+            Thread.setDefaultUncaughtExceptionHandler((Thread t, Throwable e) ->
+                    writeErrorLog("Uncaught exception", e));
 
             stage.setTitle("Elif");
             stage.getIcons().add(ResourceManager.getAppIcon());
@@ -28,7 +31,7 @@ public class FXMain extends Application {
             stage.setScene(scene);
             stage.show();
         } catch (Exception e) {
-            writeErrorLog(getClass(), "Could not start the application", e);
+            writeErrorLog("Could not start the application", e);
         }
     }
 }

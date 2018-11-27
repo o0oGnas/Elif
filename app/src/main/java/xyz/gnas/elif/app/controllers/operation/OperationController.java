@@ -10,6 +10,8 @@ import javafx.scene.layout.HBox;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import xyz.gnas.elif.app.common.Configurations;
+import xyz.gnas.elif.app.common.utility.CodeRunnerUtility;
+import xyz.gnas.elif.app.common.utility.CodeRunnerUtility.Runner;
 import xyz.gnas.elif.app.common.utility.DialogUtility;
 import xyz.gnas.elif.app.events.operation.InitialiseOperationEvent;
 import xyz.gnas.elif.core.models.Operation;
@@ -37,8 +39,8 @@ public class OperationController {
 
     private Operation operation;
 
-    private void showError(Exception e, String message) {
-        DialogUtility.showError(getClass(), e, message, false);
+    private void executeRunner(String errorMessage, Runner runner) {
+        CodeRunnerUtility.executeRunner(getClass(), errorMessage, runner);
     }
 
     private void writeInfoLog(String log) {
@@ -47,92 +49,69 @@ public class OperationController {
 
     @Subscribe
     public void onInitialiseOperationEvent(InitialiseOperationEvent event) {
-        try {
+        executeRunner("Error handling initialise operation event", () -> {
             if (operation == null) {
                 operation = event.getOperation();
                 lblName.setText(operation.getName());
                 hbxActions.disableProperty().bind(operation.stoppedProperty());
                 hbxActions.disableProperty().bind(operation.completeProperty());
-                addSuboperationNameListener(operation);
-                addPercentageDoneListner(operation);
+
+                operation.suboperationNameProperty().addListener(
+                        l -> executeRunner("Error handling suboperation  name change event",
+                                () -> lblStatus.setText(operation.getSuboperationName())));
+
+                operation.completedAmountProperty().addListener(
+                        l -> executeRunner("Error handling completed amount change event",
+                                () -> pgiProgress.setProgress(operation.getCompletedAmount())));
+
                 addPauseListener(operation);
-            }
-        } catch (Exception e) {
-            showError(e, "Error handling initialise operation event");
-        }
-    }
-
-    private void addSuboperationNameListener(Operation operation) {
-        operation.suboperationNameProperty().addListener(l -> {
-            try {
-                lblStatus.setText(operation.getSuboperationName());
-            } catch (Exception e) {
-                showError(e, "Could not update suboperation name");
-            }
-        });
-    }
-
-    private void addPercentageDoneListner(Operation operation) {
-        operation.percentageDoneProperty().addListener(l -> {
-            try {
-                pgiProgress.setProgress(operation.getPercentageDone());
-            } catch (Exception e) {
-                showError(e, "Could not update progress indicator");
             }
         });
     }
 
     private void addPauseListener(Operation operation) {
-        operation.pausedProperty().addListener(l -> {
-            try {
-                if (!operation.isStopped()) {
-                    boolean pause = operation.isPaused();
-                    mivPauseResume.setGlyphName(pause ? Configurations.RESUME_GLYPH : Configurations.PAUSE_GLYPH);
-                    btnPauseResume.setText(pause ? "Resume" : "Pause");
-                    String status = "";
+        operation.pausedProperty().addListener(l -> executeRunner("Error handling paused status change event", () -> {
+            if (!operation.isStopped()) {
+                boolean pause = operation.isPaused();
+                mivPauseResume.setGlyphName(pause ? Configurations.RESUME_GLYPH : Configurations.PAUSE_GLYPH);
+                btnPauseResume.setText(pause ? "Resume" : "Pause");
+                String status = "";
 
-                    if (pause) {
-                        status += "(Paused) ";
-                    }
-
-                    status += operation.getSuboperationName();
-                    lblStatus.setText(status);
+                if (pause) {
+                    status += "(Paused) ";
                 }
-            } catch (Exception e) {
-                showError(e, "Error handing operation paused event");
+
+                status += operation.getSuboperationName();
+                lblStatus.setText(status);
             }
-        });
+        }));
     }
 
     @FXML
     private void initialize() {
-        try {
-            EventBus.getDefault().register(this);
-        } catch (Exception e) {
-            showError(e, "Could not initialise operation item");
-        }
+        executeRunner("Could not initialise operation item", () -> EventBus.getDefault().register(this));
     }
 
     @FXML
     private void pauseOrResume(ActionEvent event) {
-        try {
+        executeRunner("Could not pause/resume operation " + getOperationNameForError(), () -> {
             operation.setPaused(!operation.isPaused());
             String pauseResume = operation.isPaused() ? "Pausing" : "Resuming";
             writeInfoLog(pauseResume + " operation [" + operation.getName() + "]");
-        } catch (Exception e) {
-            showError(e, "Could not pause/resume operation [" + operation.getName() + "]");
-        }
+        });
+    }
+
+    private String getOperationNameForError() {
+        return "[" + operation.getName() + "]";
     }
 
     @FXML
     private void stop(ActionEvent event) {
-        try {
+        executeRunner("Could not stop operation " + getOperationNameForError(), () -> {
             if (showConfirmation("Are you sure you want to stop this operation?")) {
                 operation.setStopped(true);
                 writeInfoLog("Stopping operation [" + operation.getName() + "]");
             }
-        } catch (Exception e) {
-            showError(e, "Could not stop operation [" + operation.getName() + "]");
-        }
+        });
     }
 }
