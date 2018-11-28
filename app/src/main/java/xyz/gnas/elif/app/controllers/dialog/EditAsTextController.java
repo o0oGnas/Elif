@@ -16,7 +16,8 @@ import xyz.gnas.elif.app.common.utility.LogUtility;
 import xyz.gnas.elif.app.common.utility.code.CodeRunnerUtility;
 import xyz.gnas.elif.app.common.utility.code.Runner;
 import xyz.gnas.elif.app.common.utility.window.WindowEventHandler;
-import xyz.gnas.elif.app.events.dialog.EditAsTextEvent;
+import xyz.gnas.elif.app.events.dialog.DialogEvent.DialogType;
+import xyz.gnas.elif.app.events.dialog.SingleFileDialogEvent;
 import xyz.gnas.elif.core.logic.FileLogic;
 
 import java.io.File;
@@ -46,13 +47,15 @@ public class EditAsTextController {
     }
 
     @Subscribe
-    public void onEditAsTextEvent(EditAsTextEvent event) {
+    public void onSingleFileDialogEvent(SingleFileDialogEvent event) {
         executeRunner("Error when handling edit as text event", () -> {
-            file = event.getFile();
-            ttaContent.textProperty().removeListener(textAreaListener);
-            ttaContent.setText(FileLogic.readFileAsText(file));
-            ttaContent.textProperty().addListener(textAreaListener);
-            btnSave.disableProperty().bind(hasNewContent.not());
+            if (event.getType() == DialogType.EditAsText) {
+                file = event.getFile();
+                ttaContent.textProperty().removeListener(textAreaListener);
+                ttaContent.setText(FileLogic.readFileAsText(file));
+                ttaContent.textProperty().addListener(textAreaListener);
+                btnSave.disableProperty().bind(hasNewContent.not());
+            }
         });
     }
 

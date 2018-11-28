@@ -5,8 +5,6 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.ObservableList;
 import xyz.gnas.elif.app.common.Configurations;
-import xyz.gnas.elif.app.common.utility.code.CodeRunnerUtility;
-import xyz.gnas.elif.app.common.utility.code.Runner;
 import xyz.gnas.elif.app.models.explorer.ExplorerItemModel;
 import xyz.gnas.elif.app.models.explorer.ExplorerModel;
 
@@ -87,9 +85,5 @@ public class ApplicationModel {
         SettingModel settingModel = setting.get();
         settingModel.setLeftModel(new ExplorerModel());
         settingModel.setRightModel(new ExplorerModel());
-    }
-
-    private static void executeRunner(String errorMessage, Runner runner) {
-        CodeRunnerUtility.executeRunner(SettingModel.class, errorMessage, runner);
     }
 }

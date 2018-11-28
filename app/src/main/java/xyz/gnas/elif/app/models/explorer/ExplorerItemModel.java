@@ -40,10 +40,6 @@ public class ExplorerItemModel implements Comparable<ExplorerItemModel> {
         return file;
     }
 
-    public void setFile(File file) {
-        this.file = file;
-    }
-
     public String getName() {
         return name;
     }

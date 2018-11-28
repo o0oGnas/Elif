@@ -40,23 +40,17 @@ import xyz.gnas.elif.app.common.utility.LogUtility;
 import xyz.gnas.elif.app.common.utility.code.CodeRunnerUtility;
 import xyz.gnas.elif.app.common.utility.code.Runner;
 import xyz.gnas.elif.app.common.utility.code.RunnerWithIntReturn;
-import xyz.gnas.elif.app.common.utility.code.RunnerWithObjectReturn;
 import xyz.gnas.elif.app.common.utility.window.WindowEventHandler;
 import xyz.gnas.elif.app.common.utility.window.WindowEventUtility;
 import xyz.gnas.elif.app.controllers.explorer.ExplorerTableCellCallback.Column;
-import xyz.gnas.elif.app.events.dialog.EditAsTextEvent;
-import xyz.gnas.elif.app.events.dialog.SimpleRenameEvent;
+import xyz.gnas.elif.app.events.dialog.DialogEvent.DialogType;
+import xyz.gnas.elif.app.events.dialog.SingleFileDialogEvent;
 import xyz.gnas.elif.app.events.explorer.ChangePathEvent;
 import xyz.gnas.elif.app.events.explorer.InitialiseExplorerEvent;
 import xyz.gnas.elif.app.events.explorer.ReloadEvent;
 import xyz.gnas.elif.app.events.explorer.SwitchTabEvent;
-import xyz.gnas.elif.app.events.operation.AddNewFileEvent;
-import xyz.gnas.elif.app.events.operation.AddNewFolderEvent;
-import xyz.gnas.elif.app.events.operation.CopyToClipboardEvent;
-import xyz.gnas.elif.app.events.operation.CopyToOtherEvent;
-import xyz.gnas.elif.app.events.operation.DeleteEvent;
-import xyz.gnas.elif.app.events.operation.MoveEvent;
-import xyz.gnas.elif.app.events.operation.PasteEvent;
+import xyz.gnas.elif.app.events.operation.PerformOperationEvent;
+import xyz.gnas.elif.app.events.operation.PerformOperationEvent.OperationType;
 import xyz.gnas.elif.app.models.ApplicationModel;
 import xyz.gnas.elif.app.models.explorer.ExplorerItemModel;
 import xyz.gnas.elif.app.models.explorer.ExplorerModel;
@@ -106,6 +100,9 @@ public class ExplorerController {
 
     @FXML
     private Label lblCopyToClipboard;
+
+    @FXML
+    private Label lblCutToClipboard;
 
     @FXML
     private Label lblPaste;
@@ -211,10 +208,6 @@ public class ExplorerController {
 
     private int executeRunnerWithIntReturn(String errorMessage, int errorReturnValue, RunnerWithIntReturn runner) {
         return CodeRunnerUtility.executeRunnerWithIntReturn(getClass(), errorMessage, errorReturnValue, runner);
-    }
-
-    private Object executeRunnerWithObjectReturn(String errorMessage, RunnerWithObjectReturn runner) {
-        return CodeRunnerUtility.executeRunnerWithObjectReturn(getClass(), errorMessage, runner);
     }
 
     private void writeInfoLog(String log) {
@@ -583,6 +576,7 @@ public class ExplorerController {
     private void bindTableMenuItemsWidthProperty() {
         lblCopyToOther.prefWidthProperty().bind(lblRunOrGoTo.widthProperty());
         lblCopyToClipboard.prefWidthProperty().bind(lblRunOrGoTo.widthProperty());
+        lblCutToClipboard.prefWidthProperty().bind(lblRunOrGoTo.widthProperty());
         lblPaste.prefWidthProperty().bind(lblRunOrGoTo.widthProperty());
         lblMove.prefWidthProperty().bind(lblRunOrGoTo.widthProperty());
         lblDelete.prefWidthProperty().bind(lblRunOrGoTo.widthProperty());
@@ -693,7 +687,7 @@ public class ExplorerController {
 
     @FXML
     private void reload(ActionEvent event) {
-        executeRunner("Could not reload", () -> updateAndReselect());
+        executeRunner("Could not reload", this::updateAndReselect);
     }
 
     @FXML
@@ -754,8 +748,8 @@ public class ExplorerController {
 
     @FXML
     private void copyToOther(ActionEvent event) {
-        executeRunner("Could not copy to other tab", () -> checkEmptyAndPostEvent(new CopyToOtherEvent(explorerModel,
-                getSelectedItems())));
+        executeRunner("Could not copy to other tab",
+                () -> checkEmptyAndPostEvent(new PerformOperationEvent(OperationType.CopyToOther)));
     }
 
     private void checkEmptyAndPostEvent(Object event) {
@@ -767,31 +761,37 @@ public class ExplorerController {
     @FXML
     private void copyToClipboard(ActionEvent event) {
         executeRunner("Could not copy to clipboard",
-                () -> checkEmptyAndPostEvent(new CopyToClipboardEvent(explorerModel,
-                        getSelectedItems())));
+                () -> checkEmptyAndPostEvent(new PerformOperationEvent(OperationType.CopyToClipboard)));
+    }
+
+    @FXML
+    private void cutToClipboard(ActionEvent event) {
+        executeRunner("Could not cut to clipboard",
+                () -> checkEmptyAndPostEvent(new PerformOperationEvent(OperationType.CutToClipboard)));
     }
 
     @FXML
     private void paste(ActionEvent event) {
-        executeRunner("Could not paste", () -> postEvent(new PasteEvent(explorerModel)));
+        executeRunner("Could not paste", () -> postEvent(new PerformOperationEvent(OperationType.Paste)));
     }
 
     @FXML
     private void move(ActionEvent event) {
-        executeRunner("Could not copy to clipboard", () -> checkEmptyAndPostEvent(new MoveEvent(explorerModel,
-                getSelectedItems())));
+        executeRunner("Could not copy to clipboard",
+                () -> checkEmptyAndPostEvent(new PerformOperationEvent(OperationType.Move)));
     }
 
     @FXML
     private void delete(ActionEvent event) {
-        executeRunner("Could not delete", () -> checkEmptyAndPostEvent(new DeleteEvent(explorerModel,
-                getSelectedItems())));
+        executeRunner("Could not delete",
+                () -> checkEmptyAndPostEvent(new PerformOperationEvent(OperationType.Delete)));
     }
 
     @FXML
     private void simpleRename(ActionEvent event) {
         executeRunner("Could not perform simple rename",
-                () -> postEvent(new SimpleRenameEvent(tbvTable.getSelectionModel().getSelectedItem().getFile())));
+                () -> postEvent(new SingleFileDialogEvent(DialogType.SimpleRename,
+                        getSelectedItems().get(0).getFile())));
     }
 
     @FXML
@@ -801,17 +801,18 @@ public class ExplorerController {
     @FXML
     private void editAsText(ActionEvent event) {
         executeRunner("Could not edit as text",
-                () -> postEvent(new EditAsTextEvent(tbvTable.getSelectionModel().getSelectedItem().getFile())));
+                () -> postEvent(new SingleFileDialogEvent(DialogType.EditAsText, getSelectedItems().get(0).getFile())));
     }
 
     @FXML
     private void addNewFolder(ActionEvent event) {
-        executeRunner("Could not add new folder", () -> postEvent(new AddNewFolderEvent(explorerModel)));
+        executeRunner("Could not add new folder",
+                () -> postEvent(new PerformOperationEvent(OperationType.AddNewFolder)));
     }
 
     @FXML
     private void addNewFile(ActionEvent event) {
-        executeRunner("Could not add new file", () -> postEvent(new AddNewFileEvent(explorerModel)));
+        executeRunner("Could not add new file", () -> postEvent(new PerformOperationEvent(OperationType.AddNewFile)));
     }
 
     @FXML
@@ -837,6 +838,10 @@ public class ExplorerController {
 
             case C:
                 copyToClipboard(null);
+                break;
+
+            case X:
+                cutToClipboard(null);
                 break;
 
             case V:

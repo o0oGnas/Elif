@@ -16,7 +16,8 @@ import xyz.gnas.elif.app.common.utility.LogUtility;
 import xyz.gnas.elif.app.common.utility.code.CodeRunnerUtility;
 import xyz.gnas.elif.app.common.utility.code.Runner;
 import xyz.gnas.elif.app.common.utility.window.WindowEventHandler;
-import xyz.gnas.elif.app.events.dialog.SimpleRenameEvent;
+import xyz.gnas.elif.app.events.dialog.DialogEvent.DialogType;
+import xyz.gnas.elif.app.events.dialog.SingleFileDialogEvent;
 import xyz.gnas.elif.core.logic.FileLogic;
 
 import java.io.File;
@@ -48,17 +49,19 @@ public class SimpleRenameController {
     }
 
     @Subscribe
-    public void onSimpleRenameEvent(SimpleRenameEvent event) {
+    public void onSingleFileDialogEvent(SingleFileDialogEvent event) {
         executeRunner("Error when handling simple rename event", () -> {
-            file = event.getFile();
-            mivFolder.setVisible(file.isDirectory());
+            if (event.getType() == DialogType.SimpleRename) {
+                file = event.getFile();
+                mivFolder.setVisible(file.isDirectory());
 
-            if (!file.isDirectory()) {
-                imvFile.setImage(ImageUtility.getFileIcon(file, true));
+                if (!file.isDirectory()) {
+                    imvFile.setImage(ImageUtility.getFileIcon(file, true));
+                }
+
+                lblFile.setText(file.getAbsolutePath());
+                txtName.setText(file.getName());
             }
-
-            lblFile.setText(file.getAbsolutePath());
-            txtName.setText(file.getName());
         });
     }
 
@@ -125,7 +128,7 @@ public class SimpleRenameController {
             }
 
             if (result) {
-                writeInfoLog("Raname file " + file.getAbsolutePath() + " to " + target.getAbsolutePath());
+                writeInfoLog("SimpleRename file " + file.getAbsolutePath() + " to " + target.getAbsolutePath());
                 FileLogic.rename(file, target);
                 hideDialog();
             }

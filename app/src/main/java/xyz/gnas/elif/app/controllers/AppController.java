@@ -29,18 +29,13 @@ import xyz.gnas.elif.app.common.utility.code.MainThreadTaskRunner;
 import xyz.gnas.elif.app.common.utility.code.Runner;
 import xyz.gnas.elif.app.common.utility.code.SideThreadTaskRunner;
 import xyz.gnas.elif.app.common.utility.window.WindowEventHandler;
-import xyz.gnas.elif.app.events.dialog.EditAsTextEvent;
-import xyz.gnas.elif.app.events.dialog.SimpleRenameEvent;
+import xyz.gnas.elif.app.events.dialog.DialogEvent.DialogType;
+import xyz.gnas.elif.app.events.dialog.SingleFileDialogEvent;
 import xyz.gnas.elif.app.events.explorer.InitialiseExplorerEvent;
 import xyz.gnas.elif.app.events.explorer.ReloadEvent;
-import xyz.gnas.elif.app.events.operation.AddNewFileEvent;
-import xyz.gnas.elif.app.events.operation.AddNewFolderEvent;
-import xyz.gnas.elif.app.events.operation.CopyToClipboardEvent;
-import xyz.gnas.elif.app.events.operation.CopyToOtherEvent;
-import xyz.gnas.elif.app.events.operation.DeleteEvent;
 import xyz.gnas.elif.app.events.operation.InitialiseOperationEvent;
-import xyz.gnas.elif.app.events.operation.MoveEvent;
-import xyz.gnas.elif.app.events.operation.PasteEvent;
+import xyz.gnas.elif.app.events.operation.PerformOperationEvent;
+import xyz.gnas.elif.app.events.operation.PerformOperationEvent.OperationType;
 import xyz.gnas.elif.app.models.ApplicationModel;
 import xyz.gnas.elif.app.models.SettingModel;
 import xyz.gnas.elif.app.models.explorer.ExplorerItemModel;
@@ -87,13 +82,9 @@ public class AppController {
     @FXML
     private Button btnEditAsText;
 
-    private enum CopyMode {
-        COPY, MOVE, PASTE
-    }
-
     private final int THREAD_SLEEP_TIME = 500;
 
-    private ApplicationModel model = ApplicationModel.getInstance();
+    private ApplicationModel applicationModel = ApplicationModel.getInstance();
 
     private Node textEditorDialog;
 
@@ -130,30 +121,81 @@ public class AppController {
     }
 
     @Subscribe
-    public void onCopyToOtherEvent(CopyToOtherEvent event) {
-        executeRunner("Error when handling copy to other tab event", () -> copy(event.getSourceModel(),
-                event.getSourceList(), getTargetPath(event.getSourceModel()), CopyMode.COPY));
+    public void onOperationEvent(PerformOperationEvent event) {
+        executeRunner("Error when handling operation event", () -> {
+            switch (event.getType()) {
+                case CopyToOther:
+                    copy(applicationModel.getSelectedItemList(), getTargetPath(), CopyMode.COPY);
+                    break;
+
+                case CopyToClipboard:
+                    copyToClipboard();
+                    break;
+
+                case CutToClipboard:
+                    cutToClipboard();
+                    break;
+
+                case Paste:
+                    paste();
+                    break;
+
+                case Move:
+                    copy(applicationModel.getSelectedItemList(), getTargetPath(), CopyMode.MOVE);
+                    break;
+
+                case Delete:
+                    delete();
+                    break;
+
+                case AddNewFolder:
+                    addNewFolder();
+                    break;
+
+                case AddNewFile:
+                    addNewFile();
+                    break;
+
+                default:
+                    break;
+            }
+        });
     }
 
-    private String getTargetPath(ExplorerModel sourceModel) {
+    @Subscribe
+    public void onSingleFileDialogEvent(SingleFileDialogEvent event) {
+        executeRunner("Error when handling single file dialog event", () -> {
+            switch (event.getType()) {
+                case SimpleRename:
+                    showCustomDialog("Simple rename", simpleRenameDialog, ResourceManager.getSimpleRenameIcon());
+                    break;
+
+                case EditAsText:
+                    showCustomDialog("Edit as text", textEditorDialog, ResourceManager.getEditAsTextIcon());
+                    break;
+            }
+        });
+    }
+
+    /**
+     * get the target path of an operation, i.e. path of the other tab
+     *
+     * @return
+     */
+    private String getTargetPath() {
         SettingModel settingModel = ApplicationModel.getInstance().getSetting();
         ExplorerModel leftModel = settingModel.getLeftModel();
-        ExplorerModel targetModel = sourceModel == leftModel ? settingModel.getRightModel() : leftModel;
+        ExplorerModel targetModel = applicationModel.getSelectedExplorerModel() == leftModel ?
+                settingModel.getRightModel() : leftModel;
         return targetModel.getFolder().getAbsolutePath();
     }
 
-    private void copy(ExplorerModel model, List<ExplorerItemModel> sourceList, String targetPath,
-                      CopyMode mode) throws IOException {
-        if (mode == CopyMode.MOVE && model.getFolder().getAbsolutePath().equalsIgnoreCase(targetPath)) {
-            showAlert("Invalid operation", "Cannot move files to their current folder!");
-        } else {
-            CopyParameterContainer container = new CopyParameterContainer();
-            container.model = model;
-            container.sourceList = sourceList;
-            container.mode = mode;
-            container.targetPath = targetPath + "\\";
-            copyFromSourceList(container);
-        }
+    private void copy(List<ExplorerItemModel> sourceList, String targetPath, CopyMode mode) throws IOException {
+        CopyParameterContainer container = new CopyParameterContainer();
+        container.sourceList = sourceList;
+        container.mode = mode;
+        container.targetPath = targetPath + "\\";
+        copyFromSourceList(container);
     }
 
     private void copyFromSourceList(CopyParameterContainer container) throws IOException {
@@ -181,13 +223,12 @@ public class AppController {
         String cancel = "Cancel";
         String confirmResult = duplicate;
         boolean checkDifferentPath =
-                !container.model.getFolder().getAbsolutePath().equalsIgnoreCase(container.targetPath);
+                !applicationModel.getSelectedExplorerModel().getFolder().getAbsolutePath().equalsIgnoreCase(container.targetPath);
 
         // Ask for choice if mode is copy and paths are different, for other modes always ask
         if ((checkDifferentPath || container.mode != CopyMode.COPY) && container.hasDuplicate) {
             confirmResult = DialogUtility.showOptions("There are files in the target folder with the same name",
-                    replace,
-                    skip, duplicate, cancel);
+                    replace, skip, duplicate, cancel);
         }
 
         if (confirmResult != null && !confirmResult.equalsIgnoreCase(cancel)) {
@@ -257,20 +298,25 @@ public class AppController {
 
     private void processSourceTargetMap(CopyParameterContainer container, String duplicate) throws InterruptedException {
         for (ExplorerItemModel source : container.sourceTargetMap.keySet()) {
-            while (container.operation.isPaused()) {
-                sleep(THREAD_SLEEP_TIME);
-            }
-
-            if (container.operation.isStopped()) {
-                break;
+            if (container.mode == CopyMode.MOVE && applicationModel.getSelectedExplorerModel().getFolder().getAbsolutePath().equalsIgnoreCase(container.targetPath)) {
+                showAlert("Invalid operation", "Cannot move files to their current folder!");
             } else {
-                runInMainThread("Error creating new operation", () -> {
-                    String name = container.mode == CopyMode.MOVE ? "Moving" : "Copying";
-                    container.operation.setSuboperationName(name + " \"" + source.getFile().getAbsolutePath() + "\"");
-                });
+                while (container.operation.isPaused()) {
+                    sleep(THREAD_SLEEP_TIME);
+                }
 
-                checkAndUpdateSourceTargetMap(container, source, duplicate);
-                copyFile(container, source);
+                if (container.operation.isStopped()) {
+                    break;
+                } else {
+                    runInMainThread("Error creating new operation", () -> {
+                        String name = container.mode == CopyMode.MOVE ? "Moving" : "Copying";
+                        container.operation.setSuboperationName(name + " \"" + source.getFile().getAbsolutePath() +
+                                "\"");
+                    });
+
+                    checkAndUpdateSourceTargetMap(container, source, duplicate);
+                    copyFile(container, source);
+                }
             }
         }
     }
@@ -313,7 +359,7 @@ public class AppController {
             throws IOException, InterruptedException {
         File sourceFile = source.getFile();
 
-        if (container.mode == CopyMode.MOVE) {
+        if (container.mode == CopyMode.MOVE || container.mode == CopyMode.CUT_PASTE) {
             FileLogic.move(sourceFile, container.sourceTargetMap.get(source), container.operation, progress);
         } else {
             FileLogic.copy(sourceFile, container.sourceTargetMap.get(source), container.operation, progress);
@@ -350,7 +396,7 @@ public class AppController {
             sleep(THREAD_SLEEP_TIME);
         }
 
-        finishCopyFileProgress(container, error, target, currentCompletedAmount, contribution);
+        finishCopyFileProgress(container, error, source, target, currentCompletedAmount, contribution);
     }
 
     private void setCompletedAmount(CopyParameterContainer container, double percent) {
@@ -358,14 +404,15 @@ public class AppController {
                 () -> container.operation.setCompletedAmount(percent));
     }
 
-    private void finishCopyFileProgress(CopyParameterContainer container, BooleanProperty error, File target,
-                                        double currentPercentageDone, double contribution) {
+    private void finishCopyFileProgress(CopyParameterContainer container, BooleanProperty error,
+                                        ExplorerItemModel source, File target, double currentPercentageDone,
+                                        double contribution) {
         setCompletedAmount(container, currentPercentageDone + contribution);
 
         runInMainThread("Error creating reload event", () -> {
-            // reload source folder if operation is move and there was no error
-            if (container.mode == CopyMode.MOVE && !container.operation.isStopped() && !error.get()) {
-                postEvent(new ReloadEvent(container.model.getFolder().getAbsolutePath()));
+            if (!container.operation.isStopped() && !error.get()) {
+                // reload source folder if operation is move or cut & paste
+                postEvent(new ReloadEvent(source.getFile().getParent()));
             }
 
             // reload target folder each time a file process is finished
@@ -373,34 +420,40 @@ public class AppController {
         });
     }
 
-    @Subscribe
-    public void onCopyToClipboardEvent(CopyToClipboardEvent event) {
-        executeRunner("Error when handling copy to clipboard event", () -> {
-            List<File> fileList = new LinkedList<>();
 
-            for (ExplorerItemModel item : event.getSourceList()) {
-                fileList.add(item.getFile());
-            }
-
-            ClipboardLogic.copyToClipboard(fileList);
-        });
+    private void copyToClipboard() {
+        List<File> fileList = getFileListFromSelectedItems();
+        ClipboardLogic.copyToClipboard(fileList);
     }
 
-    @Subscribe
-    public void onPasteEvent(PasteEvent event) {
-        executeRunner("Error when handling paste event", () -> {
-            List<File> fileList = ClipboardLogic.getFiles();
+    private List<File> getFileListFromSelectedItems() {
+        List<File> fileList = new LinkedList<>();
 
-            if (fileList != null && !fileList.isEmpty()) {
-                List<ExplorerItemModel> sourceList = convertFileListToSourceList(fileList);
+        for (ExplorerItemModel item : applicationModel.getSelectedItemList()) {
+            fileList.add(item.getFile());
+        }
 
-                if (!sourceList.isEmpty()) {
-                    writeInfoLog("Pasting files from clipboard");
-                    ExplorerModel model = event.getSourceModel();
-                    copy(event.getSourceModel(), sourceList, model.getFolder().getAbsolutePath(), CopyMode.PASTE);
-                }
+        return fileList;
+    }
+
+    private void cutToClipboard() {
+        List<File> fileList = getFileListFromSelectedItems();
+        ClipboardLogic.cutToClipboard(fileList);
+    }
+
+    private void paste() throws IOException {
+        BooleanProperty isCut = new SimpleBooleanProperty();
+        List<File> fileList = ClipboardLogic.getFiles(isCut);
+
+        if (fileList != null && !fileList.isEmpty()) {
+            List<ExplorerItemModel> sourceList = convertFileListToSourceList(fileList);
+
+            if (!sourceList.isEmpty()) {
+                writeInfoLog("Pasting files from clipboard");
+                copy(sourceList, applicationModel.getSelectedExplorerModel().getFolder().getAbsolutePath(),
+                        isCut.get() ? CopyMode.CUT_PASTE : CopyMode.COPY_PASTE);
             }
-        });
+        }
     }
 
     private List<ExplorerItemModel> convertFileListToSourceList(List<File> fileList) {
@@ -417,73 +470,53 @@ public class AppController {
         return sourceList;
     }
 
-    @Subscribe
-    public void onMoveEvent(MoveEvent event) {
-        executeRunner("Error when handling move event", () -> copy(event.getSourceModel(), event.getSourceList(),
-                getTargetPath(event.getSourceModel()), CopyMode.MOVE));
+    private void delete() {
+        List<ExplorerItemModel> sourceList = new LinkedList<>(applicationModel.getSelectedItemList());
+
+        // cannot use normal boolean in lambda
+        BooleanProperty breakLoop = new SimpleBooleanProperty();
+
+        if (showConfirmation("Are you sure you want to delete selected files/folders (" + sourceList.size() + ")?")) {
+            for (ExplorerItemModel item : sourceList) {
+                deleteItem(item, breakLoop);
+
+                if (breakLoop.get()) {
+                    break;
+                }
+            }
+        }
     }
 
-    @Subscribe
-    public void onDeleteEvent(DeleteEvent event) {
-        executeRunner("Error when handling delete event", () -> {
-            List<ExplorerItemModel> sourceList = event.getSourceList();
-            BooleanProperty breakLoop = new SimpleBooleanProperty();
+    private void deleteItem(ExplorerItemModel item, BooleanProperty breakLoop) {
+        writeInfoLog("Deleting file " + item.getFile().getAbsolutePath());
 
-            if (showConfirmation("Are you sure you want to delete selected files/folders (" + sourceList.size() + ")" + "?")) {
-                for (ExplorerItemModel item : sourceList) {
-                    writeInfoLog("Deleting file " + item.getFile().getAbsolutePath());
+        executeRunnerAndHandleException(() -> {
+            File file = item.getFile();
+            FileLogic.delete(file);
+            postEvent(new ReloadEvent(file.getParent()));
+        }, (Exception e) -> {
+            writeErrorLog("Error when deleting file", e);
 
-                    executeRunnerAndHandleException(() -> FileLogic.delete(item.getFile()), (Exception e) -> {
-                        writeErrorLog("Error when deleting file", e);
-
-                        // ask for confirmation to continue when there is an error
-                        if (!showConfirmation("Error when deleting " + item.getFile().getAbsolutePath() + "\n" + e.getMessage() + "\nDo you want to continue?")) {
-                            breakLoop.set(true);
-                        }
-                    });
-
-                    if (breakLoop.get()) {
-                        break;
-                    }
-                }
-
-                postEvent(new ReloadEvent(event.getSourceModel().getFolder().getAbsolutePath()));
+            // ask for confirmation to continue when there is an error
+            if (!showConfirmation("Error when deleting " + item.getFile().getAbsolutePath() + "\n" + e.getMessage() + "\nDo you want to continue?")) {
+                breakLoop.set(true);
             }
         });
     }
 
-    @Subscribe
-    public void onRenameEvent(SimpleRenameEvent event) {
-        executeRunner("Error when handling simple rename event", () -> showCustomDialog("Simple rename",
-                simpleRenameDialog, ResourceManager.getSimpleRenameIcon()));
+    private void addNewFolder() {
+        File folder = FileLogic.addNewFolder(applicationModel.getSelectedExplorerModel().getFolder().getAbsolutePath());
+        reloadAndRenameNewFileFolder(folder);
     }
 
-    @Subscribe
-    public void onEditAsTextEvent(EditAsTextEvent event) {
-        executeRunner("Error when handling edit as text event", () -> showCustomDialog("Edit as text", textEditorDialog,
-                ResourceManager.getEditAsTextIcon()));
+    private void reloadAndRenameNewFileFolder(File file) {
+        postEvent(new ReloadEvent(file.getParent()));
+        postEvent(new SingleFileDialogEvent(DialogType.SimpleRename, file));
     }
 
-    @Subscribe
-    public void onAddNewFolderEvent(AddNewFolderEvent event) {
-        executeRunner("Error when handling add new folder event", () -> {
-            File folder =
-                    FileLogic.addNewFolder(model.getSelectedExplorerModel().getFolder().getAbsolutePath());
-            reloadAndRenameNewFileFolder(folder);
-        });
-    }
-
-    private void reloadAndRenameNewFileFolder(File fileOrFolder) {
-        postEvent(new ReloadEvent(model.getSelectedExplorerModel().getFolder().getAbsolutePath()));
-        postEvent(new SimpleRenameEvent(fileOrFolder));
-    }
-
-    @Subscribe
-    public void onAddNewFileEvent(AddNewFileEvent event) {
-        executeRunner("Error when handling add new file event", () -> {
-            File file = FileLogic.addNewFile(model.getSelectedExplorerModel().getFolder().getAbsolutePath());
-            reloadAndRenameNewFileFolder(file);
-        });
+    private void addNewFile() throws IOException {
+        File file = FileLogic.addNewFile(applicationModel.getSelectedExplorerModel().getFolder().getAbsolutePath());
+        reloadAndRenameNewFileFolder(file);
     }
 
     @FXML
@@ -506,15 +539,15 @@ public class AppController {
     }
 
     private void addListenerToSelectedModelAndItemList() {
-        model.selectedExplorerModelProperty().addListener(l -> {
-            if (model.getSelectedExplorerModel() != null) {
+        applicationModel.selectedExplorerModelProperty().addListener(l -> {
+            if (applicationModel.getSelectedExplorerModel() != null) {
                 hbxNewFolderFile.setDisable(false);
             }
         });
 
         bindListenerToSelectedItemList();
 
-        model.selectedItemListProperty().addListener(
+        applicationModel.selectedItemListProperty().addListener(
                 l -> executeRunner("Error when handling item selection change event", () -> {
                     updateFunctionButtons();
                     bindListenerToSelectedItemList();
@@ -522,18 +555,17 @@ public class AppController {
     }
 
     private void bindListenerToSelectedItemList() {
-        ObservableList<ExplorerItemModel> selectedItemList = model.getSelectedItemList();
+        ObservableList<ExplorerItemModel> selectedItemList = applicationModel.getSelectedItemList();
 
         if (selectedItemList != null) {
             selectedItemList.addListener((ListChangeListener<? super ExplorerItemModel>) l ->
-                    executeRunner("Error when handling changes to selected item list", () -> {
-                        updateFunctionButtons();
-                    }));
+                    executeRunner("Error when handling changes to selected item list",
+                            this::updateFunctionButtons));
         }
     }
 
     private void updateFunctionButtons() {
-        ObservableList<ExplorerItemModel> selectedItemList = model.getSelectedItemList();
+        ObservableList<ExplorerItemModel> selectedItemList = applicationModel.getSelectedItemList();
 
         if (selectedItemList.isEmpty()) {
             hbxRenameEditCopyMove.setDisable(true);
@@ -590,7 +622,7 @@ public class AppController {
     }
 
     private void initialiseExplorers() throws IOException {
-        SettingModel settingModel = model.getSetting();
+        SettingModel settingModel = applicationModel.getSetting();
 
         // load both sides
         writeInfoLog("Loading left side");
@@ -610,7 +642,8 @@ public class AppController {
     @FXML
     private void simpleRename(ActionEvent event) {
         executeRunner("Could not perform simple rename",
-                () -> postEvent(new SimpleRenameEvent(model.getSelectedItemList().get(0).getFile())));
+                () -> postEvent(new SingleFileDialogEvent(DialogType.SimpleRename,
+                        applicationModel.getSelectedItemList().get(0).getFile())));
     }
 
     @FXML
@@ -619,40 +652,43 @@ public class AppController {
 
     @FXML
     private void editAsText(ActionEvent event) {
-        executeRunner("Could not edit as text",
-                () -> postEvent(new EditAsTextEvent(model.getSelectedItemList().get(0).getFile())));
+        executeRunner("Could not edit as text", () -> postEvent(new SingleFileDialogEvent(DialogType.EditAsText,
+                applicationModel.getSelectedItemList().get(0).getFile())));
     }
 
     @FXML
     private void copy(ActionEvent event) {
         executeRunner("Could not copy to other tab",
-                () -> postEvent(new CopyToOtherEvent(model.getSelectedExplorerModel(),
-                        model.getSelectedItemList())));
+                () -> postEvent(new PerformOperationEvent(OperationType.CopyToOther)));
     }
 
     @FXML
     private void move(ActionEvent event) {
-        executeRunner("Could not move files", () -> postEvent(new MoveEvent(model.getSelectedExplorerModel(),
-                model.getSelectedItemList())));
+        executeRunner("Could not move files", () -> postEvent(new PerformOperationEvent(OperationType.Move)));
     }
 
     @FXML
     private void addNewFolder(ActionEvent event) {
         executeRunner("Could not add new folder",
-                () -> postEvent(new AddNewFolderEvent(model.getSelectedExplorerModel())));
+                () -> postEvent(new PerformOperationEvent(OperationType.AddNewFolder)));
     }
 
     @FXML
     private void addNewFile(ActionEvent event) {
-        executeRunner("Could not add new file", () -> postEvent(new AddNewFileEvent(model.getSelectedExplorerModel())));
+        executeRunner("Could not add new file", () -> postEvent(new PerformOperationEvent(OperationType.AddNewFile)));
+    }
+
+    /**
+     * convenient enum for copy method
+     */
+    private enum CopyMode {
+        COPY, MOVE, COPY_PASTE, CUT_PASTE
     }
 
     /**
      * Convenient class that contains parameters used by copy and move operation
      */
     private class CopyParameterContainer {
-        private ExplorerModel model;
-
         private List<ExplorerItemModel> sourceList;
 
         private CopyMode mode;

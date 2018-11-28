@@ -8,5 +8,5 @@ public class Configurations {
     public static final String RESUME_GLYPH = "PLAY_ARROW";
     public static final String RUN_FILE_GLYPH = "POWER_SETTINGS_NEW";
     public static final String GO_TO_GLYPH = "OPEN_IN_BROWSER";
-    public static final String FOLDER_GRYPH = "FOLDER_OPEN";
+    public static final String FOLDER_GlYPH = "FOLDER_OPEN";
 }

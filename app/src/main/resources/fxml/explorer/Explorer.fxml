@@ -158,6 +158,15 @@
                                 </Label>
                             </content>
                         </CustomMenuItem>
+                        <CustomMenuItem onAction="#cutToClipboard">
+                            <content>
+                                <Label fx:id="lblCutToClipboard" text="Cut to clipboard">
+                                    <graphic>
+                                        <FontAwesomeIconView glyphName="CUT" size="16"/>
+                                    </graphic>
+                                </Label>
+                            </content>
+                        </CustomMenuItem>
                         <CustomMenuItem fx:id="cmiPaste" onAction="#paste">
                             <content>
                                 <Label fx:id="lblPaste" text="Paste">

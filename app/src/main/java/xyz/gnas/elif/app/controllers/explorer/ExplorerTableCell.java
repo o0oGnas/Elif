@@ -66,7 +66,7 @@ class ExplorerTableCell extends TableCell<ExplorerItemModel, ExplorerItemModel> 
 
         if (file.isDirectory()) {
             MaterialIconView mivFolder = new MaterialIconView();
-            mivFolder.setGlyphName(Configurations.FOLDER_GRYPH);
+            mivFolder.setGlyphName(Configurations.FOLDER_GlYPH);
             mivFolder.setGlyphSize(16);
             setGraphic(mivFolder);
         } else {

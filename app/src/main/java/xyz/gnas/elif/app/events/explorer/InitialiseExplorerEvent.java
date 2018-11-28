@@ -9,10 +9,6 @@ public class InitialiseExplorerEvent extends ExplorerEvent {
         return isLeft;
     }
 
-    public void setLeft(boolean left) {
-        isLeft = left;
-    }
-
     public InitialiseExplorerEvent(ExplorerModel model, boolean isLeft) {
         super(model);
         this.isLeft = isLeft;

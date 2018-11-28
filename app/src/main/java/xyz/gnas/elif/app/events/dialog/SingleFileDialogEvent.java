@@ -2,14 +2,15 @@ package xyz.gnas.elif.app.events.dialog;
 
 import java.io.File;
 
-public abstract class SingleFileDialogEvent {
+public class SingleFileDialogEvent extends DialogEvent {
     private File file;
 
     public File getFile() {
         return file;
     }
 
-    public SingleFileDialogEvent(File file) {
+    public SingleFileDialogEvent(DialogType type, File file) {
+        super(type);
         this.file = file;
     }
 }
