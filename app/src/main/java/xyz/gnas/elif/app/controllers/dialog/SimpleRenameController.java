@@ -80,10 +80,11 @@ public class SimpleRenameController {
         bindWindowEventHandler(getClass(), txtName, new WindowEventHandler() {
             @Override
             public void handleShownEvent() {
-                // select only the name of the file by default
                 txtName.requestFocus();
-                String name = FilenameUtils.removeExtension(file.getName());
-                txtName.selectRange(0, name.length());
+
+                // select only the name of the file or the whole folder name
+                txtName.selectRange(0, file.isDirectory() ? file.getName().length() :
+                        FilenameUtils.removeExtension(file.getName()).length());
             }
 
             @Override
@@ -116,7 +117,7 @@ public class SimpleRenameController {
 
     @FXML
     private void rename(ActionEvent event) {
-        executeRunner("Could not apply rename", () -> {
+        executeRunner("Could not apply simple rename", () -> {
             String newName = txtName.getText() == null ? "" : txtName.getText();
             File target = new File(file.getParent() + "\\" + newName);
             boolean result = true;
@@ -141,6 +142,6 @@ public class SimpleRenameController {
 
     @FXML
     private void cancel(ActionEvent event) {
-        executeRunner("Could not cancel rename", this::hideDialog);
+        executeRunner("Could not cancel simple rename", this::hideDialog);
     }
 }

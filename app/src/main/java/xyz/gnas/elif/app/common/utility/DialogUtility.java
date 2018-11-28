@@ -1,5 +1,6 @@
 package xyz.gnas.elif.app.common.utility;
 
+import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
@@ -22,7 +23,7 @@ import java.io.StringWriter;
 import java.util.Optional;
 
 import static javafx.application.Platform.runLater;
-import static xyz.gnas.elif.app.common.utility.code.CodeRunnerUtility.executeRunnerAndHandleException;
+import static xyz.gnas.elif.app.common.utility.code.CodeRunnerUtility.executeRunner;
 
 public final class DialogUtility {
     private static void runInMainThread(Runner runner, ExceptionHandler handler) {
@@ -60,7 +61,7 @@ public final class DialogUtility {
 
     private static void checkExitFlagAndExit(boolean exit) {
         if (exit) {
-            System.exit(1);
+            Platform.exit();
         }
     }
 
@@ -94,18 +95,17 @@ public final class DialogUtility {
     }
 
     /**
-     * Show alert dialog
+     * Show warning dialog
      *
      * @param headerText the header text
      * @param message    the message
      */
-    public static void showAlert(String headerText, String message) {
+    public static void showWarning(String headerText, String message) {
         runInMainThread(() -> {
-            Alert alert = new Alert(AlertType.NONE);
+            Alert alert = new Alert(AlertType.WARNING);
             initialiseAlert(alert, "Message", headerText, message);
-            alert.getDialogPane().getButtonTypes().add(ButtonType.OK);
             alert.showAndWait();
-        }, (Exception e) -> writeErrorLog("Could not display alert", e));
+        }, (Exception e) -> writeErrorLog("Could not display warning", e));
     }
 
     /**
@@ -177,18 +177,20 @@ public final class DialogUtility {
         }
 
         DialogPane dialogPane = alert.getDialogPane();
-        handleKeyEventForOptionDialog(dialogPane);
+        addKeyEventHandlerForOptionDialog(dialogPane);
         addCloseButton(dialogPane);
         Optional<ButtonType> result = alert.showAndWait();
         return getOptionResult(result);
     }
 
-    private static void handleKeyEventForOptionDialog(DialogPane dialogPane) {
-        dialogPane.setOnKeyPressed((KeyEvent event) -> executeRunnerAndHandleException(() -> {
-            if (event.getCode() == KeyCode.ESCAPE) {
-                dialogPane.getScene().getWindow().hide();
-            }
-        }, (Exception e) -> writeErrorLog("Could not display custom dialog", e)));
+    private static void addKeyEventHandlerForOptionDialog(DialogPane dialogPane) {
+        // close dialog if escape key is pressed
+        dialogPane.addEventHandler(KeyEvent.KEY_PRESSED, (KeyEvent event) -> executeRunner(DialogUtility.class,
+                "Error when handling key event for dialog", () -> {
+                    if (event.getCode() == KeyCode.ESCAPE) {
+                        dialogPane.getScene().getWindow().hide();
+                    }
+                }));
     }
 
     private static String getOptionResult(Optional<ButtonType> result) {

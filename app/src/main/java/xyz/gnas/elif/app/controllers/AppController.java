@@ -29,6 +29,7 @@ import xyz.gnas.elif.app.common.utility.code.MainThreadTaskRunner;
 import xyz.gnas.elif.app.common.utility.code.Runner;
 import xyz.gnas.elif.app.common.utility.code.SideThreadTaskRunner;
 import xyz.gnas.elif.app.common.utility.window.WindowEventHandler;
+import xyz.gnas.elif.app.events.dialog.DialogEvent;
 import xyz.gnas.elif.app.events.dialog.DialogEvent.DialogType;
 import xyz.gnas.elif.app.events.dialog.SingleFileDialogEvent;
 import xyz.gnas.elif.app.events.explorer.InitialiseExplorerEvent;
@@ -54,9 +55,9 @@ import java.util.TreeMap;
 
 import static java.lang.Thread.sleep;
 import static javafx.application.Platform.runLater;
-import static xyz.gnas.elif.app.common.utility.DialogUtility.showAlert;
 import static xyz.gnas.elif.app.common.utility.DialogUtility.showConfirmation;
 import static xyz.gnas.elif.app.common.utility.DialogUtility.showCustomDialog;
+import static xyz.gnas.elif.app.common.utility.DialogUtility.showWarning;
 import static xyz.gnas.elif.app.common.utility.code.CodeRunnerUtility.executeRunnerAndHandleException;
 import static xyz.gnas.elif.app.common.utility.window.WindowEventUtility.bindWindowEventHandler;
 
@@ -86,9 +87,9 @@ public class AppController {
 
     private ApplicationModel applicationModel = ApplicationModel.getInstance();
 
-    private Node textEditorDialog;
-
     private Node simpleRenameDialog;
+    private Node advancedRenameDialog;
+    private Node textEditorDialog;
 
     private ObservableList<Operation> operationList = FXCollections.observableArrayList();
 
@@ -141,7 +142,7 @@ public class AppController {
                     break;
 
                 case Move:
-                    copy(applicationModel.getSelectedItemList(), getTargetPath(), CopyMode.MOVE);
+                    copy(applicationModel.getSelectedItemList(), getTargetPath(), CopyMode.CUT);
                     break;
 
                 case Delete:
@@ -163,11 +164,15 @@ public class AppController {
     }
 
     @Subscribe
-    public void onSingleFileDialogEvent(SingleFileDialogEvent event) {
+    public void onDialogEvent(DialogEvent event) {
         executeRunner("Error when handling single file dialog event", () -> {
             switch (event.getType()) {
                 case SimpleRename:
                     showCustomDialog("Simple rename", simpleRenameDialog, ResourceManager.getSimpleRenameIcon());
+                    break;
+
+                case AdvancedRename:
+                    showCustomDialog("Advanced rename", advancedRenameDialog, ResourceManager.getAdvancedRenameIcon());
                     break;
 
                 case EditAsText:
@@ -223,10 +228,10 @@ public class AppController {
         String cancel = "Cancel";
         String confirmResult = duplicate;
         boolean checkDifferentPath =
-                !applicationModel.getSelectedExplorerModel().getFolder().getAbsolutePath().equalsIgnoreCase(container.targetPath);
+                container.targetPath.equalsIgnoreCase(applicationModel.getSelectedExplorerModel().getFolder().getAbsolutePath());
 
-        // Ask for choice if mode is copy and paths are different, for other modes always ask
-        if ((checkDifferentPath || container.mode != CopyMode.COPY) && container.hasDuplicate) {
+        // show confirm if copy mode is copy or source and target paths are different
+        if ((checkDifferentPath || container.mode == CopyMode.COPY) && container.hasDuplicate) {
             confirmResult = DialogUtility.showOptions("There are files in the target folder with the same name",
                     replace, skip, duplicate, cancel);
         }
@@ -242,7 +247,7 @@ public class AppController {
             removeExistingFiles(container);
         }
 
-        String operationName = container.mode == CopyMode.MOVE ? "Move" : "Copy";
+        String operationName = container.mode == CopyMode.CUT ? "Move" : "Copy";
         container.operation = createNewOperation(operationName + " files to \"" + container.targetPath + "\"");
 
         runInSideThread("Error running copy task", () -> {
@@ -298,8 +303,12 @@ public class AppController {
 
     private void processSourceTargetMap(CopyParameterContainer container, String duplicate) throws InterruptedException {
         for (ExplorerItemModel source : container.sourceTargetMap.keySet()) {
-            if (container.mode == CopyMode.MOVE && applicationModel.getSelectedExplorerModel().getFolder().getAbsolutePath().equalsIgnoreCase(container.targetPath)) {
-                showAlert("Invalid operation", "Cannot move files to their current folder!");
+            File file = source.getFile();
+
+            if (container.mode == CopyMode.CUT && container.targetPath.equalsIgnoreCase(file.getParent() + "\\")) {
+                runInMainThread("Error showing invalid operation", () ->
+                        showWarning("Invalid operation", "Cannot move file/folder \"" + getFilePathInQuote(file) +
+                                "\" to its current folder!"));
             } else {
                 while (container.operation.isPaused()) {
                     sleep(THREAD_SLEEP_TIME);
@@ -308,17 +317,25 @@ public class AppController {
                 if (container.operation.isStopped()) {
                     break;
                 } else {
-                    runInMainThread("Error creating new operation", () -> {
-                        String name = container.mode == CopyMode.MOVE ? "Moving" : "Copying";
-                        container.operation.setSuboperationName(name + " \"" + source.getFile().getAbsolutePath() +
-                                "\"");
-                    });
-
-                    checkAndUpdateSourceTargetMap(container, source, duplicate);
-                    copyFile(container, source);
+                    updateSuboperationAndCopy(source, container, duplicate);
                 }
             }
         }
+    }
+
+    private String getFilePathInQuote(File file) {
+        return "\"" + file.getAbsolutePath() + "\"";
+    }
+
+    private void updateSuboperationAndCopy(ExplorerItemModel source, CopyParameterContainer container, String duplicate)
+            throws InterruptedException {
+        runInMainThread("Error creating new operation", () -> {
+            String name = container.mode == CopyMode.CUT ? "Moving" : "Copying";
+            container.operation.setSuboperationName(name + " \"" + getFilePathInQuote(source.getFile()) + "\"");
+        });
+
+        checkAndUpdateSourceTargetMap(container, source, duplicate);
+        copyFile(container, source);
     }
 
     private void checkAndUpdateSourceTargetMap(CopyParameterContainer container, ExplorerItemModel source,
@@ -359,7 +376,7 @@ public class AppController {
             throws IOException, InterruptedException {
         File sourceFile = source.getFile();
 
-        if (container.mode == CopyMode.MOVE || container.mode == CopyMode.CUT_PASTE) {
+        if (container.mode == CopyMode.CUT) {
             FileLogic.move(sourceFile, container.sourceTargetMap.get(source), container.operation, progress);
         } else {
             FileLogic.copy(sourceFile, container.sourceTargetMap.get(source), container.operation, progress);
@@ -451,7 +468,7 @@ public class AppController {
             if (!sourceList.isEmpty()) {
                 writeInfoLog("Pasting files from clipboard");
                 copy(sourceList, applicationModel.getSelectedExplorerModel().getFolder().getAbsolutePath(),
-                        isCut.get() ? CopyMode.CUT_PASTE : CopyMode.COPY_PASTE);
+                        isCut.get() ? CopyMode.CUT : CopyMode.COPY);
             }
         }
     }
@@ -505,7 +522,16 @@ public class AppController {
     }
 
     private void addNewFolder() {
-        File folder = FileLogic.addNewFolder(applicationModel.getSelectedExplorerModel().getFolder().getAbsolutePath());
+        List<ExplorerItemModel> selectedItemList = applicationModel.getSelectedItemList();
+        String newFolder = applicationModel.getSelectedExplorerModel().getFolder().getAbsolutePath() + "\\";
+
+        if (selectedItemList.isEmpty()) {
+            newFolder += "New folder";
+        } else {
+            newFolder += selectedItemList.get(0).getName();
+        }
+
+        File folder = FileLogic.addNewFolder(newFolder);
         reloadAndRenameNewFileFolder(folder);
     }
 
@@ -515,7 +541,8 @@ public class AppController {
     }
 
     private void addNewFile() throws IOException {
-        File file = FileLogic.addNewFile(applicationModel.getSelectedExplorerModel().getFolder().getAbsolutePath());
+        String newFile = applicationModel.getSelectedExplorerModel().getFolder().getAbsolutePath() + "\\New file";
+        File file = FileLogic.addNewFile(newFile);
         reloadAndRenameNewFileFolder(file);
     }
 
@@ -615,8 +642,15 @@ public class AppController {
     }
 
     private void initialiseDialogs() throws IOException {
+        // simple rename
         FXMLLoader loader = new FXMLLoader(ResourceManager.getSimpleRenameFXML());
         simpleRenameDialog = loader.load();
+
+        // advanced rename
+        loader = new FXMLLoader(ResourceManager.getAdvancedRenameFXML());
+        advancedRenameDialog = loader.load();
+
+        // edit as text
         loader = new FXMLLoader(ResourceManager.getEditAsTextFXML());
         textEditorDialog = loader.load();
     }
@@ -682,7 +716,7 @@ public class AppController {
      * convenient enum for copy method
      */
     private enum CopyMode {
-        COPY, MOVE, COPY_PASTE, CUT_PASTE
+        COPY, CUT
     }
 
     /**

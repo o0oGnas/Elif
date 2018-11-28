@@ -14,6 +14,7 @@ import java.util.List;
 public class ResourceManager {
     private static Image appIcon;
     private static Image simpleRenameIcon;
+    private static Image advancedRenameIcon;
     private static Image editAsTextIcon;
 
     private static Media notificationSound;
@@ -24,6 +25,7 @@ public class ResourceManager {
     private static URL operationFXML;
     private static URL explorerFXML;
     private static URL simpleRenameFXML;
+    private static URL advancedRenameFXML;
     private static URL editAsTextFXML;
 
     public static Image getAppIcon() {
@@ -48,6 +50,14 @@ public class ResourceManager {
         }
 
         return simpleRenameIcon;
+    }
+
+    public static Image getAdvancedRenameIcon() {
+        if (advancedRenameIcon == null) {
+            advancedRenameIcon = getIcon("advanced_rename.png");
+        }
+
+        return advancedRenameIcon;
     }
 
     public static Image getEditAsTextIcon() {
@@ -126,6 +136,14 @@ public class ResourceManager {
 
     private static URL getDialogFXML(String fxml) {
         return getFXML("dialog/" + fxml);
+    }
+
+    public static URL getAdvancedRenameFXML() {
+        if (advancedRenameFXML == null) {
+            advancedRenameFXML = getDialogFXML("AdvancedRename");
+        }
+
+        return advancedRenameFXML;
     }
 
     public static URL getEditAsTextFXML() {

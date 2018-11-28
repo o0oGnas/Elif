@@ -43,6 +43,7 @@ import xyz.gnas.elif.app.common.utility.code.RunnerWithIntReturn;
 import xyz.gnas.elif.app.common.utility.window.WindowEventHandler;
 import xyz.gnas.elif.app.common.utility.window.WindowEventUtility;
 import xyz.gnas.elif.app.controllers.explorer.ExplorerTableCellCallback.Column;
+import xyz.gnas.elif.app.events.dialog.DialogEvent;
 import xyz.gnas.elif.app.events.dialog.DialogEvent.DialogType;
 import xyz.gnas.elif.app.events.dialog.SingleFileDialogEvent;
 import xyz.gnas.elif.app.events.explorer.ChangePathEvent;
@@ -60,6 +61,7 @@ import javax.swing.filechooser.FileSystemView;
 import java.awt.Desktop;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -182,7 +184,15 @@ public class ExplorerController {
     @FXML
     private SeparatorMenuItem smiEditAsText;
 
+    /**
+     * minimum width of table context menu
+     */
     private final int MIN_TABLE_CONTEXT_MENU_ITEM_WIDTH = 150;
+
+    /**
+     * period of quick selection in milliseconds
+     */
+    private final int QUICK_SELECT_PERIOD = 1000;
 
     private ApplicationModel applicationModel = ApplicationModel.getInstance();
 
@@ -197,6 +207,10 @@ public class ExplorerController {
 
     private List<ExplorerItemModel> selectedFolderList = new ArrayList<>();
     private List<ExplorerItemModel> selectedFileList = new ArrayList<>();
+
+    private Calendar lastQuickSelect;
+
+    private String quickSelectString;
 
     private void executeRunner(String errorMessage, Runner runner) {
         CodeRunnerUtility.executeRunner(getClass(), errorMessage, runner);
@@ -796,6 +810,7 @@ public class ExplorerController {
 
     @FXML
     private void advancedRename(ActionEvent event) {
+        executeRunner("Could not perform advanced rename", () -> postEvent(new DialogEvent(DialogType.AdvancedRename)));
     }
 
     @FXML
@@ -817,7 +832,7 @@ public class ExplorerController {
 
     @FXML
     private void tableKeyPressed(KeyEvent event) {
-        executeRunner("Could not handle key event", () -> {
+        executeRunner("Could not handle table key pressed event", () -> {
             if (event.isControlDown()) {
                 handleControlModifierEvent(event);
             } else {
@@ -889,6 +904,10 @@ public class ExplorerController {
 
                 break;
 
+            case F3:
+                advancedRename(null);
+                break;
+
             case F4:
                 if (cmiEditAsText.isVisible()) {
                     editAsText(null);
@@ -907,5 +926,29 @@ public class ExplorerController {
             default:
                 break;
         }
+    }
+
+    @FXML
+    private void tableKeyTyped(KeyEvent event) {
+        executeRunner("Could not handle table key typed event", () -> {
+            Calendar now = Calendar.getInstance();
+
+            // renew select string if it's the first time or the period timed out
+            if (lastQuickSelect == null || now.getTimeInMillis() - lastQuickSelect.getTimeInMillis() > QUICK_SELECT_PERIOD) {
+                quickSelectString = event.getCharacter();
+            } else {
+                quickSelectString += event.getCharacter();
+            }
+
+            lastQuickSelect = now;
+
+            for (int i = 0; i < tbvTable.getItems().size(); ++i) {
+                // select the first occurrence that matches the quick selection string
+                if (tbvTable.getItems().get(i).getName().toUpperCase().startsWith(quickSelectString.toUpperCase())) {
+                    tbvTable.getSelectionModel().clearAndSelect(i);
+                    break;
+                }
+            }
+        });
     }
 }

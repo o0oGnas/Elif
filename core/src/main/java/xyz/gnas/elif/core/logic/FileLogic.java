@@ -121,13 +121,25 @@ public class FileLogic {
     /**
      * create a new folder
      *
-     * @param parent the parent path of the folder
+     * @param folderPath the folder path
      * @return the file object representing the new folder
      */
-    public static File addNewFolder(String parent) {
-        File folder = getNewFileOrFolder(parent, false);
+    public static File addNewFolder(String folderPath) {
+        File folder = getNewFileOrFolder(folderPath);
         folder.mkdir();
         return folder;
+    }
+
+    private static File getNewFileOrFolder(String path) {
+        File fileOrFolder = new File(path);
+        int index = 2;
+
+        while (fileOrFolder.exists()) {
+            fileOrFolder = new File(path + " (" + index + ")");
+            ++index;
+        }
+
+        return fileOrFolder;
     }
 
     /**
@@ -155,30 +167,15 @@ public class FileLogic {
         }
     }
 
-    private static File getNewFileOrFolder(String parent, boolean isFile) {
-        String parentPath = parent + "\\";
-        String fileFolder = isFile ? "file" : "folder";
-        String newFileFolderPath = parentPath + "New " + fileFolder;
-        File fileOrFolder = new File(newFileFolderPath);
-        int index = 2;
-
-        while (fileOrFolder.exists()) {
-            fileOrFolder = new File(newFileFolderPath + " (" + index + ")");
-            ++index;
-        }
-
-        return fileOrFolder;
-    }
-
     /**
      * create a new file
      *
-     * @param parent the parent path of the file
+     * @param filePath the file path
      * @return the file object representing the new file
      * @throws IOException the io exception
      */
-    public static File addNewFile(String parent) throws IOException {
-        File file = getNewFileOrFolder(parent, true);
+    public static File addNewFile(String filePath) throws IOException {
+        File file = getNewFileOrFolder(filePath);
         file.createNewFile();
         return file;
     }

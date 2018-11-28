@@ -1,6 +1,6 @@
 package xyz.gnas.elif.app.events.dialog;
 
-public abstract class DialogEvent {
+public class DialogEvent {
     public enum DialogType {
         SimpleRename, AdvancedRename, EditAsText
     }

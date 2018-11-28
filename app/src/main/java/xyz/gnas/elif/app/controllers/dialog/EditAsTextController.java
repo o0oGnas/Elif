@@ -67,11 +67,11 @@ public class EditAsTextController {
             textAreaListener = (observableValue, s, t1) -> executeRunner("Error when handling text change event",
                     () -> hasNewContent.set(true));
 
-            handleCloseEvent();
+            bindCloseEventHandler();
         });
     }
 
-    private void handleCloseEvent() {
+    private void bindCloseEventHandler() {
         bindWindowEventHandler(getClass(), ttaContent, new WindowEventHandler() {
             @Override
             public void handleShownEvent() {
@@ -84,12 +84,24 @@ public class EditAsTextController {
             @Override
             public void handleCloseEvent(WindowEvent windowEvent) {
                 // show confirm if there are unsaved changes and prevent closing if user chooses no
-                if (hasNewContent.get() && !showConfirmation("There are unsaved changes, are you sure you want close " +
-                        "without saving first?")) {
+                if (!checkCloseDialog()) {
                     windowEvent.consume();
                 }
             }
         });
+    }
+
+    /**
+     * check if there are unsaved changes and show confirmation if there are
+     *
+     * @return true if there are no unsaved changes or user chooses to close without saving, false otherwise
+     */
+    private boolean checkCloseDialog() {
+        if (hasNewContent.get()) {
+            return showConfirmation("There are unsaved changes, are you sure you want close without saving?");
+        } else {
+            return true;
+        }
     }
 
     @FXML
@@ -101,9 +113,15 @@ public class EditAsTextController {
                     hasNewContent.set(false);
                 }
             } else if (keyEvent.getCode() == KeyCode.ESCAPE) {
-                cancel(null);
+                hideDialog();
             }
         });
+    }
+
+    private void hideDialog() {
+        if (checkCloseDialog()) {
+            ttaContent.getScene().getWindow().hide();
+        }
     }
 
     @FXML
@@ -111,6 +129,7 @@ public class EditAsTextController {
         executeRunner("Could not save text edit", () -> {
             writeInfoLog("Saving text to file " + file.getAbsolutePath());
             FileLogic.saveTextToFile(file, ttaContent.getText());
+            hasNewContent.set(false);
 
             // hide dialog if use clicks on save button
             if (event != null) {
@@ -119,18 +138,8 @@ public class EditAsTextController {
         });
     }
 
-    private void hideDialog() {
-        ttaContent.getScene().getWindow().hide();
-    }
-
     @FXML
     private void cancel(ActionEvent event) {
-        executeRunner("Could not cancel edit as text", () -> {
-            // show confirm if there are unsaved changes
-            if (!hasNewContent.get() || showConfirmation("There are unsaved changes, are you sure you want to close " +
-                    "without saving first?")) {
-                hideDialog();
-            }
-        });
+        executeRunner("Could not cancel edit as text", () -> hideDialog());
     }
 }

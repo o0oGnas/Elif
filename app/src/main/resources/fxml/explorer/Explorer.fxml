@@ -72,7 +72,7 @@
             </HBox>
         </HBox>
         <TableView fx:id="tbvTable" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308"
-                   onKeyPressed="#tableKeyPressed" VBox.vgrow="ALWAYS">
+                   onKeyPressed="#tableKeyPressed" onKeyTyped="#tableKeyTyped" VBox.vgrow="ALWAYS">
             <placeholder>
                 <Label/>
             </placeholder>
