@@ -4,7 +4,7 @@ import javafx.concurrent.Task;
 
 import static xyz.gnas.elif.app.common.utility.DialogUtility.showError;
 
-public class SideThreadTaskRunner extends Task {
+class SideThreadTaskRunner extends Task {
     private Class callerClass;
     private String errorMessage;
     private Runner runner;

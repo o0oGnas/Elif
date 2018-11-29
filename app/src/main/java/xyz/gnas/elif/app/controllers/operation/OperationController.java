@@ -1,5 +1,6 @@
 package xyz.gnas.elif.app.controllers.operation;
 
+import de.jensd.fx.glyphs.materialicons.MaterialIcon;
 import de.jensd.fx.glyphs.materialicons.MaterialIconView;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -9,7 +10,6 @@ import javafx.scene.control.ProgressIndicator;
 import javafx.scene.layout.HBox;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
-import xyz.gnas.elif.app.common.Configurations;
 import xyz.gnas.elif.app.common.utility.LogUtility;
 import xyz.gnas.elif.app.common.utility.code.CodeRunnerUtility;
 import xyz.gnas.elif.app.common.utility.code.Runner;
@@ -74,7 +74,7 @@ public class OperationController {
                 () -> {
                     if (!operation.isStopped()) {
                         boolean pause = operation.isPaused();
-                        mivPauseResume.setGlyphName(pause ? Configurations.RESUME_GLYPH : Configurations.PAUSE_GLYPH);
+                        mivPauseResume.setIcon(pause ? MaterialIcon.MAIL.PLAY_ARROW : MaterialIcon.PAUSE);
                         btnPauseResume.setText(pause ? "Resume" : "Pause");
                         String status = "";
 

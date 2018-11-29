@@ -63,10 +63,8 @@ public class EditAsTextController {
     private void initialize() {
         executeRunner("Could not initialise edit as text dialog", () -> {
             EventBus.getDefault().register(this);
-
             textAreaListener = (observableValue, s, t1) -> executeRunner("Error when handling text change event",
                     () -> hasNewContent.set(true));
-
             bindCloseEventHandler();
         });
     }

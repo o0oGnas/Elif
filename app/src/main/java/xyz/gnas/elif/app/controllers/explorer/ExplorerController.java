@@ -1,5 +1,6 @@
 package xyz.gnas.elif.app.controllers.explorer;
 
+import de.jensd.fx.glyphs.materialicons.MaterialIcon;
 import de.jensd.fx.glyphs.materialicons.MaterialIconView;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -34,7 +35,6 @@ import javafx.scene.paint.Color;
 import javafx.stage.WindowEvent;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
-import xyz.gnas.elif.app.common.Configurations;
 import xyz.gnas.elif.app.common.utility.ImageUtility;
 import xyz.gnas.elif.app.common.utility.LogUtility;
 import xyz.gnas.elif.app.common.utility.code.CodeRunnerUtility;
@@ -460,11 +460,11 @@ public class ExplorerController {
         mivName.setVisible(true);
 
         isDescending.addListener(l -> executeRunner("Error when handling change to sort order", () -> {
-            String glyph = isDescending.get() ? Configurations.DESCENDING_GLYPH : Configurations.ASCENDING_GLYPH;
-            mivName.setGlyphName(glyph);
-            mivExtension.setGlyphName(glyph);
-            mivSize.setGlyphName(glyph);
-            mivDate.setGlyphName(glyph);
+            MaterialIcon icon = isDescending.get() ? MaterialIcon.KEYBOARD_ARROW_DOWN : MaterialIcon.KEYBOARD_ARROW_UP;
+            mivName.setIcon(icon);
+            mivExtension.setIcon(icon);
+            mivSize.setIcon(icon);
+            mivDate.setIcon(icon);
         }));
     }
 
@@ -481,22 +481,21 @@ public class ExplorerController {
 
         tbvTable.getItems().sort((ExplorerItemModel o1, ExplorerItemModel o2) ->
                 executeRunnerWithIntReturn("Error when sorting table", 0, () -> {
-                    boolean descending = isDescending.get();
-                    boolean IsDirectory1 = o1.getFile().isDirectory();
+                    boolean isDirectory = o1.getFile().isDirectory();
 
                     // only sort if both are files or folders, otherwise folder comes first
-                    if (IsDirectory1 == o2.getFile().isDirectory()) {
+                    if (isDirectory == o2.getFile().isDirectory()) {
                         if (currentSortLabel == lblName) {
-                            return getSortResult(descending, o1.getName(), o2.getName());
+                            return getSortResult(o1.getName(), o2.getName());
                         } else if (currentSortLabel == lblExtension) {
-                            return getSortResult(descending, o1.getExtension(), o2.getExtension());
+                            return getSortResult(o1.getExtension(), o2.getExtension());
                         } else if (currentSortLabel == lblSize) {
-                            return getSortResult(descending, o1.getSize(), o2.getSize());
+                            return getSortResult(o1.getSize(), o2.getSize());
                         } else {
-                            return getSortResult(descending, o1.getDate(), o2.getDate());
+                            return getSortResult(o1.getDate(), o2.getDate());
                         }
                     } else {
-                        return IsDirectory1 ? -1 : 1;
+                        return isDirectory ? -1 : 1;
                     }
                 }));
     }
@@ -504,8 +503,8 @@ public class ExplorerController {
     /**
      * Wrapper to return the result of comparison
      */
-    private int getSortResult(boolean descending, Comparable o1, Comparable o2) {
-        return descending ? o2.compareTo(o1) : o1.compareTo(o2);
+    private int getSortResult(Comparable o1, Comparable o2) {
+        return isDescending.get() ? o2.compareTo(o1) : o1.compareTo(o2);
     }
 
     private void initialiseTable() {
@@ -566,9 +565,7 @@ public class ExplorerController {
 
     private void initialiseTableContextMenu() {
         ctmTable.setOnShowing(l -> executeRunner("Error when handling table context menu shown event",
-                () -> cmiPaste.setVisible(ClipboardLogic.clipboardHasFiles()))
-        );
-
+                () -> cmiPaste.setVisible(ClipboardLogic.clipboardHasFiles())));
         smiRunOrGoTo.visibleProperty().bind(cmiRunOrGoto.visibleProperty());
         smiEditAsText.visibleProperty().bindBidirectional(cmiEditAsText.visibleProperty());
         setRunOrGoToLabelWidth();
@@ -620,7 +617,7 @@ public class ExplorerController {
     }
 
     private void setRunContextMenuItem() {
-        mivRunOrGoTo.setGlyphName(Configurations.RUN_FILE_GLYPH);
+        mivRunOrGoTo.setIcon(MaterialIcon.POWER_SETTINGS_NEW);
         String run = "Run ";
         int size = selectedFileList.size();
 
@@ -634,7 +631,7 @@ public class ExplorerController {
     }
 
     private void setGoToContextMenuItem() {
-        mivRunOrGoTo.setGlyphName(Configurations.GO_TO_GLYPH);
+        mivRunOrGoTo.setIcon(MaterialIcon.OPEN_IN_BROWSER);
         ExplorerItemModel item = selectedFolderList.get(0);
         lblRunOrGoTo.setText("Go to " + item.getFile().getAbsolutePath());
     }

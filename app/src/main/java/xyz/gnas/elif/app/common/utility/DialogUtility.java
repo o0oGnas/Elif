@@ -13,8 +13,8 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
 import javafx.stage.Stage;
+import xyz.gnas.elif.app.common.ResourceManager;
 import xyz.gnas.elif.app.common.utility.code.ExceptionHandler;
-import xyz.gnas.elif.app.common.utility.code.MainThreadTaskRunner;
 import xyz.gnas.elif.app.common.utility.code.Runner;
 
 import java.io.IOException;
@@ -22,12 +22,12 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Optional;
 
-import static javafx.application.Platform.runLater;
 import static xyz.gnas.elif.app.common.utility.code.CodeRunnerUtility.executeRunner;
+import static xyz.gnas.elif.app.common.utility.code.CodeRunnerUtility.runInMainThreadAndHandleException;
 
 public final class DialogUtility {
     private static void runInMainThread(Runner runner, ExceptionHandler handler) {
-        runLater(new MainThreadTaskRunner(runner, handler));
+        runInMainThreadAndHandleException(runner, handler);
     }
 
     private static void writeErrorLog(String message, Throwable e) {
@@ -126,6 +126,7 @@ public final class DialogUtility {
 
     private static void initialiseCustomDialogPane(Alert alert, Node content, Image icon) {
         DialogPane dialogPane = alert.getDialogPane();
+        dialogPane.getScene().getStylesheets().addAll(ResourceManager.getCSSList());
         dialogPane.setContent(content);
 
         if (icon != null) {

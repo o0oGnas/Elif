@@ -21,13 +21,12 @@ import javafx.scene.media.MediaPlayer;
 import javafx.stage.WindowEvent;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
+import xyz.gnas.elif.app.common.Configurations;
 import xyz.gnas.elif.app.common.ResourceManager;
 import xyz.gnas.elif.app.common.utility.DialogUtility;
 import xyz.gnas.elif.app.common.utility.LogUtility;
 import xyz.gnas.elif.app.common.utility.code.CodeRunnerUtility;
-import xyz.gnas.elif.app.common.utility.code.MainThreadTaskRunner;
 import xyz.gnas.elif.app.common.utility.code.Runner;
-import xyz.gnas.elif.app.common.utility.code.SideThreadTaskRunner;
 import xyz.gnas.elif.app.common.utility.window.WindowEventHandler;
 import xyz.gnas.elif.app.events.dialog.DialogEvent;
 import xyz.gnas.elif.app.events.dialog.DialogEvent.DialogType;
@@ -54,7 +53,6 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import static java.lang.Thread.sleep;
-import static javafx.application.Platform.runLater;
 import static xyz.gnas.elif.app.common.utility.DialogUtility.showConfirmation;
 import static xyz.gnas.elif.app.common.utility.DialogUtility.showCustomDialog;
 import static xyz.gnas.elif.app.common.utility.DialogUtility.showWarning;
@@ -83,8 +81,6 @@ public class AppController {
     @FXML
     private Button btnEditAsText;
 
-    private final int THREAD_SLEEP_TIME = 500;
-
     private ApplicationModel applicationModel = ApplicationModel.getInstance();
 
     private Node simpleRenameDialog;
@@ -102,11 +98,11 @@ public class AppController {
     }
 
     private void runInSideThread(String errorMessage, Runner runner) {
-        new Thread(new SideThreadTaskRunner(getClass(), errorMessage, runner)).start();
+        CodeRunnerUtility.runInSideThread(getClass(), errorMessage, runner);
     }
 
     private void runInMainThread(String errorMessage, Runner runner) {
-        runLater(new MainThreadTaskRunner(getClass(), errorMessage, runner));
+        CodeRunnerUtility.runInMainThread(getClass(), errorMessage, runner);
     }
 
     private void writeErrorLog(String message, Throwable e) {
@@ -311,7 +307,7 @@ public class AppController {
                                 "\" to its current folder!"));
             } else {
                 while (container.operation.isPaused()) {
-                    sleep(THREAD_SLEEP_TIME);
+                    sleep(Configurations.THREAD_SLEEP_TIME);
                 }
 
                 if (container.operation.isStopped()) {
@@ -368,7 +364,6 @@ public class AppController {
         runInSideThread("Error running file copy task",
                 () -> executeRunnerAndHandleException(() -> moveOrCopy(container, source, progress),
                         (Exception e) -> handleCopyError(container, error, progress, source, target, e)));
-
         monitorFileProgress(container, progress, error, source, target);
     }
 
@@ -410,15 +405,14 @@ public class AppController {
 
         while (progress.get() < 1 && !container.operation.isStopped()) {
             setCompletedAmount(container, currentCompletedAmount + contribution * progress.get());
-            sleep(THREAD_SLEEP_TIME);
+            sleep(Configurations.THREAD_SLEEP_TIME);
         }
 
         finishCopyFileProgress(container, error, source, target, currentCompletedAmount, contribution);
     }
 
     private void setCompletedAmount(CopyParameterContainer container, double percent) {
-        runInMainThread("Error updating completed amount",
-                () -> container.operation.setCompletedAmount(percent));
+        runInMainThread("Error updating completed amount", () -> container.operation.setCompletedAmount(percent));
     }
 
     private void finishCopyFileProgress(CopyParameterContainer container, BooleanProperty error,
@@ -559,7 +553,6 @@ public class AppController {
             operationList.addListener((ListChangeListener<Operation>) l ->
                     executeRunner("Error when handling operation  list change event",
                             () -> scpOperation.setVisible(!operationList.isEmpty())));
-
             initialiseDialogs();
             initialiseExplorers();
         });

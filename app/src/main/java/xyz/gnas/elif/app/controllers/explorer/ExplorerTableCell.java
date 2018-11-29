@@ -1,5 +1,6 @@
 package xyz.gnas.elif.app.controllers.explorer;
 
+import de.jensd.fx.glyphs.materialicons.MaterialIcon;
 import de.jensd.fx.glyphs.materialicons.MaterialIconView;
 import javafx.scene.control.TableCell;
 import javafx.scene.image.ImageView;
@@ -65,9 +66,7 @@ class ExplorerTableCell extends TableCell<ExplorerItemModel, ExplorerItemModel> 
         File file = item.getFile();
 
         if (file.isDirectory()) {
-            MaterialIconView mivFolder = new MaterialIconView();
-            mivFolder.setGlyphName(Configurations.FOLDER_GlYPH);
-            mivFolder.setGlyphSize(16);
+            MaterialIconView mivFolder = new MaterialIconView(MaterialIcon.FOLDER_OPEN, Configurations.ICON_SIZE);
             setGraphic(mivFolder);
         } else {
             ImageView imv = new ImageView(ImageUtility.getFileIcon(file, true));

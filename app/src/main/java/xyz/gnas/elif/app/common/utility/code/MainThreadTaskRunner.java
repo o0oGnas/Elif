@@ -2,7 +2,7 @@ package xyz.gnas.elif.app.common.utility.code;
 
 import static xyz.gnas.elif.app.common.utility.DialogUtility.showError;
 
-public class MainThreadTaskRunner implements Runnable {
+class MainThreadTaskRunner implements Runnable {
     private Class callerClass;
     private String errorMessage;
     private Runner runner;
