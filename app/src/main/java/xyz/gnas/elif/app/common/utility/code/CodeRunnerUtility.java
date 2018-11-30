@@ -47,6 +47,16 @@ public class CodeRunnerUtility {
         }
     }
 
+    public static boolean executeRunnerWithBooleanReturn(Class callerClass, String errorMessage,
+                                                         boolean errorReturnValue, RunnerWithBooleanReturn runner) {
+        try {
+            return runner.run();
+        } catch (Exception e) {
+            showError(callerClass, errorMessage, e, false);
+            return errorReturnValue;
+        }
+    }
+
     /**
      * Execute runner with return object.
      *

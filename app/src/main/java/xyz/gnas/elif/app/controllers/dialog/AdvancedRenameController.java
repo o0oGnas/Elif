@@ -203,7 +203,7 @@ public class AdvancedRenameController {
     private synchronized void buildTrees(TreeItem<File> mainTreeParent, TreeItem<File> previewTreeParent, File file) {
         CheckBoxTreeItem<File> mainTreeNode = new CheckBoxTreeItem<>(file, getIcon(file));
         mainTreeNode.selectedProperty().addListener(
-                l -> executeRunner("Error when handling main tree node selection", () -> updatePreviewTree()));
+                l -> executeRunner("Error when handling main tree node selection", this::updatePreviewTree));
         TreeItem<File> previewTreeNode = new TreeItem<>(file, getIcon(file));
         searchPreviewNodeMap.put(mainTreeNode, previewTreeNode);
 
@@ -222,8 +222,7 @@ public class AdvancedRenameController {
         Node icon;
 
         if (file.isDirectory()) {
-            MaterialIconView miv = new MaterialIconView(MaterialIcon.FOLDER_OPEN, Configurations.ICON_SIZE);
-            icon = miv;
+            icon = new MaterialIconView(MaterialIcon.FOLDER_OPEN, Configurations.ICON_SIZE);
         } else {
             icon = new ImageView(ImageUtility.getFileIcon(file, true));
         }
@@ -332,7 +331,7 @@ public class AdvancedRenameController {
         selectionModel.select(Configurations.NAME);
         selectionModel.selectedItemProperty().addListener(
                 l -> executeRunner("Error when handling name/extension selection",
-                        () -> updateTextFieldsBySelectedItem()));
+                        this::updateTextFieldsBySelectedItem));
     }
 
     private void initialiseMainTree() {

@@ -2,6 +2,7 @@ package xyz.gnas.elif.app.controllers.explorer;
 
 import de.jensd.fx.glyphs.materialicons.MaterialIcon;
 import de.jensd.fx.glyphs.materialicons.MaterialIconView;
+import javafx.beans.binding.Bindings;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ObservableValue;
@@ -39,6 +40,7 @@ import xyz.gnas.elif.app.common.utility.ImageUtility;
 import xyz.gnas.elif.app.common.utility.LogUtility;
 import xyz.gnas.elif.app.common.utility.code.CodeRunnerUtility;
 import xyz.gnas.elif.app.common.utility.code.Runner;
+import xyz.gnas.elif.app.common.utility.code.RunnerWithBooleanReturn;
 import xyz.gnas.elif.app.common.utility.code.RunnerWithIntReturn;
 import xyz.gnas.elif.app.common.utility.window.WindowEventHandler;
 import xyz.gnas.elif.app.common.utility.window.WindowEventUtility;
@@ -170,16 +172,40 @@ public class ExplorerController {
     private CustomMenuItem cmiCopyToOther;
 
     @FXML
+    private CustomMenuItem cmiCopyToClipboard;
+
+    @FXML
+    private CustomMenuItem cmiCutToClipboard;
+
+    @FXML
+    private CustomMenuItem cmiPaste;
+
+    @FXML
+    private CustomMenuItem cmiMove;
+
+    @FXML
+    private CustomMenuItem cmiDelete;
+
+    @FXML
     private CustomMenuItem cmiSimpleRename;
 
     @FXML
     private CustomMenuItem cmiEditAsText;
 
     @FXML
-    private CustomMenuItem cmiPaste;
+    private SeparatorMenuItem smiRunOrGoTo;
 
     @FXML
-    private SeparatorMenuItem smiRunOrGoTo;
+    private SeparatorMenuItem smiCopyToOther;
+
+    @FXML
+    private SeparatorMenuItem smiClipboard;
+
+    @FXML
+    private SeparatorMenuItem smiMove;
+
+    @FXML
+    private SeparatorMenuItem smiDelete;
 
     @FXML
     private SeparatorMenuItem smiEditAsText;
@@ -222,6 +248,11 @@ public class ExplorerController {
 
     private int executeRunnerWithIntReturn(String errorMessage, int errorReturnValue, RunnerWithIntReturn runner) {
         return CodeRunnerUtility.executeRunnerWithIntReturn(getClass(), errorMessage, errorReturnValue, runner);
+    }
+
+    private boolean executeRunnerWithBooleanReturn(String errorMessage, boolean errorReturnValue,
+                                                   RunnerWithBooleanReturn runner) {
+        return CodeRunnerUtility.executeRunnerWithBooleanReturn(getClass(), errorMessage, errorReturnValue, runner);
     }
 
     private void writeInfoLog(String log) {
@@ -533,17 +564,40 @@ public class ExplorerController {
         tbvTable.getSelectionModel().getSelectedItems().addListener((ListChangeListener<ExplorerItemModel>) l ->
                 executeRunner("Error when handling change to item selection", () -> {
                     updateSelectedFoldersAndFiles();
-                    updateTableContextMenu();
                 }));
+    }
+
+    private void initialiseTableContextMenu() {
+        ctmTable.setOnShowing(l -> executeRunner("Error when handling table context menu shown event",
+                () -> updateTableContextMenu()));
+        cmiCopyToClipboard.visibleProperty().bind(cmiCopyToOther.visibleProperty());
+        cmiCutToClipboard.visibleProperty().bind(cmiCopyToOther.visibleProperty());
+        cmiMove.visibleProperty().bind(cmiCopyToOther.visibleProperty());
+        cmiDelete.visibleProperty().bind(cmiCopyToOther.visibleProperty());
+        smiRunOrGoTo.visibleProperty().bind(cmiRunOrGoto.visibleProperty());
+        smiCopyToOther.visibleProperty().bind(cmiCopyToOther.visibleProperty());
+        smiClipboard.visibleProperty().bind(Bindings.createBooleanBinding(() ->
+                        executeRunnerWithBooleanReturn("Error when binding clipboard separator context menu", true,
+                                () -> cmiCopyToClipboard.isVisible() || cmiCutToClipboard.isVisible() || cmiPaste.isVisible()),
+                cmiCopyToClipboard.visibleProperty(), cmiCutToClipboard.visibleProperty(), cmiPaste.visibleProperty()));
+        smiMove.visibleProperty().bind(cmiMove.visibleProperty());
+        smiDelete.visibleProperty().bind(cmiDelete.visibleProperty());
+        smiEditAsText.visibleProperty().bind(cmiEditAsText.visibleProperty());
+        setRunOrGoToLabelWidth();
+        bindTableMenuItemsWidthProperty();
     }
 
     private void updateTableContextMenu() {
         cmiRunOrGoto.setVisible(false);
+        cmiCopyToOther.setVisible(true);
+        cmiPaste.setVisible(ClipboardLogic.clipboardHasFiles());
         cmiSimpleRename.setVisible(false);
         cmiEditAsText.setVisible(false);
 
         if (selectedFolderList.isEmpty()) {
-            if (!selectedFileList.isEmpty()) {
+            if (selectedFileList.isEmpty()) {
+                cmiCopyToOther.setVisible(false);
+            } else {
                 cmiRunOrGoto.setVisible(true);
                 setRunContextMenuItem();
 
@@ -561,15 +615,6 @@ public class ExplorerController {
                 setGoToContextMenuItem();
             }
         }
-    }
-
-    private void initialiseTableContextMenu() {
-        ctmTable.setOnShowing(l -> executeRunner("Error when handling table context menu shown event",
-                () -> cmiPaste.setVisible(ClipboardLogic.clipboardHasFiles())));
-        smiRunOrGoTo.visibleProperty().bind(cmiRunOrGoto.visibleProperty());
-        smiEditAsText.visibleProperty().bindBidirectional(cmiEditAsText.visibleProperty());
-        setRunOrGoToLabelWidth();
-        bindTableMenuItemsWidthProperty();
     }
 
     private void setRunOrGoToLabelWidth() {
@@ -672,7 +717,8 @@ public class ExplorerController {
     /**
      * Wrapper to initialise column
      */
-    private void initialiseColumn(TableColumn<ExplorerItemModel, ExplorerItemModel> tbc, Label lbl, Column column) {
+    private void initialiseColumn(TableColumn<ExplorerItemModel, ExplorerItemModel> tbc, Label lbl, Column
+            column) {
         tbc.setCellValueFactory(new ExplorerTableCellValue());
         tbc.setCellFactory(new ExplorerTableCellCallback(column));
 
@@ -807,13 +853,15 @@ public class ExplorerController {
 
     @FXML
     private void advancedRename(ActionEvent event) {
-        executeRunner("Could not perform advanced rename", () -> postEvent(new DialogEvent(DialogType.AdvancedRename)));
+        executeRunner("Could not perform advanced rename",
+                () -> postEvent(new DialogEvent(DialogType.AdvancedRename)));
     }
 
     @FXML
     private void editAsText(ActionEvent event) {
         executeRunner("Could not edit as text",
-                () -> postEvent(new SingleFileDialogEvent(DialogType.EditAsText, getSelectedItems().get(0).getFile())));
+                () -> postEvent(new SingleFileDialogEvent(DialogType.EditAsText,
+                        getSelectedItems().get(0).getFile())));
     }
 
     @FXML
@@ -824,7 +872,8 @@ public class ExplorerController {
 
     @FXML
     private void addNewFile(ActionEvent event) {
-        executeRunner("Could not add new file", () -> postEvent(new PerformOperationEvent(OperationType.AddNewFile)));
+        executeRunner("Could not add new file",
+                () -> postEvent(new PerformOperationEvent(OperationType.AddNewFile)));
     }
 
     @FXML

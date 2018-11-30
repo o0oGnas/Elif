@@ -149,7 +149,8 @@
                                 </Label>
                             </content>
                         </CustomMenuItem>
-                        <CustomMenuItem onAction="#copyToClipboard">
+                        <SeparatorMenuItem fx:id="smiCopyToOther" hideOnClick="true"/>
+                        <CustomMenuItem fx:id="cmiCopyToClipboard" onAction="#copyToClipboard">
                             <content>
                                 <Label fx:id="lblCopyToClipboard" text="Copy to clipboard">
                                     <graphic>
@@ -158,7 +159,7 @@
                                 </Label>
                             </content>
                         </CustomMenuItem>
-                        <CustomMenuItem onAction="#cutToClipboard">
+                        <CustomMenuItem fx:id="cmiCutToClipboard" onAction="#cutToClipboard">
                             <content>
                                 <Label fx:id="lblCutToClipboard" text="Cut to clipboard">
                                     <graphic>
@@ -176,8 +177,8 @@
                                 </Label>
                             </content>
                         </CustomMenuItem>
-                        <SeparatorMenuItem hideOnClick="true"/>
-                        <CustomMenuItem onAction="#move">
+                        <SeparatorMenuItem fx:id="smiClipboard" hideOnClick="true"/>
+                        <CustomMenuItem fx:id="cmiMove" onAction="#move">
                             <content>
                                 <Label fx:id="lblMove" text="Move">
                                     <graphic>
@@ -186,8 +187,8 @@
                                 </Label>
                             </content>
                         </CustomMenuItem>
-                        <SeparatorMenuItem hideOnClick="true"/>
-                        <CustomMenuItem onAction="#delete">
+                        <SeparatorMenuItem fx:id="smiMove" hideOnClick="true"/>
+                        <CustomMenuItem fx:id="cmiDelete" onAction="#delete">
                             <content>
                                 <Label fx:id="lblDelete" text="Delete">
                                     <graphic>
@@ -196,7 +197,7 @@
                                 </Label>
                             </content>
                         </CustomMenuItem>
-                        <SeparatorMenuItem hideOnClick="true"/>
+                        <SeparatorMenuItem fx:id="smiDelete" hideOnClick="true"/>
                         <CustomMenuItem fx:id="cmiSimpleRename" onAction="#simpleRename">
                             <content>
                                 <Label fx:id="lblSimpleRename" text="Rename (simple)">

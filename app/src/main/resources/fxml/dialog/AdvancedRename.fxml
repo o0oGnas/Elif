@@ -16,162 +16,136 @@
 <?import javafx.scene.text.Font?>
 <AnchorPane onKeyReleased="#keyReleased" xmlns="http://javafx.com/javafx/10.0.1" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="xyz.gnas.elif.app.controllers.dialog.AdvancedRenameController">
-    <children>
-        <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
-              AnchorPane.topAnchor="0.0">
-            <children>
-                <HBox alignment="CENTER_LEFT" style="-fx-background-color: white;" styleClass="control-box">
-                    <children>
-                        <HBox alignment="CENTER_LEFT" styleClass="control-box">
-                            <children>
-                                <Label text="Rename mode"/>
-                                <ComboBox fx:id="cbbMode">
-                                    <HBox.margin>
-                                        <Insets left="10.0"/>
-                                    </HBox.margin>
-                                </ComboBox>
-                            </children>
-                        </HBox>
-                        <HBox fx:id="hbxNameExtension" alignment="CENTER_LEFT" styleClass="control-box">
-                            <children>
-                                <Label text="Replace name/extension"/>
-                                <ComboBox fx:id="cbbNameExtension">
-                                    <HBox.margin>
-                                        <Insets left="10.0"/>
-                                    </HBox.margin>
-                                </ComboBox>
-                            </children>
-                            <HBox.margin>
-                                <Insets left="10.0"/>
-                            </HBox.margin>
-                        </HBox>
-                        <HBox alignment="CENTER_LEFT" styleClass="control-box" HBox.hgrow="ALWAYS">
-                            <children>
-                                <Label text="Text to search"/>
-                                <TextField fx:id="ttfSearch" HBox.hgrow="ALWAYS">
-                                    <HBox.margin>
-                                        <Insets left="10.0"/>
-                                    </HBox.margin>
-                                </TextField>
-                            </children>
-                            <HBox.margin>
-                                <Insets left="10.0"/>
-                            </HBox.margin>
-                        </HBox>
-                        <HBox fx:id="hbxReplace" alignment="CENTER_LEFT" styleClass="control-box" HBox.hgrow="ALWAYS">
-                            <children>
-                                <Label text="Replace by"/>
-                                <TextField fx:id="ttfReplace" HBox.hgrow="ALWAYS">
-                                    <HBox.margin>
-                                        <Insets left="10.0"/>
-                                    </HBox.margin>
-                                </TextField>
-                            </children>
-                            <HBox.margin>
-                                <Insets left="10.0"/>
-                            </HBox.margin>
-                        </HBox>
-                    </children>
-                </HBox>
-                <VBox>
-                    <children>
-                        <HBox fx:id="hbxGenerating" alignment="CENTER" visible="false">
-                            <VBox.margin>
-                                <Insets/>
-                            </VBox.margin>
-                            <children>
-                                <Label text="Generating trees ...">
-                                    <font>
-                                        <Font name="System Bold" size="12.0"/>
-                                    </font>
-                                </Label>
-                                <Button mnemonicParsing="false" onAction="#stopBuildingTrees" text="Stop">
-                                    <graphic>
-                                        <MaterialIconView glyphName="STOP" size="16"/>
-                                    </graphic>
-                                    <HBox.margin>
-                                        <Insets left="10.0"/>
-                                    </HBox.margin>
-                                </Button>
-                            </children>
-                        </HBox>
-                        <GridPane>
-                            <columnConstraints>
-                                <ColumnConstraints hgrow="SOMETIMES"/>
-                                <ColumnConstraints hgrow="SOMETIMES"/>
-                            </columnConstraints>
-                            <rowConstraints>
-                                <RowConstraints vgrow="SOMETIMES"/>
-                                <RowConstraints vgrow="SOMETIMES"/>
-                            </rowConstraints>
-                            <children>
-                                <TreeView fx:id="tvwMain" prefHeight="600.0" prefWidth="700.0" showRoot="false"
-                                          GridPane.rowIndex="1">
-                                    <GridPane.margin>
-                                        <Insets top="5.0"/>
-                                    </GridPane.margin>
-                                </TreeView>
-                                <TreeView fx:id="tvwPreview" prefHeight="600.0" prefWidth="700.0" showRoot="false"
-                                          GridPane.columnIndex="1" GridPane.rowIndex="1">
-                                    <GridPane.margin>
-                                        <Insets top="5.0"/>
-                                    </GridPane.margin>
-                                </TreeView>
-                                <HBox alignment="CENTER">
-                                    <children>
-                                        <Label text="Main">
-                                            <font>
-                                                <Font name="System Bold" size="12.0"/>
-                                            </font>
-                                        </Label>
-                                    </children>
-                                    <GridPane.margin>
-                                        <Insets/>
-                                    </GridPane.margin>
-                                </HBox>
-                                <HBox alignment="CENTER" GridPane.columnIndex="1">
-                                    <children>
-                                        <Label text="Preview">
-                                            <font>
-                                                <Font name="System Bold" size="12.0"/>
-                                            </font>
-                                        </Label>
-                                    </children>
-                                    <GridPane.margin>
-                                        <Insets/>
-                                    </GridPane.margin>
-                                </HBox>
-                            </children>
-                            <VBox.margin>
-                                <Insets top="10.0"/>
-                            </VBox.margin>
-                        </GridPane>
-                    </children>
-                    <VBox.margin>
-                        <Insets top="10.0"/>
-                    </VBox.margin>
-                </VBox>
+    <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
+          AnchorPane.topAnchor="0.0">
+        <HBox alignment="CENTER_LEFT" style="-fx-background-color: white;" styleClass="control-box">
+            <HBox alignment="CENTER_LEFT" styleClass="control-box">
+                <Label text="Rename mode"/>
+                <ComboBox fx:id="cbbMode">
+                    <HBox.margin>
+                        <Insets left="10.0"/>
+                    </HBox.margin>
+                </ComboBox>
+            </HBox>
+            <HBox fx:id="hbxNameExtension" alignment="CENTER_LEFT" styleClass="control-box">
+                <HBox.margin>
+                    <Insets left="10.0"/>
+                </HBox.margin>
+                <Label text="Replace name/extension"/>
+                <ComboBox fx:id="cbbNameExtension">
+                    <HBox.margin>
+                        <Insets left="10.0"/>
+                    </HBox.margin>
+                </ComboBox>
+            </HBox>
+            <HBox alignment="CENTER_LEFT" styleClass="control-box" HBox.hgrow="ALWAYS">
+                <HBox.margin>
+                    <Insets left="10.0"/>
+                </HBox.margin>
+                <Label text="Text to search"/>
+                <TextField fx:id="ttfSearch" HBox.hgrow="ALWAYS">
+                    <HBox.margin>
+                        <Insets left="10.0"/>
+                    </HBox.margin>
+                </TextField>
+            </HBox>
+            <HBox fx:id="hbxReplace" alignment="CENTER_LEFT" styleClass="control-box" HBox.hgrow="ALWAYS">
+                <HBox.margin>
+                    <Insets left="10.0"/>
+                </HBox.margin>
+                <Label text="Replace by"/>
+                <TextField fx:id="ttfReplace" HBox.hgrow="ALWAYS">
+                    <HBox.margin>
+                        <Insets left="10.0"/>
+                    </HBox.margin>
+                </TextField>
+            </HBox>
+        </HBox>
+        <VBox>
+            <VBox.margin>
+                <Insets top="10.0"/>
+            </VBox.margin>
+            <HBox fx:id="hbxGenerating" alignment="CENTER" visible="false">
+                <VBox.margin>
+                    <Insets/>
+                </VBox.margin>
+                <Label text="Generating trees ...">
+                    <font>
+                        <Font name="System Bold" size="12.0"/>
+                    </font>
+                </Label>
+                <Button mnemonicParsing="false" onAction="#stopBuildingTrees" text="Stop">
+                    <graphic>
+                        <MaterialIconView glyphName="STOP" size="16"/>
+                    </graphic>
+                    <HBox.margin>
+                        <Insets left="10.0"/>
+                    </HBox.margin>
+                </Button>
+            </HBox>
+            <GridPane>
+                <columnConstraints>
+                    <ColumnConstraints hgrow="SOMETIMES"/>
+                    <ColumnConstraints hgrow="SOMETIMES"/>
+                </columnConstraints>
+                <rowConstraints>
+                    <RowConstraints vgrow="SOMETIMES"/>
+                    <RowConstraints vgrow="SOMETIMES"/>
+                </rowConstraints>
+                <VBox.margin>
+                    <Insets top="10.0"/>
+                </VBox.margin>
+                <TreeView fx:id="tvwMain" prefHeight="600.0" prefWidth="700.0" showRoot="false"
+                          GridPane.rowIndex="1">
+                    <GridPane.margin>
+                        <Insets top="5.0"/>
+                    </GridPane.margin>
+                </TreeView>
+                <TreeView fx:id="tvwPreview" prefHeight="600.0" prefWidth="700.0" showRoot="false"
+                          GridPane.columnIndex="1" GridPane.rowIndex="1">
+                    <GridPane.margin>
+                        <Insets top="5.0"/>
+                    </GridPane.margin>
+                </TreeView>
                 <HBox alignment="CENTER">
-                    <children>
-                        <Button fx:id="btnRename" mnemonicParsing="false" onAction="#rename" text="Rename">
-                            <graphic>
-                                <MaterialIconView glyphName="CHECK_CIRCLE" size="16"/>
-                            </graphic>
-                        </Button>
-                        <Button mnemonicParsing="false" onAction="#cancel" text="Cancel">
-                            <HBox.margin>
-                                <Insets left="10.0"/>
-                            </HBox.margin>
-                            <graphic>
-                                <MaterialIconView glyphName="CANCEL" size="16"/>
-                            </graphic>
-                        </Button>
-                    </children>
-                    <VBox.margin>
-                        <Insets top="10.0"/>
-                    </VBox.margin>
+                    <GridPane.margin>
+                        <Insets/>
+                    </GridPane.margin>
+                    <Label text="Main">
+                        <font>
+                            <Font name="System Bold" size="12.0"/>
+                        </font>
+                    </Label>
                 </HBox>
-            </children>
+                <HBox alignment="CENTER" GridPane.columnIndex="1">
+                    <GridPane.margin>
+                        <Insets/>
+                    </GridPane.margin>
+                    <Label text="Preview">
+                        <font>
+                            <Font name="System Bold" size="12.0"/>
+                        </font>
+                    </Label>
+                </HBox>
+            </GridPane>
         </VBox>
-    </children>
+        <HBox alignment="CENTER">
+            <VBox.margin>
+                <Insets top="10.0"/>
+            </VBox.margin>
+            <Button fx:id="btnRename" mnemonicParsing="false" onAction="#rename" text="Rename">
+                <graphic>
+                    <MaterialIconView glyphName="CHECK_CIRCLE" size="16"/>
+                </graphic>
+            </Button>
+            <Button mnemonicParsing="false" onAction="#cancel" text="Cancel">
+                <HBox.margin>
+                    <Insets left="10.0"/>
+                </HBox.margin>
+                <graphic>
+                    <MaterialIconView glyphName="CANCEL" size="16"/>
+                </graphic>
+            </Button>
+        </HBox>
+    </VBox>
 </AnchorPane>

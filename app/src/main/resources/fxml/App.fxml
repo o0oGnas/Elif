@@ -24,22 +24,22 @@
             <VBox.margin>
                 <Insets top="10.0"/>
             </VBox.margin>
-            <HBox fx:id="hbxRenameEditCopyMove" disable="true">
-                <Button fx:id="btnSimpleRename" mnemonicParsing="false" onAction="#simpleRename" prefWidth="190.0"
-                        text="F2 - Simple rename">
-                    <graphic>
-                        <MaterialIconView glyphName="EDIT" size="16"/>
-                    </graphic>
-                </Button>
-                <Button mnemonicParsing="false" onAction="#advancedRename" prefWidth="190.0"
-                        text="F3 - Advanced rename">
-                    <graphic>
-                        <FontAwesomeIconView glyphName="EDIT" size="16"/>
-                    </graphic>
-                    <HBox.margin>
-                        <Insets left="10.0"/>
-                    </HBox.margin>
-                </Button>
+            <Button fx:id="btnSimpleRename" mnemonicParsing="false" onAction="#simpleRename" prefWidth="190.0"
+                    text="F2 - Simple rename">
+                <graphic>
+                    <MaterialIconView glyphName="EDIT" size="16"/>
+                </graphic>
+            </Button>
+            <Button fx:id="btnAdvancedRename" mnemonicParsing="false" onAction="#advancedRename" prefWidth="190.0"
+                    text="F3 - Advanced rename">
+                <graphic>
+                    <FontAwesomeIconView glyphName="EDIT" size="16"/>
+                </graphic>
+                <HBox.margin>
+                    <Insets left="10.0"/>
+                </HBox.margin>
+            </Button>
+            <HBox fx:id="hbxEditCopyMove" disable="true">
                 <Button fx:id="btnEditAsText" mnemonicParsing="false" onAction="#editAsText" prefWidth="190.0"
                         text="F4 - Edit as text">
                     <HBox.margin>

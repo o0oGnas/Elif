@@ -138,6 +138,6 @@ public class EditAsTextController {
 
     @FXML
     private void cancel(ActionEvent event) {
-        executeRunner("Could not cancel edit as text", () -> hideDialog());
+        executeRunner("Could not cancel edit as text", this::hideDialog);
     }
 }

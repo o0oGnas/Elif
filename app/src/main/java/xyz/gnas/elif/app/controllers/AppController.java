@@ -64,7 +64,7 @@ public class AppController {
     private HBox hbxExplorer;
 
     @FXML
-    private HBox hbxRenameEditCopyMove;
+    private HBox hbxEditCopyMove;
 
     @FXML
     private HBox hbxNewFolderFile;
@@ -77,6 +77,9 @@ public class AppController {
 
     @FXML
     private Button btnSimpleRename;
+
+    @FXML
+    private Button btnAdvancedRename;
 
     @FXML
     private Button btnEditAsText;
@@ -181,7 +184,7 @@ public class AppController {
     /**
      * get the target path of an operation, i.e. path of the other tab
      *
-     * @return
+     * @return path
      */
     private String getTargetPath() {
         SettingModel settingModel = ApplicationModel.getInstance().getSetting();
@@ -548,6 +551,7 @@ public class AppController {
             handleCloseEvent();
             scpOperation.setManaged(false);
             scpOperation.managedProperty().bind(scpOperation.visibleProperty());
+            btnAdvancedRename.disableProperty().bind(hbxNewFolderFile.disableProperty());
 
             // only show scroll pane if there are running operations
             operationList.addListener((ListChangeListener<Operation>) l ->
@@ -588,9 +592,9 @@ public class AppController {
         ObservableList<ExplorerItemModel> selectedItemList = applicationModel.getSelectedItemList();
 
         if (selectedItemList.isEmpty()) {
-            hbxRenameEditCopyMove.setDisable(true);
+            hbxEditCopyMove.setDisable(true);
         } else {
-            hbxRenameEditCopyMove.setDisable(false);
+            hbxEditCopyMove.setDisable(false);
 
             if (selectedItemList.size() == 1) {
                 btnSimpleRename.setDisable(false);
@@ -675,6 +679,7 @@ public class AppController {
 
     @FXML
     private void advancedRename(ActionEvent event) {
+        executeRunner("Could not perform advanced rename", () -> postEvent(new DialogEvent(DialogType.AdvancedRename)));
     }
 
     @FXML
