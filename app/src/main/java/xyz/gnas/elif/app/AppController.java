@@ -1,4 +1,4 @@
-package xyz.gnas.elif.app.controllers;
+package xyz.gnas.elif.app;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
@@ -28,9 +28,9 @@ import xyz.gnas.elif.app.common.utility.LogUtility;
 import xyz.gnas.elif.app.common.utility.code.CodeRunnerUtility;
 import xyz.gnas.elif.app.common.utility.code.Runner;
 import xyz.gnas.elif.app.common.utility.window.WindowEventHandler;
-import xyz.gnas.elif.app.events.dialog.DialogEvent;
-import xyz.gnas.elif.app.events.dialog.DialogEvent.DialogType;
-import xyz.gnas.elif.app.events.dialog.SingleFileDialogEvent;
+import xyz.gnas.elif.app.events.dialogs.DialogEvent;
+import xyz.gnas.elif.app.events.dialogs.DialogEvent.DialogType;
+import xyz.gnas.elif.app.events.dialogs.SingleFileDialogEvent;
 import xyz.gnas.elif.app.events.explorer.InitialiseExplorerEvent;
 import xyz.gnas.elif.app.events.explorer.ReloadEvent;
 import xyz.gnas.elif.app.events.operation.InitialiseOperationEvent;
@@ -164,7 +164,7 @@ public class AppController {
 
     @Subscribe
     public void onDialogEvent(DialogEvent event) {
-        executeRunner("Error when handling single file dialog event", () -> {
+        executeRunner("Error when handling single file dialogs event", () -> {
             switch (event.getType()) {
                 case SimpleRename:
                     showCustomDialog("Simple rename", simpleRenameDialog, ResourceManager.getSimpleRenameIcon());
@@ -512,9 +512,8 @@ public class AppController {
             writeErrorLog("Error when deleting file", e);
 
             // ask for confirmation to continue when there is an error
-            if (!showConfirmation("Error when deleting " + item.getFile().getAbsolutePath() + "\n" + e.getMessage() + "\nDo you want to continue?")) {
-                breakLoop.set(true);
-            }
+            breakLoop.set(!showConfirmation("Error when deleting " + item.getFile().getAbsolutePath() + "\n"
+                    + e.getMessage() + "\nDo you want to continue?"));
         });
     }
 

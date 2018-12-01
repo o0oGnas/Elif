@@ -1,4 +1,4 @@
-package xyz.gnas.elif.app.events.dialog;
+package xyz.gnas.elif.app.events.dialogs;
 
 public class DialogEvent {
     public enum DialogType {

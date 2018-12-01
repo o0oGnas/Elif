@@ -135,7 +135,7 @@ public class ResourceManager {
     }
 
     private static URL getDialogFXML(String fxml) {
-        return getFXML("dialog/" + fxml);
+        return getFXML("dialogs/" + fxml);
     }
 
     public static URL getAdvancedRenameFXML() {

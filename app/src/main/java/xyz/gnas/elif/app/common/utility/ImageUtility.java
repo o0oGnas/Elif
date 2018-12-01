@@ -56,11 +56,13 @@ public class ImageUtility {
         } else {
             WritableImage wr = getWritableImage(file);
 
-            if (useCache) {
-                if (checkCacheByName) {
-                    nameIconMap.put(name, wr);
-                } else {
-                    extensionIconMap.put(extension, wr);
+            if (wr != null) {
+                if (useCache) {
+                    if (checkCacheByName) {
+                        nameIconMap.put(name, wr);
+                    } else {
+                        extensionIconMap.put(extension, wr);
+                    }
                 }
             }
 
@@ -70,18 +72,24 @@ public class ImageUtility {
 
     private static WritableImage getWritableImage(File file) {
         Icon icon = FileSystemView.getFileSystemView().getSystemIcon(file);
-        BufferedImage bi = new BufferedImage(icon.getIconWidth(), icon.getIconHeight(), BufferedImage.TYPE_INT_ARGB);
-        Graphics g = bi.createGraphics();
-        icon.paintIcon(null, g, 0, 0);
-        WritableImage wr = new WritableImage(bi.getWidth(), bi.getHeight());
-        PixelWriter pw = wr.getPixelWriter();
 
-        for (int x = 0; x < bi.getWidth(); x++) {
-            for (int y = 0; y < bi.getHeight(); y++) {
-                pw.setArgb(x, y, bi.getRGB(x, y));
+        if (icon == null) {
+            return null;
+        } else {
+            BufferedImage bi = new BufferedImage(icon.getIconWidth(), icon.getIconHeight(),
+                    BufferedImage.TYPE_INT_ARGB);
+            Graphics g = bi.createGraphics();
+            icon.paintIcon(null, g, 0, 0);
+            WritableImage wr = new WritableImage(bi.getWidth(), bi.getHeight());
+            PixelWriter pw = wr.getPixelWriter();
+
+            for (int x = 0; x < bi.getWidth(); x++) {
+                for (int y = 0; y < bi.getHeight(); y++) {
+                    pw.setArgb(x, y, bi.getRGB(x, y));
+                }
             }
-        }
 
-        return wr;
+            return wr;
+        }
     }
 }

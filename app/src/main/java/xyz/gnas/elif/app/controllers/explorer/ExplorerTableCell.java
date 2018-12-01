@@ -5,7 +5,6 @@ import de.jensd.fx.glyphs.materialicons.MaterialIconView;
 import javafx.scene.control.TableCell;
 import javafx.scene.image.ImageView;
 import xyz.gnas.elif.app.common.Configurations;
-import xyz.gnas.elif.app.common.utility.ImageUtility;
 import xyz.gnas.elif.app.controllers.explorer.ExplorerTableCellCallback.Column;
 import xyz.gnas.elif.app.models.explorer.ExplorerItemModel;
 
@@ -13,6 +12,7 @@ import java.io.File;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 
+import static xyz.gnas.elif.app.common.utility.ImageUtility.getFileIcon;
 import static xyz.gnas.elif.app.common.utility.code.CodeRunnerUtility.executeRunner;
 
 class ExplorerTableCell extends TableCell<ExplorerItemModel, ExplorerItemModel> {
@@ -69,7 +69,7 @@ class ExplorerTableCell extends TableCell<ExplorerItemModel, ExplorerItemModel> 
             MaterialIconView mivFolder = new MaterialIconView(MaterialIcon.FOLDER_OPEN, Configurations.ICON_SIZE);
             setGraphic(mivFolder);
         } else {
-            ImageView imv = new ImageView(ImageUtility.getFileIcon(file, true));
+            ImageView imv = new ImageView(getFileIcon(file, true));
             setGraphic(imv);
         }
     }

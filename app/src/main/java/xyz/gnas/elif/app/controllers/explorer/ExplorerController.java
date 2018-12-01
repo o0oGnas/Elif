@@ -36,7 +36,6 @@ import javafx.scene.paint.Color;
 import javafx.stage.WindowEvent;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
-import xyz.gnas.elif.app.common.utility.ImageUtility;
 import xyz.gnas.elif.app.common.utility.LogUtility;
 import xyz.gnas.elif.app.common.utility.code.CodeRunnerUtility;
 import xyz.gnas.elif.app.common.utility.code.Runner;
@@ -45,9 +44,9 @@ import xyz.gnas.elif.app.common.utility.code.RunnerWithIntReturn;
 import xyz.gnas.elif.app.common.utility.window.WindowEventHandler;
 import xyz.gnas.elif.app.common.utility.window.WindowEventUtility;
 import xyz.gnas.elif.app.controllers.explorer.ExplorerTableCellCallback.Column;
-import xyz.gnas.elif.app.events.dialog.DialogEvent;
-import xyz.gnas.elif.app.events.dialog.DialogEvent.DialogType;
-import xyz.gnas.elif.app.events.dialog.SingleFileDialogEvent;
+import xyz.gnas.elif.app.events.dialogs.DialogEvent;
+import xyz.gnas.elif.app.events.dialogs.DialogEvent.DialogType;
+import xyz.gnas.elif.app.events.dialogs.SingleFileDialogEvent;
 import xyz.gnas.elif.app.events.explorer.ChangePathEvent;
 import xyz.gnas.elif.app.events.explorer.InitialiseExplorerEvent;
 import xyz.gnas.elif.app.events.explorer.ReloadEvent;
@@ -67,6 +66,8 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+
+import static xyz.gnas.elif.app.common.utility.ImageUtility.getFileIcon;
 
 public class ExplorerController {
     @FXML
@@ -472,18 +473,18 @@ public class ExplorerController {
      * @return the Node object
      */
     private HBox getDriveItem(File item) {
-        ImageView imv = new ImageView(ImageUtility.getFileIcon(item, false));
+        ImageView imv = new ImageView(getFileIcon(item, false));
         Label lbl = new Label(FileSystemView.getFileSystemView().getSystemDisplayName(item));
         lbl.setTextFill(Color.BLACK);
-        HBox hbo = new HBox(imv, lbl);
+        HBox hbx = new HBox(imv, lbl);
         HBox.setMargin(lbl, new Insets(0, 0, 0, 10));
 
         // make the icon vertically center
         HBox.setMargin(imv, new Insets(0, 0, 5, 0));
         HBox.setHgrow(lbl, Priority.ALWAYS);
-        hbo.setAlignment(Pos.CENTER_LEFT);
-        hbo.setPadding(new Insets(5, 5, 5, 5));
-        return hbo;
+        hbx.setAlignment(Pos.CENTER_LEFT);
+        hbx.setPadding(new Insets(5, 5, 5, 5));
+        return hbx;
     }
 
     private void initialiseSortImages() {

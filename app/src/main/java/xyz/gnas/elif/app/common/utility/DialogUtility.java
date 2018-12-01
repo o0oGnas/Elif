@@ -95,7 +95,7 @@ public final class DialogUtility {
     }
 
     /**
-     * Show warning dialog
+     * Show warning dialogs
      *
      * @param headerText the header text
      * @param message    the message
@@ -109,11 +109,11 @@ public final class DialogUtility {
     }
 
     /**
-     * Show a custom dialog
+     * Show a custom dialogs
      *
-     * @param dialogName the dialog name
+     * @param dialogName the dialogs name
      * @param content    the node object representing the content
-     * @param icon       the icon of the dialog (can be null)
+     * @param icon       the icon of the dialogs (can be null)
      */
     public static void showCustomDialog(String dialogName, Node content, Image icon) {
         runInMainThread(() -> {
@@ -121,7 +121,7 @@ public final class DialogUtility {
             alert.setTitle(dialogName);
             initialiseCustomDialogPane(alert, content, icon);
             alert.showAndWait();
-        }, (Exception e) -> writeErrorLog("Could not display custom dialog", e));
+        }, (Exception e) -> writeErrorLog("Could not display custom dialogs", e));
     }
 
     private static void initialiseCustomDialogPane(Alert alert, Node content, Image icon) {
@@ -148,7 +148,7 @@ public final class DialogUtility {
     }
 
     /**
-     * Show confirmation dialog, must be called in main thread
+     * Show confirmation dialogs, must be called in main thread
      *
      * @param message the message
      * @return the boolean result - true is OK, false is cancel
@@ -161,7 +161,7 @@ public final class DialogUtility {
     }
 
     /**
-     * Show dialog with options, must be called in main thread
+     * Show dialogs with options, must be called in main thread
      *
      * @param message the message
      * @param options the options
@@ -185,9 +185,9 @@ public final class DialogUtility {
     }
 
     private static void addKeyEventHandlerForOptionDialog(DialogPane dialogPane) {
-        // close dialog if escape key is pressed
+        // close dialogs if escape key is pressed
         dialogPane.addEventHandler(KeyEvent.KEY_PRESSED, (KeyEvent event) -> executeRunner(DialogUtility.class,
-                "Error when handling key event for dialog", () -> {
+                "Error when handling key event for dialogs", () -> {
                     if (event.getCode() == KeyCode.ESCAPE) {
                         dialogPane.getScene().getWindow().hide();
                     }

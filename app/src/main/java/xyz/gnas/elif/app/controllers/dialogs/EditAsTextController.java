@@ -1,4 +1,4 @@
-package xyz.gnas.elif.app.controllers.dialog;
+package xyz.gnas.elif.app.controllers.dialogs;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -16,8 +16,8 @@ import xyz.gnas.elif.app.common.utility.LogUtility;
 import xyz.gnas.elif.app.common.utility.code.CodeRunnerUtility;
 import xyz.gnas.elif.app.common.utility.code.Runner;
 import xyz.gnas.elif.app.common.utility.window.WindowEventHandler;
-import xyz.gnas.elif.app.events.dialog.DialogEvent.DialogType;
-import xyz.gnas.elif.app.events.dialog.SingleFileDialogEvent;
+import xyz.gnas.elif.app.events.dialogs.DialogEvent.DialogType;
+import xyz.gnas.elif.app.events.dialogs.SingleFileDialogEvent;
 import xyz.gnas.elif.core.logic.FileLogic;
 
 import java.io.File;
@@ -61,7 +61,7 @@ public class EditAsTextController {
 
     @FXML
     private void initialize() {
-        executeRunner("Could not initialise edit as text dialog", () -> {
+        executeRunner("Could not initialise edit as text dialogs", () -> {
             EventBus.getDefault().register(this);
             textAreaListener = (observableValue, s, t1) -> executeRunner("Error when handling text change event",
                     () -> hasNewContent.set(true));
@@ -129,7 +129,7 @@ public class EditAsTextController {
             FileLogic.saveTextToFile(file, ttaContent.getText());
             hasNewContent.set(false);
 
-            // hide dialog if use clicks on save button
+            // hide dialogs if use clicks on save button
             if (event != null) {
                 hideDialog();
             }

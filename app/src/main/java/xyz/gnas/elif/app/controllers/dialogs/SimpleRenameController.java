@@ -1,4 +1,4 @@
-package xyz.gnas.elif.app.controllers.dialog;
+package xyz.gnas.elif.app.controllers.dialogs;
 
 import de.jensd.fx.glyphs.materialicons.MaterialIconView;
 import javafx.event.ActionEvent;
@@ -11,18 +11,18 @@ import javafx.stage.WindowEvent;
 import org.apache.commons.io.FilenameUtils;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
-import xyz.gnas.elif.app.common.utility.ImageUtility;
 import xyz.gnas.elif.app.common.utility.LogUtility;
 import xyz.gnas.elif.app.common.utility.code.CodeRunnerUtility;
 import xyz.gnas.elif.app.common.utility.code.Runner;
 import xyz.gnas.elif.app.common.utility.window.WindowEventHandler;
-import xyz.gnas.elif.app.events.dialog.DialogEvent.DialogType;
-import xyz.gnas.elif.app.events.dialog.SingleFileDialogEvent;
+import xyz.gnas.elif.app.events.dialogs.DialogEvent.DialogType;
+import xyz.gnas.elif.app.events.dialogs.SingleFileDialogEvent;
 import xyz.gnas.elif.core.logic.FileLogic;
 
 import java.io.File;
 
 import static xyz.gnas.elif.app.common.utility.DialogUtility.showConfirmation;
+import static xyz.gnas.elif.app.common.utility.ImageUtility.getFileIcon;
 import static xyz.gnas.elif.app.common.utility.window.WindowEventUtility.bindWindowEventHandler;
 
 public class SimpleRenameController {
@@ -56,7 +56,7 @@ public class SimpleRenameController {
                 mivFolder.setVisible(file.isDirectory());
 
                 if (!file.isDirectory()) {
-                    imvFile.setImage(ImageUtility.getFileIcon(file, true));
+                    imvFile.setImage(getFileIcon(file, true));
                 }
 
                 lblFile.setText(file.getAbsolutePath());
@@ -67,7 +67,7 @@ public class SimpleRenameController {
 
     @FXML
     private void initialize() {
-        executeRunner("Could not initialise simple rename dialog", () -> {
+        executeRunner("Could not initialise simple rename dialogs", () -> {
             EventBus.getDefault().register(this);
             mivFolder.managedProperty().bind(mivFolder.visibleProperty());
             imvFile.managedProperty().bind(imvFile.visibleProperty());

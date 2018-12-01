@@ -8,7 +8,7 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 <AnchorPane onKeyReleased="#keyReleased" xmlns="http://javafx.com/javafx/10.0.1" xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="xyz.gnas.elif.app.controllers.dialog.EditAsTextController">
+            fx:controller="xyz.gnas.elif.app.controllers.dialogs.EditAsTextController">
     <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
           AnchorPane.topAnchor="0.0">
         <TextArea fx:id="ttaContent" prefHeight="800.0" prefWidth="1500.0"/>

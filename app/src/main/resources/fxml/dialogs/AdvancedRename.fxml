@@ -14,8 +14,9 @@
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
+<?import org.controlsfx.control.CheckTreeView?>
 <AnchorPane onKeyReleased="#keyReleased" xmlns="http://javafx.com/javafx/10.0.1" xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="xyz.gnas.elif.app.controllers.dialog.AdvancedRenameController">
+            fx:controller="xyz.gnas.elif.app.controllers.dialogs.advanced_rename.AdvancedRenameController">
     <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
           AnchorPane.topAnchor="0.0">
         <HBox alignment="CENTER_LEFT" style="-fx-background-color: white;" styleClass="control-box">
@@ -95,12 +96,12 @@
                 <VBox.margin>
                     <Insets top="10.0"/>
                 </VBox.margin>
-                <TreeView fx:id="tvwMain" prefHeight="600.0" prefWidth="700.0" showRoot="false"
-                          GridPane.rowIndex="1">
+                <CheckTreeView fx:id="tvwMain" prefHeight="600.0" prefWidth="700.0" showRoot="false"
+                               GridPane.rowIndex="1">
                     <GridPane.margin>
                         <Insets top="5.0"/>
                     </GridPane.margin>
-                </TreeView>
+                </CheckTreeView>
                 <TreeView fx:id="tvwPreview" prefHeight="600.0" prefWidth="700.0" showRoot="false"
                           GridPane.columnIndex="1" GridPane.rowIndex="1">
                     <GridPane.margin>

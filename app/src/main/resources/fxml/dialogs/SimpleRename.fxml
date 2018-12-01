@@ -11,7 +11,7 @@
 <?import javafx.scene.layout.VBox?>
 <AnchorPane onKeyPressed="#keyPressed" prefWidth="400.0" xmlns="http://javafx.com/javafx/10.0.1"
             xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="xyz.gnas.elif.app.controllers.dialog.SimpleRenameController">
+            fx:controller="xyz.gnas.elif.app.controllers.dialogs.SimpleRenameController">
     <padding>
         <Insets right="10.0" top="10.0"/>
     </padding>

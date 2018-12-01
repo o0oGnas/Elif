@@ -6,6 +6,7 @@ module xyz.gnas.elif.app {
     requires javafx.controls;
     requires javafx.media;
 
+    requires controlsfx;
     requires de.jensd.fx.glyphs.materialicons;
     requires de.jensd.fx.glyphs.fontawesome;
     requires de.jensd.fx.glyphs.octicons;
@@ -15,7 +16,7 @@ module xyz.gnas.elif.app {
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.databind;
     requires com.fasterxml.jackson.annotation;
-
+    requires org.apache.commons.collections4;
     requires org.apache.commons.io;
 
     requires org.slf4j;
