@@ -542,6 +542,7 @@ public class ExplorerController {
     private void initialiseTable() {
         // sort by name initially
         currentSortLabel = lblName;
+        tbvTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 
         tbvTable.focusedProperty().addListener(l ->
                 executeRunner("Error when handling table focus change event", () -> {
@@ -551,9 +552,9 @@ public class ExplorerController {
                     }
                 }));
 
-        addListenerToSelectedItems();
+        tbvTable.getSelectionModel().getSelectedItems().addListener((ListChangeListener<ExplorerItemModel>) l ->
+                executeRunner("Error when handling change to item selection", this::updateSelectedFoldersAndFiles));
         initialiseTableContextMenu();
-        tbvTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         setDoubleClickHandler();
         initialiseColumn(tbcName, lblName, Column.Name);
         initialiseColumn(tbcExtension, lblExtension, Column.Extension);
@@ -561,16 +562,9 @@ public class ExplorerController {
         initialiseColumn(tbcDate, lblDate, Column.Date);
     }
 
-    private void addListenerToSelectedItems() {
-        tbvTable.getSelectionModel().getSelectedItems().addListener((ListChangeListener<ExplorerItemModel>) l ->
-                executeRunner("Error when handling change to item selection", () -> {
-                    updateSelectedFoldersAndFiles();
-                }));
-    }
-
     private void initialiseTableContextMenu() {
         ctmTable.setOnShowing(l -> executeRunner("Error when handling table context menu shown event",
-                () -> updateTableContextMenu()));
+                this::updateTableContextMenu));
         cmiCopyToClipboard.visibleProperty().bind(cmiCopyToOther.visibleProperty());
         cmiCutToClipboard.visibleProperty().bind(cmiCopyToOther.visibleProperty());
         cmiMove.visibleProperty().bind(cmiCopyToOther.visibleProperty());
@@ -594,9 +588,10 @@ public class ExplorerController {
         cmiPaste.setVisible(ClipboardLogic.clipboardHasFiles());
         cmiSimpleRename.setVisible(false);
         cmiEditAsText.setVisible(false);
+        boolean fileListIsEmpty = selectedFileList.isEmpty();
 
         if (selectedFolderList.isEmpty()) {
-            if (selectedFileList.isEmpty()) {
+            if (fileListIsEmpty) {
                 cmiCopyToOther.setVisible(false);
             } else {
                 cmiRunOrGoto.setVisible(true);
@@ -610,7 +605,7 @@ public class ExplorerController {
             }
         } else if (selectedFolderList.size() == 1) {
             // only show rename and go to if exactly 1 folder is selected
-            if (selectedFileList.isEmpty()) {
+            if (fileListIsEmpty) {
                 cmiSimpleRename.setVisible(true);
                 cmiRunOrGoto.setVisible(true);
                 setGoToContextMenuItem();

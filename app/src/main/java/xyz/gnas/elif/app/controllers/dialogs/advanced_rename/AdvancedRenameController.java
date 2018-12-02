@@ -1,7 +1,9 @@
 package xyz.gnas.elif.app.controllers.dialogs.advanced_rename;
 
 import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ListChangeListener;
@@ -12,6 +14,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.CheckBoxTreeItem;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.SelectionModel;
+import javafx.scene.control.SplitMenuButton;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TreeCell;
 import javafx.scene.control.TreeItem;
@@ -19,8 +22,10 @@ import javafx.scene.control.TreeView;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import org.apache.commons.collections4.BidiMap;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.bidimap.DualHashBidiMap;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.controlsfx.control.CheckModel;
 import org.controlsfx.control.CheckTreeView;
 import org.greenrobot.eventbus.EventBus;
@@ -51,8 +56,22 @@ import static xyz.gnas.elif.app.common.utility.DialogUtility.showConfirmation;
 import static xyz.gnas.elif.app.common.utility.code.CodeRunnerUtility.executeRunnerAndHandleException;
 
 public class AdvancedRenameController {
+    private enum AlphaMode {
+        Both, Upper, Lower, Non
+    }
+
+    private enum NormalOrNonMode {
+        Normal, Non
+    }
+
     @FXML
-    private ComboBox<String> cbbMode;
+    private TextField ttfSearch;
+
+    @FXML
+    private TextField ttfReplace;
+
+    @FXML
+    private ComboBox<String> cbbRenameMode;
 
     @FXML
     private ComboBox<String> cbbNameExtension;
@@ -64,19 +83,31 @@ public class AdvancedRenameController {
     private HBox hbxReplace;
 
     @FXML
+    private HBox hbxPattern;
+
+    @FXML
     private HBox hbxGenerating;
 
     @FXML
-    private TextField ttfSearch;
+    private ComboBox<String> cbbSearchMode;
 
     @FXML
-    private TextField ttfReplace;
+    private SplitMenuButton smbAlpha;
 
     @FXML
-    private CheckTreeView<File> tvwMain;
+    private SplitMenuButton smbNumeric;
+
+    @FXML
+    private SplitMenuButton smbAlphaNumeric;
+
+    @FXML
+    private SplitMenuButton smbSpace;
 
     @FXML
     private TreeView<File> tvwPreview;
+
+    @FXML
+    private CheckTreeView<File> tvwMain;
 
     @FXML
     private Button btnRename;
@@ -96,6 +127,11 @@ public class AdvancedRenameController {
     private Map<String, List<TreeItem<File>>> newNameItemMap = new HashMap<>();
 
     private List<File> oldCheckList = new LinkedList<>();
+
+    private ObjectProperty<AlphaMode> alphaButtonMode = new SimpleObjectProperty<>(AlphaMode.Both);
+    private ObjectProperty<NormalOrNonMode> numericButtonMode = new SimpleObjectProperty<>(NormalOrNonMode.Normal);
+    private ObjectProperty<AlphaMode> alphaNumericButtonMode = new SimpleObjectProperty<>(AlphaMode.Both);
+    private ObjectProperty<NormalOrNonMode> spaceButtonMode = new SimpleObjectProperty<>(NormalOrNonMode.Normal);
 
     /**
      * flag to stop building trees
@@ -152,7 +188,7 @@ public class AdvancedRenameController {
         if (file.isDirectory()) {
             ttfSearch.setText(nameWithExtension);
         } else {
-            if (cbbMode.getSelectionModel().getSelectedItem().equalsIgnoreCase(Configurations.KEEP)) {
+            if (cbbRenameMode.getSelectionModel().getSelectedItem().equalsIgnoreCase(Configurations.KEEP)) {
                 ttfSearch.setText(FilenameUtils.removeExtension(nameWithExtension));
             } else {
                 updateSearchTextByNameExtensionSelection(file);
@@ -321,6 +357,8 @@ public class AdvancedRenameController {
                                 CheckModel<TreeItem<File>> t1) {
                 executeRunner("Error when handling change to check model",
                         () -> tvwMain.getCheckModel().check(node));
+
+                // remove listener after check model is initialised to prevent rechecking
                 tvwMain.checkModelProperty().removeListener(this);
             }
         };
@@ -330,8 +368,8 @@ public class AdvancedRenameController {
     private void initialize() {
         executeRunner("Could not initialise advanced rename dialogs", () -> {
             EventBus.getDefault().register(this);
-            initialiseModeComboBox();
-            initialiseNameExtensionComboBox();
+            initialiseComboBoxes();
+            initialisePatternButtons();
             initialiseMainTree();
             tvwPreview.setCellFactory(f -> new AdvancedRenameTreeCell(mainPreviewNodeMap, newNameItemMap));
             bindControlsVisibility();
@@ -341,13 +379,19 @@ public class AdvancedRenameController {
         });
     }
 
-    private void initialiseModeComboBox() {
-        cbbMode.getItems().addAll(Configurations.REPLACE, Configurations.KEEP);
-        SelectionModel<String> selectionModel = cbbMode.getSelectionModel();
+    private void initialiseComboBoxes() {
+        initialiseRenameModeModeComboBox();
+        initialiseNameExtensionComboBox();
+        initialiseSearchModeComboBox();
+    }
+
+    private void initialiseRenameModeModeComboBox() {
+        cbbRenameMode.getItems().addAll(Configurations.REPLACE, Configurations.KEEP);
+        SelectionModel<String> selectionModel = cbbRenameMode.getSelectionModel();
         selectionModel.select(Configurations.REPLACE);
 
         selectionModel.selectedItemProperty().addListener(
-                l -> executeRunner("Error when handling replace mode selection", () -> {
+                l -> executeRunner("Error when handling rename mode selection", () -> {
                     // Disable name/extension box if rename mode is not replace
                     hbxNameExtension.setDisable(!selectionModel.getSelectedItem().equalsIgnoreCase(Configurations.REPLACE));
                 }));
@@ -370,6 +414,79 @@ public class AdvancedRenameController {
                         }));
     }
 
+    private void initialiseSearchModeComboBox() {
+        cbbSearchMode.getItems().addAll(Configurations.TEXT, Configurations.PATTERN);
+        SelectionModel<String> selectionModel = cbbSearchMode.getSelectionModel();
+        selectionModel.select(Configurations.TEXT);
+
+        selectionModel.selectedItemProperty().addListener(
+                l -> executeRunner("Error when handling search mode selection",
+                        () -> {
+                            // disable pattern if search mode is text
+                            hbxPattern.setDisable(selectionModel.getSelectedItem().equalsIgnoreCase(Configurations.TEXT));
+                        }));
+    }
+
+    private void initialisePatternButtons() {
+        initialiseAlphaButton(smbAlpha, alphaButtonMode, "Alpha", 1);
+        initialiseNormalOrNonButton(smbNumeric, numericButtonMode, "Numeric", 2);
+        initialiseAlphaButton(smbAlphaNumeric, alphaNumericButtonMode, "Alphanumeric", 3);
+        initialiseNormalOrNonButton(smbSpace, spaceButtonMode, "Space", 4);
+    }
+
+    private void initialiseAlphaButton(SplitMenuButton smb, ObjectProperty<AlphaMode> mode, String text, int number) {
+        mode.addListener(l -> executeRunner("Error when handling change to alpha button mode", () -> {
+            switch (mode.get()) {
+                case Both:
+                    updateAlphaButtonCase(smb, text, "[U] & [l]", number);
+                    break;
+
+                case Upper:
+                    updateAlphaButtonCase(smb, text, "[U]", number);
+                    break;
+
+                case Lower:
+                    updateAlphaButtonCase(smb, text, "[l]", number);
+                    break;
+
+                default:
+                    updateAlphaButton(smb, "Non-" + text.toLowerCase(), number);
+                    break;
+            }
+        }));
+    }
+
+    private void updateAlphaButtonCase(SplitMenuButton smb, String normal, String s, int number) {
+        updateAlphaButton(smb, normal + " " + s, number);
+    }
+
+    private void updateAlphaButton(SplitMenuButton smb, String text, int number) {
+        updatePatternButton(smb, text, number);
+    }
+
+    private void updatePatternButton(SplitMenuButton smb, String text, int number) {
+        smb.setText(text + "  (Ctrl + " + number + ")");
+    }
+
+    private void initialiseNormalOrNonButton(SplitMenuButton smb, ObjectProperty<NormalOrNonMode> mode, String text,
+                                             int number) {
+        mode.addListener(l -> executeRunner("Error when handling change to numeric button mode", () -> {
+            switch (mode.get()) {
+                case Normal:
+                    updateNumericButton(smb, text, number);
+                    break;
+
+                default:
+                    updateNumericButton(smb, "Non-" + text.toLowerCase(), number);
+                    break;
+            }
+        }));
+    }
+
+    private void updateNumericButton(SplitMenuButton smb, String text, int number) {
+        updatePatternButton(smb, text, number);
+    }
+
     private void initialiseMainTree() {
         addListenerToMainTreeDisabledState();
         addListenerToMainTreeSelection();
@@ -382,8 +499,7 @@ public class AdvancedRenameController {
                     if (tvwMain.isDisabled()) {
                         btnRename.setDisable(true);
                     } else {
-                        List<TreeItem<File>> selectedItemList = tvwMain.getCheckModel().getCheckedItems();
-                        btnRename.setDisable(selectedItemList == null || selectedItemList.isEmpty());
+                        btnRename.setDisable(CollectionUtils.isEmpty(tvwMain.getCheckModel().getCheckedItems()));
                     }
                 }));
     }
@@ -392,7 +508,7 @@ public class AdvancedRenameController {
         bindMainTreeCheckListener();
 
         tvwMain.checkModelProperty().addListener(
-                c -> executeRunner("Error when handling change in check model", () -> bindMainTreeCheckListener()));
+                c -> executeRunner("Error when handling change in check model", this::bindMainTreeCheckListener));
     }
 
     private void bindMainTreeCheckListener() {
@@ -404,7 +520,8 @@ public class AdvancedRenameController {
             selectedItemList.addListener((ListChangeListener<TreeItem<File>>) l ->
                     executeRunner("Error when handling changes in main tree node selection", () -> {
                         updatePreviewTree();
-                        // disable rename button if no file is selected
+
+                        // disable rename button if nothing is selected
                         btnRename.setDisable(tvwPreview.isDisabled() || selectedItemList.isEmpty());
                     }));
         }
@@ -467,13 +584,13 @@ public class AdvancedRenameController {
         String name = file.getName();
         String newName;
 
-        if (cbbMode.getSelectionModel().getSelectedItem().equalsIgnoreCase(Configurations.REPLACE)) {
+        if (cbbRenameMode.getSelectionModel().getSelectedItem().equalsIgnoreCase(Configurations.REPLACE)) {
             newName = getNewNameForReplaceMode(file);
         } else {
             newName = ttfSearch.getText();
         }
 
-        if (newName.isEmpty()) {
+        if (StringUtils.isEmpty(newName)) {
             newName = name;
         }
 
@@ -495,14 +612,14 @@ public class AdvancedRenameController {
                 case Configurations.NAME:
                     String newNameWithoutExtension = nameWithoutExtension.replace(searchText, replaceText);
 
-                    if (extension == null || extension.isEmpty()) {
+                    if (StringUtils.isEmpty(extension)) {
                         return newNameWithoutExtension;
                     } else {
                         return newNameWithoutExtension + "." + extension;
                     }
 
                 case Configurations.EXTENSION:
-                    if (extension == null || extension.isEmpty()) {
+                    if (StringUtils.isEmpty(extension)) {
                         return nameWithoutExtension;
                     } else {
                         return nameWithoutExtension + "." + extension.replace(searchText, replaceText);
@@ -527,13 +644,81 @@ public class AdvancedRenameController {
     }
 
     @FXML
+    private void addAlpha(ActionEvent event) {
+        executeRunner("Could not add alpha character", () -> {
+
+                }
+        );
+    }
+
+    @FXML
+    private void selectBothAlpha(ActionEvent actionEvent) {
+        executeRunner("Could not select both alpha", () -> alphaButtonMode.set(AlphaMode.Both));
+    }
+
+    @FXML
+    private void selectUpperAlpha(ActionEvent actionEvent) {
+        executeRunner("Could not select upper alpha", () -> alphaButtonMode.set(AlphaMode.Upper));
+    }
+
+    @FXML
+    private void selectLowerAlpha(ActionEvent actionEvent) {
+        executeRunner("Could not select lower alpha", () -> alphaButtonMode.set(AlphaMode.Lower));
+    }
+
+    @FXML
+    private void selectNonAlpha(ActionEvent actionEvent) {
+        executeRunner("Could not select non alpha", () -> alphaButtonMode.set(AlphaMode.Non));
+    }
+
+    @FXML
+    private void selectNumeric(ActionEvent actionEvent) {
+        executeRunner("Could not select numeric", () -> numericButtonMode.set(NormalOrNonMode.Normal));
+    }
+
+    @FXML
+    private void selectNonNumeric(ActionEvent actionEvent) {
+        executeRunner("Could not select non numeric", () -> numericButtonMode.set(NormalOrNonMode.Non));
+    }
+
+    @FXML
+    private void selectBothAlphaNumeric(ActionEvent actionEvent) {
+        executeRunner("Could not select both alpha numeric", () -> alphaNumericButtonMode.set(AlphaMode.Both));
+    }
+
+    @FXML
+    private void selectUpperAlphaNumeric(ActionEvent actionEvent) {
+        executeRunner("Could not select upper alpha numeric", () -> alphaNumericButtonMode.set(AlphaMode.Upper));
+    }
+
+    @FXML
+    private void selectLowerAlphaNumeric(ActionEvent actionEvent) {
+        executeRunner("Could not select lower alpha numeric", () -> alphaNumericButtonMode.set(AlphaMode.Lower));
+    }
+
+    @FXML
+    private void selectNonAlphaNumeric(ActionEvent actionEvent) {
+        executeRunner("Could not select non alpha numeric", () -> alphaNumericButtonMode.set(AlphaMode.Non));
+    }
+
+    @FXML
+    private void selectSpace(ActionEvent actionEvent) {
+        executeRunner("Could not select space", () -> spaceButtonMode.set(NormalOrNonMode.Normal));
+    }
+
+    @FXML
+    private void selectNonSpace(ActionEvent actionEvent) {
+        executeRunner("Could not select non space", () -> spaceButtonMode.set(NormalOrNonMode.Non));
+    }
+
+    @FXML
     private void stopBuildingTrees(ActionEvent event) {
         executeRunner("Could not stop building trees", () -> stopBuildingTrees = true);
     }
 
     @FXML
-    private void keyReleased(KeyEvent keyEvent) {
-        executeRunner("Could not handle key event", () -> {
+    private void dialogKeyReleased(KeyEvent keyEvent) {
+        executeRunner("Could not handle dialog key event", () -> {
             switch (keyEvent.getCode()) {
                 case ENTER:
                     if (!btnRename.isDisabled()) {
@@ -627,7 +812,7 @@ public class AdvancedRenameController {
         } else {
             newName = nameWithoutExtension + getNameSuffix(index);
 
-            if (extension != null && !extension.isEmpty()) {
+            if (StringUtils.isEmpty(extension)) {
                 newName += "." + extension;
             }
         }
@@ -653,6 +838,6 @@ public class AdvancedRenameController {
 
     @FXML
     private void cancel(ActionEvent event) {
-        executeRunner("Could not cancel advanced rename", () -> cbbMode.getScene().getWindow().hide());
+        executeRunner("Could not cancel advanced rename", () -> ttfSearch.getScene().getWindow().hide());
     }
 }

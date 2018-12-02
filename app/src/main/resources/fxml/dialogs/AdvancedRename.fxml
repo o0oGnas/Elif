@@ -5,6 +5,8 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.SplitMenuButton?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.TreeView?>
 <?import javafx.scene.layout.AnchorPane?>
@@ -15,54 +17,151 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 <?import org.controlsfx.control.CheckTreeView?>
-<AnchorPane onKeyReleased="#keyReleased" xmlns="http://javafx.com/javafx/10.0.1" xmlns:fx="http://javafx.com/fxml/1"
+<AnchorPane onKeyReleased="#dialogKeyReleased" prefHeight="500.0" xmlns="http://javafx.com/javafx/10.0.1"
+            xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="xyz.gnas.elif.app.controllers.dialogs.advanced_rename.AdvancedRenameController">
     <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
           AnchorPane.topAnchor="0.0">
-        <HBox alignment="CENTER_LEFT" style="-fx-background-color: white;" styleClass="control-box">
-            <HBox alignment="CENTER_LEFT" styleClass="control-box">
-                <Label text="Rename mode"/>
-                <ComboBox fx:id="cbbMode">
-                    <HBox.margin>
+        <GridPane>
+            <columnConstraints>
+                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0"/>
+                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0"/>
+            </columnConstraints>
+            <rowConstraints>
+                <RowConstraints vgrow="SOMETIMES"/>
+                <RowConstraints vgrow="SOMETIMES"/>
+            </rowConstraints>
+            <children>
+                <HBox alignment="CENTER_LEFT" GridPane.hgrow="ALWAYS">
+                    <HBox alignment="CENTER_LEFT" styleClass="control-box" HBox.hgrow="ALWAYS">
+                        <children>
+                            <Label text="Text to search"/>
+                            <TextField fx:id="ttfSearch" HBox.hgrow="ALWAYS">
+                                <HBox.margin>
+                                    <Insets left="10.0"/>
+                                </HBox.margin>
+                            </TextField>
+                        </children>
+                    </HBox>
+                    <HBox alignment="CENTER_LEFT" styleClass="control-box">
+                        <children>
+                            <Label text="Search mode"/>
+                            <ComboBox fx:id="cbbSearchMode">
+                                <HBox.margin>
+                                    <Insets left="10.0"/>
+                                </HBox.margin>
+                            </ComboBox>
+                        </children>
+                        <HBox.margin>
+                            <Insets left="10.0"/>
+                        </HBox.margin>
+                    </HBox>
+                </HBox>
+                <HBox fx:id="hbxReplace" alignment="CENTER_LEFT" styleClass="control-box" GridPane.columnIndex="1"
+                      GridPane.hgrow="ALWAYS">
+                    <Label text="Replace by"/>
+                    <TextField fx:id="ttfReplace" HBox.hgrow="ALWAYS">
+                        <HBox.margin>
+                            <Insets left="10.0"/>
+                        </HBox.margin>
+                    </TextField>
+                    <GridPane.margin>
                         <Insets left="10.0"/>
-                    </HBox.margin>
-                </ComboBox>
-            </HBox>
-            <HBox fx:id="hbxNameExtension" alignment="CENTER_LEFT" styleClass="control-box">
-                <HBox.margin>
-                    <Insets left="10.0"/>
-                </HBox.margin>
-                <Label text="Replace name/extension"/>
-                <ComboBox fx:id="cbbNameExtension">
-                    <HBox.margin>
-                        <Insets left="10.0"/>
-                    </HBox.margin>
-                </ComboBox>
-            </HBox>
-            <HBox alignment="CENTER_LEFT" styleClass="control-box" HBox.hgrow="ALWAYS">
-                <HBox.margin>
-                    <Insets left="10.0"/>
-                </HBox.margin>
-                <Label text="Text to search"/>
-                <TextField fx:id="ttfSearch" HBox.hgrow="ALWAYS">
-                    <HBox.margin>
-                        <Insets left="10.0"/>
-                    </HBox.margin>
-                </TextField>
-            </HBox>
-            <HBox fx:id="hbxReplace" alignment="CENTER_LEFT" styleClass="control-box" HBox.hgrow="ALWAYS">
-                <HBox.margin>
-                    <Insets left="10.0"/>
-                </HBox.margin>
-                <Label text="Replace by"/>
-                <TextField fx:id="ttfReplace" HBox.hgrow="ALWAYS">
-                    <HBox.margin>
-                        <Insets left="10.0"/>
-                    </HBox.margin>
-                </TextField>
-            </HBox>
-        </HBox>
-        <VBox>
+                    </GridPane.margin>
+                </HBox>
+                <HBox GridPane.columnIndex="1" GridPane.rowIndex="1">
+                    <children>
+                        <HBox alignment="CENTER_LEFT" styleClass="control-box">
+                            <Label text="Rename mode"/>
+                            <ComboBox fx:id="cbbRenameMode" HBox.hgrow="ALWAYS">
+                                <HBox.margin>
+                                    <Insets left="10.0"/>
+                                </HBox.margin>
+                            </ComboBox>
+                            <HBox.margin>
+                                <Insets left="10.0"/>
+                            </HBox.margin>
+                        </HBox>
+                        <HBox fx:id="hbxNameExtension" alignment="CENTER_LEFT" styleClass="control-box">
+                            <Label text="Replace name/extension">
+                                <HBox.margin>
+                                    <Insets/>
+                                </HBox.margin>
+                            </Label>
+                            <ComboBox fx:id="cbbNameExtension" HBox.hgrow="ALWAYS">
+                                <HBox.margin>
+                                    <Insets left="10.0"/>
+                                </HBox.margin>
+                            </ComboBox>
+                            <HBox.margin>
+                                <Insets left="10.0"/>
+                            </HBox.margin>
+                        </HBox>
+                    </children>
+                    <GridPane.margin>
+                        <Insets top="10.0"/>
+                    </GridPane.margin>
+                </HBox>
+                <HBox fx:id="hbxPattern" alignment="CENTER_LEFT" disable="true" GridPane.rowIndex="1">
+                    <children>
+                        <SplitMenuButton fx:id="smbAlpha" mnemonicParsing="false" onAction="#addAlpha"
+                                         onMouseClicked="#addAlpha" prefWidth="210.0"
+                                         text="Alpha [U] &amp; [l] (Ctr + 1)">
+                            <items>
+                                <MenuItem mnemonicParsing="false" onAction="#selectBothAlpha"
+                                          text="UPPERCASE &amp; lowercase"/>
+                                <MenuItem mnemonicParsing="false" onAction="#selectUpperAlpha" text="UPPERCASE"/>
+                                <MenuItem mnemonicParsing="false" onAction="#selectLowerAlpha" text="lowercase"/>
+                                <MenuItem mnemonicParsing="false" onAction="#selectNonAlpha" text="Non-alpha"/>
+                            </items>
+                        </SplitMenuButton>
+                        <SplitMenuButton fx:id="smbNumeric" mnemonicParsing="false" prefWidth="200.0"
+                                         text="Numeric (Ctr + 2)">
+                            <HBox.margin>
+                                <Insets left="10.0"/>
+                            </HBox.margin>
+                            <items>
+                                <MenuItem mnemonicParsing="false" onAction="#selectNumeric" text="Numeric"/>
+                                <MenuItem mnemonicParsing="false" onAction="#selectNonNumeric" text="Non-numeric"/>
+                            </items>
+                        </SplitMenuButton>
+                        <SplitMenuButton fx:id="smbAlphaNumeric" mnemonicParsing="false" prefWidth="260.0"
+                                         text="Alphanumeric [U] &amp; [l] (Ctrl + 3)">
+                            <HBox.margin>
+                                <Insets left="10.0"/>
+                            </HBox.margin>
+                            <items>
+                                <MenuItem mnemonicParsing="false" onAction="#selectBothAlphaNumeric"
+                                          text="UPPERCASE &amp; lowercase"/>
+                                <MenuItem mnemonicParsing="false" onAction="#selectUpperAlphaNumeric" text="UPPERCASE"/>
+                                <MenuItem mnemonicParsing="false" onAction="#selectLowerAlphaNumeric" text="lowercase"/>
+                                <MenuItem mnemonicParsing="false" onAction="#selectNonAlphaNumeric"
+                                          text="Non-alphanumeric"/>
+                            </items>
+                        </SplitMenuButton>
+                        <SplitMenuButton fx:id="smbSpace" mnemonicParsing="false" prefWidth="190.0"
+                                         text="Space (Ctrl + 4)">
+                            <HBox.margin>
+                                <Insets left="10.0"/>
+                            </HBox.margin>
+                            <items>
+                                <MenuItem mnemonicParsing="false" onAction="#selectSpace" text="Space"/>
+                                <MenuItem mnemonicParsing="false" onAction="#selectNonSpace" text="Non-space"/>
+                            </items>
+                        </SplitMenuButton>
+                        <Button mnemonicParsing="false" text="Any (Ctrl + 5)">
+                            <HBox.margin>
+                                <Insets left="10.0"/>
+                            </HBox.margin>
+                        </Button>
+                    </children>
+                    <GridPane.margin>
+                        <Insets top="10.0"/>
+                    </GridPane.margin>
+                </HBox>
+            </children>
+        </GridPane>
+        <VBox VBox.vgrow="ALWAYS">
             <VBox.margin>
                 <Insets top="10.0"/>
             </VBox.margin>
@@ -84,7 +183,7 @@
                     </HBox.margin>
                 </Button>
             </HBox>
-            <GridPane>
+            <GridPane VBox.vgrow="ALWAYS">
                 <columnConstraints>
                     <ColumnConstraints hgrow="SOMETIMES"/>
                     <ColumnConstraints hgrow="SOMETIMES"/>
@@ -96,14 +195,13 @@
                 <VBox.margin>
                     <Insets top="10.0"/>
                 </VBox.margin>
-                <CheckTreeView fx:id="tvwMain" prefHeight="600.0" prefWidth="700.0" showRoot="false"
-                               GridPane.rowIndex="1">
+                <CheckTreeView fx:id="tvwMain" prefWidth="750.0" showRoot="false" GridPane.rowIndex="1">
                     <GridPane.margin>
                         <Insets top="5.0"/>
                     </GridPane.margin>
                 </CheckTreeView>
-                <TreeView fx:id="tvwPreview" prefHeight="600.0" prefWidth="700.0" showRoot="false"
-                          GridPane.columnIndex="1" GridPane.rowIndex="1">
+                <TreeView fx:id="tvwPreview" prefWidth="750.0" showRoot="false" GridPane.columnIndex="1"
+                          GridPane.rowIndex="1">
                     <GridPane.margin>
                         <Insets top="5.0"/>
                     </GridPane.margin>
@@ -131,9 +229,6 @@
             </GridPane>
         </VBox>
         <HBox alignment="CENTER">
-            <VBox.margin>
-                <Insets top="10.0"/>
-            </VBox.margin>
             <Button fx:id="btnRename" mnemonicParsing="false" onAction="#rename" text="Rename">
                 <graphic>
                     <MaterialIconView glyphName="CHECK_CIRCLE" size="16"/>
@@ -147,6 +242,9 @@
                     <MaterialIconView glyphName="CANCEL" size="16"/>
                 </graphic>
             </Button>
+            <VBox.margin>
+                <Insets top="10.0"/>
+            </VBox.margin>
         </HBox>
     </VBox>
 </AnchorPane>

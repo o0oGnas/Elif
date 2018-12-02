@@ -19,6 +19,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.stage.WindowEvent;
+import org.apache.commons.collections4.CollectionUtils;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import xyz.gnas.elif.app.common.Configurations;
@@ -459,7 +460,7 @@ public class AppController {
         BooleanProperty isCut = new SimpleBooleanProperty();
         List<File> fileList = ClipboardLogic.getFiles(isCut);
 
-        if (fileList != null && !fileList.isEmpty()) {
+        if (!CollectionUtils.isEmpty(fileList)) {
             List<ExplorerItemModel> sourceList = convertFileListToSourceList(fileList);
 
             if (!sourceList.isEmpty()) {
