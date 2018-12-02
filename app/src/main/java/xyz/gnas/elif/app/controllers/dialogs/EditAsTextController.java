@@ -13,9 +13,9 @@ import javafx.stage.WindowEvent;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import xyz.gnas.elif.app.common.utility.LogUtility;
-import xyz.gnas.elif.app.common.utility.code.CodeRunnerUtility;
-import xyz.gnas.elif.app.common.utility.code.Runner;
-import xyz.gnas.elif.app.common.utility.window.WindowEventHandler;
+import xyz.gnas.elif.app.common.utility.runner.RunnerUtility;
+import xyz.gnas.elif.app.common.utility.runner.VoidRunner;
+import xyz.gnas.elif.app.common.utility.window_event.WindowEventHandler;
 import xyz.gnas.elif.app.events.dialogs.DialogEvent.DialogType;
 import xyz.gnas.elif.app.events.dialogs.SingleFileDialogEvent;
 import xyz.gnas.elif.core.logic.FileLogic;
@@ -23,7 +23,7 @@ import xyz.gnas.elif.core.logic.FileLogic;
 import java.io.File;
 
 import static xyz.gnas.elif.app.common.utility.DialogUtility.showConfirmation;
-import static xyz.gnas.elif.app.common.utility.window.WindowEventUtility.bindWindowEventHandler;
+import static xyz.gnas.elif.app.common.utility.window_event.WindowEventUtility.bindWindowEventHandler;
 
 public class EditAsTextController {
     @FXML
@@ -38,8 +38,8 @@ public class EditAsTextController {
 
     private BooleanProperty hasNewContent = new SimpleBooleanProperty();
 
-    private void executeRunner(String errorMessage, Runner runner) {
-        CodeRunnerUtility.executeRunner(getClass(), errorMessage, runner);
+    private void executeRunner(String errorMessage, VoidRunner runner) {
+        RunnerUtility.executeVoidrunner(getClass(), errorMessage, runner);
     }
 
     private void writeInfoLog(String log) {

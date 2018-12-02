@@ -7,11 +7,10 @@ import javafx.scene.Node;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import xyz.gnas.elif.app.common.Configurations;
+import xyz.gnas.elif.app.common.utility.ImageUtility;
 
 import java.io.File;
 import java.util.List;
-
-import static xyz.gnas.elif.app.common.utility.ImageUtility.getFileIcon;
 
 class Common {
     public static Node getIcon(File file) {
@@ -22,7 +21,7 @@ class Common {
         if (file.isDirectory()) {
             icon = new MaterialIconView(MaterialIcon.FOLDER_OPEN, Configurations.ICON_SIZE);
         } else {
-            icon = new ImageView(getFileIcon(file, true));
+            icon = new ImageView(ImageUtility.getFileIcon(file, true));
         }
 
         childrenList.add(icon);

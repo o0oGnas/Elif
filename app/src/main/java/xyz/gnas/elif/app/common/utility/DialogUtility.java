@@ -14,22 +14,16 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
 import javafx.stage.Stage;
 import xyz.gnas.elif.app.common.ResourceManager;
-import xyz.gnas.elif.app.common.utility.code.ExceptionHandler;
-import xyz.gnas.elif.app.common.utility.code.Runner;
+import xyz.gnas.elif.app.common.utility.runner.RunnerUtility;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Optional;
 
-import static xyz.gnas.elif.app.common.utility.code.CodeRunnerUtility.executeRunner;
-import static xyz.gnas.elif.app.common.utility.code.CodeRunnerUtility.runInMainThreadAndHandleException;
+import static xyz.gnas.elif.app.common.utility.runner.RunnerUtility.executeMainThreadAndExceptionRunner;
 
 public final class DialogUtility {
-    private static void runInMainThread(Runner runner, ExceptionHandler handler) {
-        runInMainThreadAndHandleException(runner, handler);
-    }
-
     private static void writeErrorLog(String message, Throwable e) {
         LogUtility.writeErrorLog(DialogUtility.class, message, e);
     }
@@ -44,7 +38,7 @@ public final class DialogUtility {
      * @param exit         flag to exit the application
      */
     public static void showError(Class callingClass, String message, Throwable e, boolean exit) {
-        runInMainThread(() -> {
+        executeMainThreadAndExceptionRunner(() -> {
             String stackTrace = getStackTrace(e);
             GridPane expContent = getExpandableContent(stackTrace);
             Alert alert = new Alert(AlertType.ERROR);
@@ -101,7 +95,7 @@ public final class DialogUtility {
      * @param message    the message
      */
     public static void showWarning(String headerText, String message) {
-        runInMainThread(() -> {
+        executeMainThreadAndExceptionRunner(() -> {
             Alert alert = new Alert(AlertType.WARNING);
             initialiseAlert(alert, "Message", headerText, message);
             alert.showAndWait();
@@ -116,7 +110,7 @@ public final class DialogUtility {
      * @param icon       the icon of the dialogs (can be null)
      */
     public static void showCustomDialog(String dialogName, Node content, Image icon) {
-        runInMainThread(() -> {
+        executeMainThreadAndExceptionRunner(() -> {
             Alert alert = new Alert(AlertType.NONE);
             alert.setTitle(dialogName);
             initialiseCustomDialogPane(alert, content, icon);
@@ -186,12 +180,13 @@ public final class DialogUtility {
 
     private static void addKeyEventHandlerForOptionDialog(DialogPane dialogPane) {
         // close dialogs if escape key is pressed
-        dialogPane.addEventHandler(KeyEvent.KEY_PRESSED, (KeyEvent event) -> executeRunner(DialogUtility.class,
-                "Error when handling key event for dialogs", () -> {
-                    if (event.getCode() == KeyCode.ESCAPE) {
-                        dialogPane.getScene().getWindow().hide();
-                    }
-                }));
+        dialogPane.addEventHandler(KeyEvent.KEY_PRESSED,
+                (KeyEvent event) -> RunnerUtility.executeVoidrunner(DialogUtility.class,
+                        "Error when handling key event for dialogs", () -> {
+                            if (event.getCode() == KeyCode.ESCAPE) {
+                                dialogPane.getScene().getWindow().hide();
+                            }
+                        }));
     }
 
     private static String getOptionResult(Optional<ButtonType> result) {

@@ -1,10 +1,10 @@
 {
   "leftModel" : {
     "@id" : 1,
-    "folder" : "E:\\Test"
+    "folder" : "E:\\Test\\New file (4)"
   },
   "rightModel" : {
     "@id" : 2,
-    "folder" : "E:\\"
+    "folder" : "E:\\Games"
   }
 }

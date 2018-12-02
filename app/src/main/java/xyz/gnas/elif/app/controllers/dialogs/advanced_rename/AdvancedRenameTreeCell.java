@@ -13,8 +13,8 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontPosture;
 import javafx.scene.text.FontWeight;
 import org.apache.commons.collections4.BidiMap;
-import xyz.gnas.elif.app.common.utility.code.CodeRunnerUtility;
-import xyz.gnas.elif.app.common.utility.code.Runner;
+import xyz.gnas.elif.app.common.utility.runner.RunnerUtility;
+import xyz.gnas.elif.app.common.utility.runner.VoidRunner;
 
 import java.io.File;
 import java.util.List;
@@ -24,8 +24,8 @@ class AdvancedRenameTreeCell extends TreeCell<File> {
     private BidiMap<TreeItem<File>, TreeItem<File>> mainPreviewNodeMap;
     private Map<String, List<TreeItem<File>>> newNameItemMap;
 
-    private void executeRunner(String errorMessage, Runner runner) {
-        CodeRunnerUtility.executeRunner(getClass(), errorMessage, runner);
+    private void executeRunner(String errorMessage, VoidRunner runner) {
+        RunnerUtility.executeVoidrunner(getClass(), errorMessage, runner);
     }
 
     public AdvancedRenameTreeCell(BidiMap<TreeItem<File>, TreeItem<File>> mainPreviewNodeMap,

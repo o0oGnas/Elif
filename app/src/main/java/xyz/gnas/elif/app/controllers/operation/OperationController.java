@@ -10,13 +10,12 @@ import javafx.scene.control.ProgressIndicator;
 import javafx.scene.layout.HBox;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
+import xyz.gnas.elif.app.common.utility.DialogUtility;
 import xyz.gnas.elif.app.common.utility.LogUtility;
-import xyz.gnas.elif.app.common.utility.code.CodeRunnerUtility;
-import xyz.gnas.elif.app.common.utility.code.Runner;
+import xyz.gnas.elif.app.common.utility.runner.RunnerUtility;
+import xyz.gnas.elif.app.common.utility.runner.VoidRunner;
 import xyz.gnas.elif.app.events.operation.InitialiseOperationEvent;
 import xyz.gnas.elif.core.models.Operation;
-
-import static xyz.gnas.elif.app.common.utility.DialogUtility.showConfirmation;
 
 public class OperationController {
     @FXML
@@ -39,8 +38,8 @@ public class OperationController {
 
     private Operation operation;
 
-    private void executeRunner(String errorMessage, Runner runner) {
-        CodeRunnerUtility.executeRunner(getClass(), errorMessage, runner);
+    private void executeRunner(String errorMessage, VoidRunner runner) {
+        RunnerUtility.executeVoidrunner(getClass(), errorMessage, runner);
     }
 
     private void writeInfoLog(String log) {
@@ -109,7 +108,7 @@ public class OperationController {
     @FXML
     private void stop(ActionEvent event) {
         executeRunner("Could not stop operation " + getOperationNameForError(), () -> {
-            if (showConfirmation("Are you sure you want to stop this operation?")) {
+            if (DialogUtility.showConfirmation("Are you sure you want to stop this operation?")) {
                 operation.setStopped(true);
                 writeInfoLog("Stopping operation [" + operation.getName() + "]");
             }

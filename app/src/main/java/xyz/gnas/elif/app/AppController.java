@@ -26,9 +26,9 @@ import xyz.gnas.elif.app.common.Configurations;
 import xyz.gnas.elif.app.common.ResourceManager;
 import xyz.gnas.elif.app.common.utility.DialogUtility;
 import xyz.gnas.elif.app.common.utility.LogUtility;
-import xyz.gnas.elif.app.common.utility.code.CodeRunnerUtility;
-import xyz.gnas.elif.app.common.utility.code.Runner;
-import xyz.gnas.elif.app.common.utility.window.WindowEventHandler;
+import xyz.gnas.elif.app.common.utility.runner.RunnerUtility;
+import xyz.gnas.elif.app.common.utility.runner.VoidRunner;
+import xyz.gnas.elif.app.common.utility.window_event.WindowEventHandler;
 import xyz.gnas.elif.app.events.dialogs.DialogEvent;
 import xyz.gnas.elif.app.events.dialogs.DialogEvent.DialogType;
 import xyz.gnas.elif.app.events.dialogs.SingleFileDialogEvent;
@@ -57,8 +57,8 @@ import static java.lang.Thread.sleep;
 import static xyz.gnas.elif.app.common.utility.DialogUtility.showConfirmation;
 import static xyz.gnas.elif.app.common.utility.DialogUtility.showCustomDialog;
 import static xyz.gnas.elif.app.common.utility.DialogUtility.showWarning;
-import static xyz.gnas.elif.app.common.utility.code.CodeRunnerUtility.executeRunnerAndHandleException;
-import static xyz.gnas.elif.app.common.utility.window.WindowEventUtility.bindWindowEventHandler;
+import static xyz.gnas.elif.app.common.utility.runner.RunnerUtility.executeVoidAndExceptionRunner;
+import static xyz.gnas.elif.app.common.utility.window_event.WindowEventUtility.bindWindowEventHandler;
 
 public class AppController {
     @FXML
@@ -93,20 +93,20 @@ public class AppController {
 
     private ObservableList<Operation> operationList = FXCollections.observableArrayList();
 
-    private void executeRunner(String errorMessage, Runner runner) {
-        CodeRunnerUtility.executeRunner(getClass(), errorMessage, runner);
+    private void executeRunner(String errorMessage, VoidRunner runner) {
+        RunnerUtility.executeVoidrunner(getClass(), errorMessage, runner);
     }
 
-    private void executeRunnerOrExit(String errorMessage, Runner runner) {
-        CodeRunnerUtility.executeRunnerOrExit(getClass(), errorMessage, runner);
+    private void executeRunnerOrExit(String errorMessage, VoidRunner runner) {
+        RunnerUtility.executeVoidRunnerOrExit(getClass(), errorMessage, runner);
     }
 
-    private void runInSideThread(String errorMessage, Runner runner) {
-        CodeRunnerUtility.runInSideThread(getClass(), errorMessage, runner);
+    private void executeSideThreadRunner(String errorMessage, VoidRunner runner) {
+        RunnerUtility.executeSideThreadRunner(getClass(), errorMessage, runner);
     }
 
-    private void runInMainThread(String errorMessage, Runner runner) {
-        CodeRunnerUtility.runInMainThread(getClass(), errorMessage, runner);
+    private void executeMainThreadRunner(String errorMessage, VoidRunner runner) {
+        RunnerUtility.executeMainThreadRunner(getClass(), errorMessage, runner);
     }
 
     private void writeErrorLog(String message, Throwable e) {
@@ -250,10 +250,10 @@ public class AppController {
         String operationName = container.mode == CopyMode.CUT ? "Move" : "Copy";
         container.operation = createNewOperation(operationName + " files to \"" + container.targetPath + "\"");
 
-        runInSideThread("Error running copy task", () -> {
+        executeSideThreadRunner("Error running copy task", () -> {
             processSourceTargetMap(container, duplicate);
 
-            runInMainThread("Error updating complete status for operation",
+            executeMainThreadRunner("Error updating complete status for operation",
                     () -> container.operation.setComplete(true));
         });
     }
@@ -306,7 +306,7 @@ public class AppController {
             File file = source.getFile();
 
             if (container.mode == CopyMode.CUT && container.targetPath.equalsIgnoreCase(file.getParent() + "\\")) {
-                runInMainThread("Error showing invalid operation", () ->
+                executeMainThreadRunner("Error showing invalid operation", () ->
                         showWarning("Invalid operation", "Cannot move file/folder \"" + getFilePathInQuote(file) +
                                 "\" to its current folder!"));
             } else {
@@ -329,7 +329,7 @@ public class AppController {
 
     private void updateSuboperationAndCopy(ExplorerItemModel source, CopyParameterContainer container, String duplicate)
             throws InterruptedException {
-        runInMainThread("Error creating new operation", () -> {
+        executeMainThreadRunner("Error creating new operation", () -> {
             String name = container.mode == CopyMode.CUT ? "Moving" : "Copying";
             container.operation.setSuboperationName(name + " \"" + getFilePathInQuote(source.getFile()) + "\"");
         });
@@ -365,8 +365,8 @@ public class AppController {
         BooleanProperty error = new SimpleBooleanProperty();
         File target = container.sourceTargetMap.get(source);
 
-        runInSideThread("Error running file copy task",
-                () -> executeRunnerAndHandleException(() -> moveOrCopy(container, source, progress),
+        executeSideThreadRunner("Error running file copy task",
+                () -> executeVoidAndExceptionRunner(() -> moveOrCopy(container, source, progress),
                         (Exception e) -> handleCopyError(container, error, progress, source, target, e)));
         monitorFileProgress(container, progress, error, source, target);
     }
@@ -388,7 +388,7 @@ public class AppController {
         String sourcePath = source.getFile().getAbsolutePath();
         writeErrorLog("Error when copying file", e);
 
-        runInMainThread("Error when handling copy error", () -> {
+        executeMainThreadRunner("Error when handling copy error", () -> {
             // ask for confirmation to continue when there is an error
             if (showConfirmation("Error when copying " + sourcePath + " to " + target.getAbsolutePath() + "\n" +
                     e.getMessage() + "\nDo you want to continue?")) {
@@ -416,7 +416,8 @@ public class AppController {
     }
 
     private void setCompletedAmount(CopyParameterContainer container, double percent) {
-        runInMainThread("Error updating completed amount", () -> container.operation.setCompletedAmount(percent));
+        executeMainThreadRunner("Error updating completed amount",
+                () -> container.operation.setCompletedAmount(percent));
     }
 
     private void finishCopyFileProgress(CopyParameterContainer container, BooleanProperty error,
@@ -424,7 +425,7 @@ public class AppController {
                                         double contribution) {
         setCompletedAmount(container, currentPercentageDone + contribution);
 
-        runInMainThread("Error creating reload event", () -> {
+        executeMainThreadRunner("Error creating reload event", () -> {
             if (!container.operation.isStopped() && !error.get()) {
                 // reload source folder if operation is move or cut & paste
                 postEvent(new ReloadEvent(source.getFile().getParent()));
@@ -505,7 +506,7 @@ public class AppController {
     private void deleteItem(ExplorerItemModel item, BooleanProperty breakLoop) {
         writeInfoLog("Deleting file " + item.getFile().getAbsolutePath());
 
-        executeRunnerAndHandleException(() -> {
+        executeVoidAndExceptionRunner(() -> {
             File file = item.getFile();
             FileLogic.delete(file);
             postEvent(new ReloadEvent(file.getParent()));
@@ -620,7 +621,7 @@ public class AppController {
 
             @Override
             public void handleCloseEvent(WindowEvent event) {
-                executeRunnerOrExit("Error when handling window exit event",
+                executeRunnerOrExit("Error when handling window_event exit event",
                         () -> checkRunningOperationsAndConfirmClose(event));
             }
         });

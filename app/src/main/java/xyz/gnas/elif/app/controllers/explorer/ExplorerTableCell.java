@@ -5,15 +5,14 @@ import de.jensd.fx.glyphs.materialicons.MaterialIconView;
 import javafx.scene.control.TableCell;
 import javafx.scene.image.ImageView;
 import xyz.gnas.elif.app.common.Configurations;
+import xyz.gnas.elif.app.common.utility.ImageUtility;
+import xyz.gnas.elif.app.common.utility.runner.RunnerUtility;
 import xyz.gnas.elif.app.controllers.explorer.ExplorerTableCellCallback.Column;
 import xyz.gnas.elif.app.models.explorer.ExplorerItemModel;
 
 import java.io.File;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
-
-import static xyz.gnas.elif.app.common.utility.ImageUtility.getFileIcon;
-import static xyz.gnas.elif.app.common.utility.code.CodeRunnerUtility.executeRunner;
 
 class ExplorerTableCell extends TableCell<ExplorerItemModel, ExplorerItemModel> {
     private Column column;
@@ -24,7 +23,7 @@ class ExplorerTableCell extends TableCell<ExplorerItemModel, ExplorerItemModel> 
 
     @Override
     protected void updateItem(ExplorerItemModel item, boolean empty) {
-        executeRunner(getClass(), "Error when displaying item", () -> {
+        RunnerUtility.executeVoidrunner(getClass(), "Error when displaying item", () -> {
             super.updateItem(item, empty);
 
             if (empty || item == null) {
@@ -69,7 +68,7 @@ class ExplorerTableCell extends TableCell<ExplorerItemModel, ExplorerItemModel> 
             MaterialIconView mivFolder = new MaterialIconView(MaterialIcon.FOLDER_OPEN, Configurations.ICON_SIZE);
             setGraphic(mivFolder);
         } else {
-            ImageView imv = new ImageView(getFileIcon(file, true));
+            ImageView imv = new ImageView(ImageUtility.getFileIcon(file, true));
             setGraphic(imv);
         }
     }

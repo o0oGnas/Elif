@@ -1,20 +1,20 @@
-package xyz.gnas.elif.app.common.utility.code;
+package xyz.gnas.elif.app.common.utility.runner;
 
-import static xyz.gnas.elif.app.common.utility.DialogUtility.showError;
+import xyz.gnas.elif.app.common.utility.DialogUtility;
 
-class MainThreadTaskRunner implements Runnable {
+class MainThreadRunner implements Runnable {
     private Class callerClass;
     private String errorMessage;
-    private Runner runner;
-    private ExceptionHandler exceptionHandler;
+    private VoidRunner runner;
+    private ExceptionRunner exceptionHandler;
 
-    public MainThreadTaskRunner(Class callerClass, String errorMessage, Runner runner) {
+    public MainThreadRunner(Class callerClass, String errorMessage, VoidRunner runner) {
         this.callerClass = callerClass;
         this.errorMessage = errorMessage;
         this.runner = runner;
     }
 
-    public MainThreadTaskRunner(Runner runner, ExceptionHandler exceptionHandler) {
+    public MainThreadRunner(VoidRunner runner, ExceptionRunner exceptionHandler) {
         this.runner = runner;
         this.exceptionHandler = exceptionHandler;
     }
@@ -25,7 +25,7 @@ class MainThreadTaskRunner implements Runnable {
             runner.run();
         } catch (Exception e) {
             if (exceptionHandler == null) {
-                showError(callerClass, errorMessage, e, false);
+                DialogUtility.showError(callerClass, errorMessage, e, false);
             } else {
                 exceptionHandler.run(e);
             }

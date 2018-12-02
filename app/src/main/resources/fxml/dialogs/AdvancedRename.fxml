@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView?>
 <?import de.jensd.fx.glyphs.materialicons.MaterialIconView?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
@@ -22,62 +23,149 @@
             fx:controller="xyz.gnas.elif.app.controllers.dialogs.advanced_rename.AdvancedRenameController">
     <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
           AnchorPane.topAnchor="0.0">
-        <GridPane>
-            <columnConstraints>
-                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0"/>
-                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0"/>
-            </columnConstraints>
-            <rowConstraints>
-                <RowConstraints vgrow="SOMETIMES"/>
-                <RowConstraints vgrow="SOMETIMES"/>
-            </rowConstraints>
+        <HBox>
             <children>
-                <HBox alignment="CENTER_LEFT" GridPane.hgrow="ALWAYS">
-                    <HBox alignment="CENTER_LEFT" styleClass="control-box" HBox.hgrow="ALWAYS">
-                        <children>
-                            <Label text="Text to search"/>
-                            <TextField fx:id="ttfSearch" HBox.hgrow="ALWAYS">
-                                <HBox.margin>
-                                    <Insets left="10.0"/>
-                                </HBox.margin>
-                            </TextField>
-                        </children>
-                    </HBox>
-                    <HBox alignment="CENTER_LEFT" styleClass="control-box">
-                        <children>
-                            <Label text="Search mode"/>
-                            <ComboBox fx:id="cbbSearchMode">
-                                <HBox.margin>
-                                    <Insets left="10.0"/>
-                                </HBox.margin>
-                            </ComboBox>
-                        </children>
-                        <HBox.margin>
-                            <Insets left="10.0"/>
-                        </HBox.margin>
-                    </HBox>
+                <HBox alignment="CENTER_LEFT" styleClass="control-box" HBox.hgrow="ALWAYS">
+                    <children>
+                        <Label text="Text to search"/>
+                        <TextField fx:id="ttfSearch" HBox.hgrow="ALWAYS">
+                            <HBox.margin>
+                                <Insets left="10.0"/>
+                            </HBox.margin>
+                        </TextField>
+                    </children>
                 </HBox>
-                <HBox fx:id="hbxReplace" alignment="CENTER_LEFT" styleClass="control-box" GridPane.columnIndex="1"
-                      GridPane.hgrow="ALWAYS">
+                <HBox fx:id="hbxReplaceText" alignment="CENTER_LEFT" styleClass="control-box" HBox.hgrow="ALWAYS">
                     <Label text="Replace by"/>
                     <TextField fx:id="ttfReplace" HBox.hgrow="ALWAYS">
                         <HBox.margin>
                             <Insets left="10.0"/>
                         </HBox.margin>
                     </TextField>
-                    <GridPane.margin>
+                    <HBox.margin>
                         <Insets left="10.0"/>
-                    </GridPane.margin>
+                    </HBox.margin>
                 </HBox>
-                <HBox GridPane.columnIndex="1" GridPane.rowIndex="1">
+            </children>
+        </HBox>
+        <HBox alignment="CENTER_LEFT">
+            <children>
+                <HBox alignment="CENTER_LEFT" styleClass="control-box">
+                    <children>
+                        <Label text="Search mode"/>
+                        <ComboBox fx:id="cbbSearchMode">
+                            <HBox.margin>
+                                <Insets left="10.0"/>
+                            </HBox.margin>
+                        </ComboBox>
+                        <HBox fx:id="hbxPattern" alignment="CENTER_LEFT" disable="true" styleClass="control-box">
+                            <children>
+                                <SplitMenuButton fx:id="smbAlpha" mnemonicParsing="false" onAction="#addAlpha"
+                                                 prefWidth="200.0" text="Alpha [U] &amp; [l] (Ctr + 1)">
+                                    <items>
+                                        <MenuItem mnemonicParsing="false" onAction="#selectBothAlpha"
+                                                  text="UPPERCASE &amp; lowercase"/>
+                                        <MenuItem mnemonicParsing="false" onAction="#selectUpperAlpha"
+                                                  text="UPPERCASE"/>
+                                        <MenuItem mnemonicParsing="false" onAction="#selectLowerAlpha"
+                                                  text="lowercase"/>
+                                        <MenuItem mnemonicParsing="false" onAction="#selectNonAlpha" text="Non-alpha"/>
+                                    </items>
+                                </SplitMenuButton>
+                                <SplitMenuButton fx:id="smbNumeric" mnemonicParsing="false" onAction="#addNumeric"
+                                                 prefWidth="200.0" text="Numeric (Ctr + 2)">
+                                    <HBox.margin>
+                                        <Insets left="10.0"/>
+                                    </HBox.margin>
+                                    <items>
+                                        <MenuItem mnemonicParsing="false" onAction="#selectNumeric" text="Numeric"/>
+                                        <MenuItem mnemonicParsing="false" onAction="#selectNonNumeric"
+                                                  text="Non-numeric"/>
+                                    </items>
+                                </SplitMenuButton>
+                                <SplitMenuButton fx:id="smbAlphaNumeric" mnemonicParsing="false"
+                                                 onAction="#addAlphaNumeric" prefWidth="250.0"
+                                                 text="Alphanumeric [U] &amp; [l] (Alt + 3)">
+                                    <HBox.margin>
+                                        <Insets left="10.0"/>
+                                    </HBox.margin>
+                                    <items>
+                                        <MenuItem mnemonicParsing="false" onAction="#selectBothAlphaNumeric"
+                                                  text="UPPERCASE &amp; lowercase"/>
+                                        <MenuItem mnemonicParsing="false" onAction="#selectUpperAlphaNumeric"
+                                                  text="UPPERCASE"/>
+                                        <MenuItem mnemonicParsing="false" onAction="#selectLowerAlphaNumeric"
+                                                  text="lowercase"/>
+                                        <MenuItem mnemonicParsing="false" onAction="#selectNonAlphaNumeric"
+                                                  text="Non-alphanumeric"/>
+                                    </items>
+                                </SplitMenuButton>
+                                <SplitMenuButton fx:id="smbSpace" mnemonicParsing="false" onAction="#addSpace"
+                                                 prefWidth="180.0" text="Space (Alt + 4)">
+                                    <HBox.margin>
+                                        <Insets left="10.0"/>
+                                    </HBox.margin>
+                                    <items>
+                                        <MenuItem mnemonicParsing="false" onAction="#selectSpace" text="Space"/>
+                                        <MenuItem mnemonicParsing="false" onAction="#selectNonSpace" text="Non-space"/>
+                                    </items>
+                                </SplitMenuButton>
+                                <Button mnemonicParsing="false" onAction="#addAny" text="Any (Alt + 5)">
+                                    <HBox.margin>
+                                        <Insets left="10.0"/>
+                                    </HBox.margin>
+                                </Button>
+                                <SplitMenuButton fx:id="smbOccurrence" mnemonicParsing="false" onAction="#addOccurrence"
+                                                 prefWidth="200.0" text="Once (Alt + 6)">
+                                    <items>
+                                        <MenuItem mnemonicParsing="false" onAction="#selectOnce" text="Once"/>
+                                        <MenuItem mnemonicParsing="false" onAction="#selectAtLeastOnce"
+                                                  text="At least once"/>
+                                        <MenuItem mnemonicParsing="false" onAction="#selectNoneOrMore"
+                                                  text="None or more"/>
+                                    </items>
+                                    <HBox.margin>
+                                        <Insets left="10.0"/>
+                                    </HBox.margin>
+                                </SplitMenuButton>
+                            </children>
+                            <HBox.margin>
+                                <Insets left="10.0"/>
+                            </HBox.margin>
+                        </HBox>
+                    </children>
+                    <HBox.margin>
+                        <Insets/>
+                    </HBox.margin>
+                </HBox>
+            </children>
+            <VBox.margin>
+                <Insets top="10.0"/>
+            </VBox.margin>
+        </HBox>
+        <HBox>
+            <children>
+                <HBox alignment="CENTER_LEFT" HBox.hgrow="ALWAYS">
                     <children>
                         <HBox alignment="CENTER_LEFT" styleClass="control-box">
-                            <Label text="Rename mode"/>
-                            <ComboBox fx:id="cbbRenameMode" HBox.hgrow="ALWAYS">
-                                <HBox.margin>
-                                    <Insets left="10.0"/>
-                                </HBox.margin>
-                            </ComboBox>
+                            <children>
+                                <Label text="Perform rename on"/>
+                                <ComboBox fx:id="cbbPerformOn">
+                                    <HBox.margin>
+                                        <Insets left="10.0"/>
+                                    </HBox.margin>
+                                </ComboBox>
+                            </children>
+                        </HBox>
+                        <HBox alignment="CENTER_LEFT" styleClass="control-box">
+                            <children>
+                                <Label text="Rename mode"/>
+                                <ComboBox fx:id="cbbRenameMode" HBox.hgrow="ALWAYS">
+                                    <HBox.margin>
+                                        <Insets left="10.0"/>
+                                    </HBox.margin>
+                                </ComboBox>
+                            </children>
                             <HBox.margin>
                                 <Insets left="10.0"/>
                             </HBox.margin>
@@ -98,69 +186,12 @@
                             </HBox.margin>
                         </HBox>
                     </children>
-                    <GridPane.margin>
-                        <Insets top="10.0"/>
-                    </GridPane.margin>
-                </HBox>
-                <HBox fx:id="hbxPattern" alignment="CENTER_LEFT" disable="true" GridPane.rowIndex="1">
-                    <children>
-                        <SplitMenuButton fx:id="smbAlpha" mnemonicParsing="false" onAction="#addAlpha"
-                                         onMouseClicked="#addAlpha" prefWidth="210.0"
-                                         text="Alpha [U] &amp; [l] (Ctr + 1)">
-                            <items>
-                                <MenuItem mnemonicParsing="false" onAction="#selectBothAlpha"
-                                          text="UPPERCASE &amp; lowercase"/>
-                                <MenuItem mnemonicParsing="false" onAction="#selectUpperAlpha" text="UPPERCASE"/>
-                                <MenuItem mnemonicParsing="false" onAction="#selectLowerAlpha" text="lowercase"/>
-                                <MenuItem mnemonicParsing="false" onAction="#selectNonAlpha" text="Non-alpha"/>
-                            </items>
-                        </SplitMenuButton>
-                        <SplitMenuButton fx:id="smbNumeric" mnemonicParsing="false" prefWidth="200.0"
-                                         text="Numeric (Ctr + 2)">
-                            <HBox.margin>
-                                <Insets left="10.0"/>
-                            </HBox.margin>
-                            <items>
-                                <MenuItem mnemonicParsing="false" onAction="#selectNumeric" text="Numeric"/>
-                                <MenuItem mnemonicParsing="false" onAction="#selectNonNumeric" text="Non-numeric"/>
-                            </items>
-                        </SplitMenuButton>
-                        <SplitMenuButton fx:id="smbAlphaNumeric" mnemonicParsing="false" prefWidth="260.0"
-                                         text="Alphanumeric [U] &amp; [l] (Ctrl + 3)">
-                            <HBox.margin>
-                                <Insets left="10.0"/>
-                            </HBox.margin>
-                            <items>
-                                <MenuItem mnemonicParsing="false" onAction="#selectBothAlphaNumeric"
-                                          text="UPPERCASE &amp; lowercase"/>
-                                <MenuItem mnemonicParsing="false" onAction="#selectUpperAlphaNumeric" text="UPPERCASE"/>
-                                <MenuItem mnemonicParsing="false" onAction="#selectLowerAlphaNumeric" text="lowercase"/>
-                                <MenuItem mnemonicParsing="false" onAction="#selectNonAlphaNumeric"
-                                          text="Non-alphanumeric"/>
-                            </items>
-                        </SplitMenuButton>
-                        <SplitMenuButton fx:id="smbSpace" mnemonicParsing="false" prefWidth="190.0"
-                                         text="Space (Ctrl + 4)">
-                            <HBox.margin>
-                                <Insets left="10.0"/>
-                            </HBox.margin>
-                            <items>
-                                <MenuItem mnemonicParsing="false" onAction="#selectSpace" text="Space"/>
-                                <MenuItem mnemonicParsing="false" onAction="#selectNonSpace" text="Non-space"/>
-                            </items>
-                        </SplitMenuButton>
-                        <Button mnemonicParsing="false" text="Any (Ctrl + 5)">
-                            <HBox.margin>
-                                <Insets left="10.0"/>
-                            </HBox.margin>
-                        </Button>
-                    </children>
-                    <GridPane.margin>
-                        <Insets top="10.0"/>
-                    </GridPane.margin>
                 </HBox>
             </children>
-        </GridPane>
+            <VBox.margin>
+                <Insets top="10.0"/>
+            </VBox.margin>
+        </HBox>
         <VBox VBox.vgrow="ALWAYS">
             <VBox.margin>
                 <Insets top="10.0"/>
@@ -183,7 +214,7 @@
                     </HBox.margin>
                 </Button>
             </HBox>
-            <GridPane VBox.vgrow="ALWAYS">
+            <GridPane fx:id="gdpTrees" VBox.vgrow="ALWAYS">
                 <columnConstraints>
                     <ColumnConstraints hgrow="SOMETIMES"/>
                     <ColumnConstraints hgrow="SOMETIMES"/>
@@ -220,11 +251,11 @@
                     <GridPane.margin>
                         <Insets/>
                     </GridPane.margin>
-                    <Label text="Preview">
-                        <font>
-                            <Font name="System Bold" size="12.0"/>
-                        </font>
-                    </Label>
+                    <Button mnemonicParsing="false" onAction="#updatePreviewTree" text="Preview">
+                        <graphic>
+                            <FontAwesomeIconView glyphName="EYE" size="16"/>
+                        </graphic>
+                    </Button>
                 </HBox>
             </GridPane>
         </VBox>

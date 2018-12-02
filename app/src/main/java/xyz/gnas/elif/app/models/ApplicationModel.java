@@ -5,13 +5,12 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.ObservableList;
 import xyz.gnas.elif.app.common.Configurations;
+import xyz.gnas.elif.app.common.utility.DialogUtility;
+import xyz.gnas.elif.app.common.utility.runner.RunnerUtility;
 import xyz.gnas.elif.app.models.explorer.ExplorerItemModel;
 import xyz.gnas.elif.app.models.explorer.ExplorerModel;
 
 import java.io.File;
-
-import static xyz.gnas.elif.app.common.utility.DialogUtility.showError;
-import static xyz.gnas.elif.app.common.utility.code.CodeRunnerUtility.executeRunnerAndHandleException;
 
 public class ApplicationModel {
     private static ApplicationModel instance = null;
@@ -38,7 +37,7 @@ public class ApplicationModel {
 
     public SettingModel getSetting() {
         if (setting.get() == null) {
-            executeRunnerAndHandleException(() -> {
+            RunnerUtility.executeVoidAndExceptionRunner(() -> {
                 ObjectMapper mapper = new ObjectMapper();
                 File file = new File(Configurations.SETTING_FILE);
 
@@ -48,7 +47,7 @@ public class ApplicationModel {
                     initialiseDefaultSetting();
                 }
             }, (Exception e) -> {
-                showError(ApplicationModel.class, "Error getting setting", e, false);
+                DialogUtility.showError(ApplicationModel.class, "Error getting setting", e, false);
                 initialiseDefaultSetting();
             });
         }

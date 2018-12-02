@@ -5,9 +5,8 @@ import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.scene.control.TableColumn;
 import javafx.util.Callback;
+import xyz.gnas.elif.app.common.utility.runner.RunnerUtility;
 import xyz.gnas.elif.app.models.explorer.ExplorerItemModel;
-
-import static xyz.gnas.elif.app.common.utility.code.CodeRunnerUtility.executeRunnerWithObjectReturn;
 
 class ExplorerTableCellValue implements Callback<TableColumn.CellDataFeatures<ExplorerItemModel,
         ExplorerItemModel>, ObservableValue<ExplorerItemModel>> {
@@ -28,7 +27,7 @@ class ExplorerTableCellValue implements Callback<TableColumn.CellDataFeatures<Ex
 
             @Override
             public ExplorerItemModel getValue() {
-                return (ExplorerItemModel) executeRunnerWithObjectReturn(getClass(),
+                return (ExplorerItemModel) RunnerUtility.executeObjectRunner(getClass(),
                         "Error getting value for table cell", param::getValue);
             }
 

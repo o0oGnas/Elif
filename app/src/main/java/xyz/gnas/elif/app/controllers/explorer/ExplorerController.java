@@ -36,13 +36,14 @@ import javafx.scene.paint.Color;
 import javafx.stage.WindowEvent;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
+import xyz.gnas.elif.app.common.utility.ImageUtility;
 import xyz.gnas.elif.app.common.utility.LogUtility;
-import xyz.gnas.elif.app.common.utility.code.CodeRunnerUtility;
-import xyz.gnas.elif.app.common.utility.code.Runner;
-import xyz.gnas.elif.app.common.utility.code.RunnerWithBooleanReturn;
-import xyz.gnas.elif.app.common.utility.code.RunnerWithIntReturn;
-import xyz.gnas.elif.app.common.utility.window.WindowEventHandler;
-import xyz.gnas.elif.app.common.utility.window.WindowEventUtility;
+import xyz.gnas.elif.app.common.utility.runner.BooleanRunner;
+import xyz.gnas.elif.app.common.utility.runner.IntRunner;
+import xyz.gnas.elif.app.common.utility.runner.RunnerUtility;
+import xyz.gnas.elif.app.common.utility.runner.VoidRunner;
+import xyz.gnas.elif.app.common.utility.window_event.WindowEventHandler;
+import xyz.gnas.elif.app.common.utility.window_event.WindowEventUtility;
 import xyz.gnas.elif.app.controllers.explorer.ExplorerTableCellCallback.Column;
 import xyz.gnas.elif.app.events.dialogs.DialogEvent;
 import xyz.gnas.elif.app.events.dialogs.DialogEvent.DialogType;
@@ -66,8 +67,6 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-
-import static xyz.gnas.elif.app.common.utility.ImageUtility.getFileIcon;
 
 public class ExplorerController {
     @FXML
@@ -239,21 +238,21 @@ public class ExplorerController {
 
     private String quickSelectString;
 
-    private void executeRunner(String errorMessage, Runner runner) {
-        CodeRunnerUtility.executeRunner(getClass(), errorMessage, runner);
+    private void executeRunner(String errorMessage, VoidRunner runner) {
+        RunnerUtility.executeVoidrunner(getClass(), errorMessage, runner);
     }
 
-    private void executeRunnerOrExit(String errorMessage, Runner runner) {
-        CodeRunnerUtility.executeRunnerOrExit(getClass(), errorMessage, runner);
+    private void executeRunnerOrExit(String errorMessage, VoidRunner runner) {
+        RunnerUtility.executeVoidRunnerOrExit(getClass(), errorMessage, runner);
     }
 
-    private int executeRunnerWithIntReturn(String errorMessage, int errorReturnValue, RunnerWithIntReturn runner) {
-        return CodeRunnerUtility.executeRunnerWithIntReturn(getClass(), errorMessage, errorReturnValue, runner);
+    private int executeIntRunner(String errorMessage, int errorReturnValue, IntRunner runner) {
+        return RunnerUtility.executeIntRunner(getClass(), errorMessage, errorReturnValue, runner);
     }
 
-    private boolean executeRunnerWithBooleanReturn(String errorMessage, boolean errorReturnValue,
-                                                   RunnerWithBooleanReturn runner) {
-        return CodeRunnerUtility.executeRunnerWithBooleanReturn(getClass(), errorMessage, errorReturnValue, runner);
+    private boolean executeBooleanRunner(String errorMessage, boolean errorReturnValue,
+                                         BooleanRunner runner) {
+        return RunnerUtility.executeBooleanRunner(getClass(), errorMessage, errorReturnValue, runner);
     }
 
     private void writeInfoLog(String log) {
@@ -411,7 +410,7 @@ public class ExplorerController {
 
             @Override
             public void handleFocusedEvent() {
-                executeRunner("Error when handling window focused event", () -> {
+                executeRunner("Error when handling window_event focused event", () -> {
                     // only reselect for the focused tab
                     if (applicationModel.getSelectedExplorerModel() == explorerModel) {
                         updateAndReselect();
@@ -473,7 +472,7 @@ public class ExplorerController {
      * @return the Node object
      */
     private HBox getDriveItem(File item) {
-        ImageView imv = new ImageView(getFileIcon(item, false));
+        ImageView imv = new ImageView(ImageUtility.getFileIcon(item, false));
         Label lbl = new Label(FileSystemView.getFileSystemView().getSystemDisplayName(item));
         lbl.setTextFill(Color.BLACK);
         HBox hbx = new HBox(imv, lbl);
@@ -512,7 +511,7 @@ public class ExplorerController {
         writeInfoLog("Sorting list by " + currentSortLabel.getText() + " - " + sortOrder);
 
         tbvTable.getItems().sort((ExplorerItemModel o1, ExplorerItemModel o2) ->
-                executeRunnerWithIntReturn("Error when sorting table", 0, () -> {
+                executeIntRunner("Error when sorting table", 0, () -> {
                     boolean isDirectory = o1.getFile().isDirectory();
 
                     // only sort if both are files or folders, otherwise folder comes first
@@ -572,7 +571,7 @@ public class ExplorerController {
         smiRunOrGoTo.visibleProperty().bind(cmiRunOrGoto.visibleProperty());
         smiCopyToOther.visibleProperty().bind(cmiCopyToOther.visibleProperty());
         smiClipboard.visibleProperty().bind(Bindings.createBooleanBinding(() ->
-                        executeRunnerWithBooleanReturn("Error when binding clipboard separator context menu", true,
+                        executeBooleanRunner("Error when binding clipboard separator context menu", true,
                                 () -> cmiCopyToClipboard.isVisible() || cmiCutToClipboard.isVisible() || cmiPaste.isVisible()),
                 cmiCopyToClipboard.visibleProperty(), cmiCutToClipboard.visibleProperty(), cmiPaste.visibleProperty()));
         smiMove.visibleProperty().bind(cmiMove.visibleProperty());
@@ -911,6 +910,10 @@ public class ExplorerController {
     }
 
     private void handleNoModifierEvent(KeyEvent event) {
+        // some keyboard inputs use visibility check on its corresponding context menu item, so we need to update
+        // their visibility before handling the keyboard input
+        updateTableContextMenu();
+
         switch (event.getCode()) {
             case TAB:
                 postEvent(new SwitchTabEvent(explorerModel));

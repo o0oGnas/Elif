@@ -1,14 +1,14 @@
 package xyz.gnas.elif.app.controllers.dialogs.advanced_rename;
 
 import javafx.scene.control.cell.CheckBoxTreeCell;
-import xyz.gnas.elif.app.common.utility.code.CodeRunnerUtility;
-import xyz.gnas.elif.app.common.utility.code.Runner;
+import xyz.gnas.elif.app.common.utility.runner.RunnerUtility;
+import xyz.gnas.elif.app.common.utility.runner.VoidRunner;
 
 import java.io.File;
 
 class AdvancedRenameCheckBoxTreeCell extends CheckBoxTreeCell<File> {
-    private void executeRunner(String errorMessage, Runner runner) {
-        CodeRunnerUtility.executeRunner(getClass(), errorMessage, runner);
+    private void executeRunner(String errorMessage, VoidRunner runner) {
+        RunnerUtility.executeVoidrunner(getClass(), errorMessage, runner);
     }
 
     @Override

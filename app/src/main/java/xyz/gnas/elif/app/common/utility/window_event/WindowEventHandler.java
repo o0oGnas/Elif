@@ -1,4 +1,4 @@
-package xyz.gnas.elif.app.common.utility.window;
+package xyz.gnas.elif.app.common.utility.window_event;
 
 import javafx.stage.WindowEvent;
 

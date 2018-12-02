@@ -1,12 +1,12 @@
-package xyz.gnas.elif.app.common.utility.code;
+package xyz.gnas.elif.app.common.utility.runner;
 
 import static javafx.application.Platform.runLater;
 import static xyz.gnas.elif.app.common.utility.DialogUtility.showError;
 
 /**
- * Provides wrapper to execute code and catch exception, which is usually shown by calling DialogUtility.showError()
+ * Provides wrapper to execute runner and catch exception, which is usually shown by calling DialogUtility.showError()
  */
-public class CodeRunnerUtility {
+public class RunnerUtility {
     /**
      * Execute runner
      *
@@ -14,7 +14,7 @@ public class CodeRunnerUtility {
      * @param errorMessage the error message
      * @param runner       the runner
      */
-    public static void executeRunner(Class callerClass, String errorMessage, Runner runner) {
+    public static void executeVoidrunner(Class callerClass, String errorMessage, VoidRunner runner) {
         try {
             runner.run();
         } catch (Exception e) {
@@ -29,7 +29,7 @@ public class CodeRunnerUtility {
      * @param errorMessage the error message
      * @param runner       the runner
      */
-    public static void executeRunnerOrExit(Class callerClass, String errorMessage, Runner runner) {
+    public static void executeVoidRunnerOrExit(Class callerClass, String errorMessage, VoidRunner runner) {
         try {
             runner.run();
         } catch (Exception e) {
@@ -37,8 +37,8 @@ public class CodeRunnerUtility {
         }
     }
 
-    public static int executeRunnerWithIntReturn(Class callerClass, String errorMessage, int errorReturnValue,
-                                                 RunnerWithIntReturn runner) {
+    public static int executeIntRunner(Class callerClass, String errorMessage, int errorReturnValue,
+                                       IntRunner runner) {
         try {
             return runner.run();
         } catch (Exception e) {
@@ -47,8 +47,8 @@ public class CodeRunnerUtility {
         }
     }
 
-    public static boolean executeRunnerWithBooleanReturn(Class callerClass, String errorMessage,
-                                                         boolean errorReturnValue, RunnerWithBooleanReturn runner) {
+    public static boolean executeBooleanRunner(Class callerClass, String errorMessage,
+                                               boolean errorReturnValue, BooleanRunner runner) {
         try {
             return runner.run();
         } catch (Exception e) {
@@ -65,8 +65,8 @@ public class CodeRunnerUtility {
      * @param runner       the runner
      * @return the object
      */
-    public static Object executeRunnerWithObjectReturn(Class callerClass, String errorMessage,
-                                                       RunnerWithObjectReturn runner) {
+    public static Object executeObjectRunner(Class callerClass, String errorMessage,
+                                             ObjectRunner runner) {
         try {
             return runner.run();
         } catch (Exception e) {
@@ -81,7 +81,7 @@ public class CodeRunnerUtility {
      * @param runner  the runner
      * @param handler the exception handler
      */
-    public static void executeRunnerAndHandleException(Runner runner, ExceptionHandler handler) {
+    public static void executeVoidAndExceptionRunner(VoidRunner runner, ExceptionRunner handler) {
         try {
             runner.run();
         } catch (Exception e) {
@@ -90,28 +90,28 @@ public class CodeRunnerUtility {
     }
 
     /**
-     * Run code in a new thread
+     * Run runner in a new thread
      *
      * @param callerClass  the caller class
      * @param errorMessage the error message
      * @param runner       the runner
      * @return the thread
      */
-    public static Thread runInSideThread(Class callerClass, String errorMessage, Runner runner) {
-        Thread t = new Thread(new SideThreadTaskRunner(callerClass, errorMessage, runner));
+    public static Thread executeSideThreadRunner(Class callerClass, String errorMessage, VoidRunner runner) {
+        Thread t = new Thread(new SideThreadRunner(callerClass, errorMessage, runner));
         t.start();
         return t;
     }
 
     /**
-     * Run code in the main thread
+     * Run runner in the main thread
      *
      * @param callerClass  the caller class
      * @param errorMessage the error message
      * @param runner       the runner
      */
-    public static void runInMainThread(Class callerClass, String errorMessage, Runner runner) {
-        runLater(new MainThreadTaskRunner(callerClass, errorMessage, runner));
+    public static void executeMainThreadRunner(Class callerClass, String errorMessage, VoidRunner runner) {
+        runLater(new MainThreadRunner(callerClass, errorMessage, runner));
     }
 
     /**
@@ -120,7 +120,7 @@ public class CodeRunnerUtility {
      * @param runner  the runner
      * @param handler the handler
      */
-    public static void runInMainThreadAndHandleException(Runner runner, ExceptionHandler handler) {
-        runLater(new MainThreadTaskRunner(runner, handler));
+    public static void executeMainThreadAndExceptionRunner(VoidRunner runner, ExceptionRunner handler) {
+        runLater(new MainThreadRunner(runner, handler));
     }
 }

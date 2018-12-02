@@ -1,15 +1,14 @@
-package xyz.gnas.elif.app.common.utility.code;
+package xyz.gnas.elif.app.common.utility.runner;
 
 import javafx.concurrent.Task;
+import xyz.gnas.elif.app.common.utility.DialogUtility;
 
-import static xyz.gnas.elif.app.common.utility.DialogUtility.showError;
-
-class SideThreadTaskRunner extends Task {
+class SideThreadRunner extends Task {
     private Class callerClass;
     private String errorMessage;
-    private Runner runner;
+    private VoidRunner runner;
 
-    public SideThreadTaskRunner(Class callerClass, String errorMessage, Runner runner) {
+    public SideThreadRunner(Class callerClass, String errorMessage, VoidRunner runner) {
         this.callerClass = callerClass;
         this.errorMessage = errorMessage;
         this.runner = runner;
@@ -20,7 +19,7 @@ class SideThreadTaskRunner extends Task {
         try {
             runner.run();
         } catch (Exception e) {
-            showError(callerClass, errorMessage, e, false);
+            DialogUtility.showError(callerClass, errorMessage, e, false);
         }
 
         return null;
